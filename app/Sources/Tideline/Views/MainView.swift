@@ -16,6 +16,10 @@ struct MainView: View {
                     Section { AccessCard() }
                 }
 
+                if showLoginSuggestion {
+                    Section { LoginSuggestionCard() }
+                }
+
                 Section {
                     StatusRow()
                 } header: {
@@ -87,6 +91,42 @@ struct MainView: View {
         .onAppear {
             controller.refreshLoginItem()
         }
+    }
+
+    /// Nudge shown until the user either opts in or waves it away once.
+    private var showLoginSuggestion: Bool {
+        !settings.hasAnsweredLoginSuggestion && !controller.loginItemEnabled
+    }
+}
+
+// MARK: - Open at login
+
+private struct LoginSuggestionCard: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Have Tideline open at login", systemImage: "power")
+                .font(.headline)
+
+            Text("Filing only happens while Tideline is running. Started at login it comes up in the background — no window, no Dock icon — and keeps the folder tidy on its own.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Button("Open at Login") {
+                    withAnimation(.easeInOut(duration: 0.2)) { controller.setLoginItem(true) }
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Not Now") {
+                    withAnimation(.easeInOut(duration: 0.2)) { settings.hasAnsweredLoginSuggestion = true }
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The window now suggests opening Tideline at login, since filing only happens
+  while the app runs. Accepting or dismissing it once puts the suggestion away
+  for good; the switch itself stays under *When it runs*.
+
 ## [1.0.0] - 2026-08-20
 
 First public release.

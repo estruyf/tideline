@@ -270,6 +270,9 @@ final class Controller: ObservableObject {
     }
 
     func setLoginItem(_ enabled: Bool) {
+        // Either answer settles the first-run suggestion, wherever it was toggled.
+        settings.hasAnsweredLoginSuggestion = true
+
         do {
             if enabled {
                 if SMAppService.mainApp.status == .enabled {

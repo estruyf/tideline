@@ -177,6 +177,10 @@ If you dismissed the prompt, the window shows an orange banner with an **Open
 Privacy Settings** button. Switch on *Downloads Folder* for Tideline under
 **Privacy & Security › Files and Folders**, then quit and reopen the app.
 
+The window also offers to start Tideline at login, since filing only happens
+while the app is running. **Open at Login** switches it on; **Not Now** hides
+the suggestion for good. Either way the same switch stays under *When it runs*.
+
 ## The window
 
 **Status** — whether filing is on, when it last ran, what it did, and when the

@@ -79,6 +79,7 @@ final class Settings: ObservableObject {
         static let notifyOnMove = "notifyOnMove"
         static let skipNames = "skipNames"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
+        static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
     }
 
     private init() {
@@ -112,6 +113,7 @@ final class Settings: ObservableObject {
         includeFolders = defaults.bool(forKey: Key.includeFolders)
         notifyOnMove = defaults.bool(forKey: Key.notifyOnMove)
         skipNames = defaults.stringArray(forKey: Key.skipNames) ?? Settings.defaultSkipNames
+        hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
     }
 
     static var defaultDownloadsPath: String {
@@ -135,6 +137,12 @@ final class Settings: ObservableObject {
     @Published var includeFolders: Bool { didSet { store(includeFolders, Key.includeFolders) } }
     @Published var notifyOnMove: Bool { didSet { store(notifyOnMove, Key.notifyOnMove) } }
     @Published var skipNames: [String] { didSet { store(skipNames, Key.skipNames) } }
+
+    /// Set once the user has either accepted or waved away the open-at-login suggestion.
+    /// Kept out of `store` so answering it never triggers a reconfigure.
+    @Published var hasAnsweredLoginSuggestion: Bool {
+        didSet { defaults.set(hasAnsweredLoginSuggestion, forKey: Key.hasAnsweredLoginSuggestion) }
+    }
 
     /// Set once the very first launch has shown the welcome screen.
     var hasCompletedFirstRun: Bool {
