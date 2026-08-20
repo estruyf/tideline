@@ -1,0 +1,29 @@
+{
+  "name": "tideline",
+  "version": "1.0.0",
+  "description": "macOS app that files older downloads into folders named for the day they arrived",
+  "license": "MIT",
+  "author": "Elio Struyf",
+  "homepage": "https://github.com/estruyf/tideline",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/estruyf/tideline.git"
+  },
+  "bugs": {
+    "url": "https://github.com/estruyf/tideline/issues"
+  },
+  "scripts": {
+    "version": "npm run build",
+    "build": "cd app && ./build.sh",
+    "build:install": "cd app && ./build.sh --install",
+    "build:zip": "cd app && ./build.sh --zip",
+    "sign": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --zip",
+    "notarize": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --notarize",
+    "release": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --notarize",
+    "open": "open 'app/dist/Tideline.app'",
+    "quit": "osascript -e 'quit app \"Tideline\"' || true",
+    "logs": "tail -f \"$HOME/Library/Logs/Tideline.log\"",
+    "icon": "cd app && swift Tools/make-icon.swift dist/AppIcon.iconset && open dist/AppIcon.iconset",
+    "clean": "rm -rf app/.build app/dist"
+  }
+}

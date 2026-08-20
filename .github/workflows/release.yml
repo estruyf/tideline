@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      notarize:
+        description: "Sign and notarize (needs the Apple secrets)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build, sign and notarize
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Select Xcode
+        run: sudo xcode-select -switch /Applications/Xcode.app
+
+      # A release tag of v1.2.3 must match "version" in package.json, otherwise
+      # the bundle would ship stamped with a different number than the tag.
+      - name: Check the version matches the tag
+        if: github.event_name == 'release'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          echo "tag=$TAG package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG."
+            echo "Run 'npm version $TAG' on main, push, then recreate the release."
+            exit 1
+          fi
+
+      - name: Import the Developer ID certificate
+        env:
+          CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE }}
+        run: |
+          set -euo pipefail
+          CERT_PATH="$RUNNER_TEMP/certificate.p12"
+          KEYCHAIN="$RUNNER_TEMP/build.keychain-db"
+          # Random per-run password: this keychain is thrown away with the runner.
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+
+          echo -n "$CERTIFICATE_P12" | base64 --decode > "$CERT_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$CERT_PATH" -k "$KEYCHAIN" -P "" -T /usr/bin/codesign
+          # Lets codesign use the key without an interactive prompt.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychain -d user -s "$KEYCHAIN" login.keychain-db
+
+          rm -f "$CERT_PATH"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | sed -n 's/.*"\(Developer ID Application: [^"]*\)".*/\1/p' | head -1)"
+          if [ -z "$IDENTITY" ]; then
+            echo "::error::No Developer ID Application identity found in the imported certificate."
+            exit 1
+          fi
+          echo "Using identity: $IDENTITY"
+          echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Build, sign, notarize and staple
+        env:
+          NOTARY_APPLE_ID: ${{ secrets.APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: cd app && ./build.sh --notarize
+
+      - name: Confirm the ticket is stapled
+        run: |
+          xcrun stapler validate "app/dist/Tideline.app"
+          spctl --assess --type execute --verbose=2 "app/dist/Tideline.app"
+
+      - name: Name the archive after the version
+        id: archive
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          NAME="Tideline-$VERSION-macos-universal.zip"
+          mv "app/dist/Tideline.zip" "app/dist/$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "path=app/dist/$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.archive.outputs.name }}
+          path: ${{ steps.archive.outputs.path }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Attach the app to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            "${{ steps.archive.outputs.path }}" --clobber
+
+      - name: Clean up the keychain
+        if: always()
+        run: |
+          security list-keychain -d user -s login.keychain-db || true
+          rm -f "$RUNNER_TEMP/build.keychain-db" "$RUNNER_TEMP/certificate.p12"

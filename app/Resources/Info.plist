@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Tideline</string>
+    <key>CFBundleDisplayName</key>
+    <string>Tideline</string>
+    <key>CFBundleIdentifier</key>
+    <string>be.eliostruyf.Tideline</string>
+    <key>CFBundleExecutable</key>
+    <string>Tideline</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>__VERSION__</string>
+    <key>CFBundleVersion</key>
+    <string>__BUILD__</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+
+    <!-- Starts as a background app: no Dock icon until the window is opened. -->
+    <key>LSUIElement</key>
+    <true/>
+
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticTermination</key>
+    <false/>
+
+    <!-- Shown in the macOS permission prompts. -->
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Tideline files older downloads into folders named for the day they arrived.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Tideline needs access to keep this folder tidy.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Tideline needs access to keep this folder tidy.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Tideline needs access to keep a folder on this volume tidy.</string>
+
+    <key>NSHumanReadableCopyright</key>
+    <string>Elio Struyf</string>
+</dict>
+</plist>
