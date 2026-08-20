@@ -289,3 +289,14 @@ of the copy. Switch *Sort by* to *Date last modified* if that suits you better.
 **A file stayed put that should have moved.** Anything written to in the last 30
 seconds is left alone, on the assumption that something is still filling it in.
 The next sweep picks it up.
+
+## 🔑 License
+
+[MIT](./LICENSE)
+
+<br />
+<br />
+
+<p align="center">
+<a href="https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline"><img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline&countColor=%23263759" /></a>
+</p>
