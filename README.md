@@ -128,8 +128,12 @@ archive is rebuilt at the end — ship the zip produced *after* that step.
 [`.github/workflows/release.yml`](.github/workflows/release.yml) builds, signs,
 notarizes and staples on a macOS runner whenever a release is **published**, then
 attaches `Tideline-<version>-macos-universal.zip` to that release and keeps
-it as a build artifact for 90 days. `workflow_dispatch` runs it by hand without
-touching a release.
+it as a build artifact for 90 days. `workflow_dispatch` runs it by hand; give it
+a **tag** to attach the result to an existing release — useful when a release
+build failed halfway and you would rather repair it than cut a new version.
+
+The release asset is the download to hand to people. The Actions artifact is a
+zip inside a zip, because GitHub wraps every artifact in an archive of its own.
 
 It needs five repository secrets (**Settings → Secrets and variables → Actions**):
 
@@ -293,6 +297,13 @@ of the copy. Switch *Sort by* to *Date last modified* if that suits you better.
 **A file stayed put that should have moved.** Anything written to in the last 30
 seconds is left alone, on the assumption that something is still filling it in.
 The next sweep picks it up.
+
+**"Unable to expand … It is in an unsupported format."** You downloaded the
+build artifact from the Actions run page rather than the zip attached to the
+release. GitHub wraps every artifact in a zip of its own, so that download is a
+zip inside a zip — unpack it twice. Take the asset from the
+[latest release](https://github.com/estruyf/tideline/releases/latest) instead;
+it is the app, zipped once.
 
 ## 🔑 License
 

@@ -9,6 +9,10 @@ on:
         description: "Sign and notarize (needs the Apple secrets)"
         type: boolean
         default: true
+      tag:
+        description: "Also attach the build to this release tag, e.g. v1.0.1 (leave empty to only keep the artifact)"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -28,13 +32,14 @@ jobs:
       # A release tag of v1.2.3 must match "version" in package.json, otherwise
       # the bundle would ship stamped with a different number than the tag.
       - name: Check the version matches the tag
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.tag != ''
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${{ github.event_name == 'release' && github.ref_name || inputs.tag }}"
+          TAG="${TAG#v}"
           PKG="$(node -p "require('./package.json').version")"
           echo "tag=$TAG package.json=$PKG"
           if [ "$TAG" != "$PKG" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG."
+            echo "::error::Tag v$TAG does not match package.json version $PKG."
             echo "Run 'npm version $TAG' on main, push, then recreate the release."
             exit 1
           fi
@@ -89,23 +94,32 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           NAME="Tideline-$VERSION-macos-universal.zip"
           mv "app/dist/Tideline.zip" "app/dist/$NAME"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "path=app/dist/$NAME" >> "$GITHUB_OUTPUT"
 
+      # GitHub always wraps an artifact in a zip of its own, so this name must
+      # differ from the zip inside it. Naming both the same makes the download
+      # and its payload collide on disk, and Archive Utility gives up with
+      # "unsupported format". The release asset is the real download; this one
+      # is a build convenience, and unpacks in two steps.
       - name: Upload the build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ steps.archive.outputs.name }}
+          name: tideline-${{ steps.archive.outputs.version }}-build
           path: ${{ steps.archive.outputs.path }}
           if-no-files-found: error
           retention-days: 90
 
+      # Also reachable from workflow_dispatch with a tag, so a release whose
+      # build failed can be repaired without cutting a new one.
       - name: Attach the app to the release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ github.event_name == 'release' && github.ref_name || inputs.tag }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" \
+          gh release upload "$TARGET" \
             "${{ steps.archive.outputs.path }}" --clobber
 
       - name: Clean up the keychain

@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   while the app runs. Accepting or dismissing it once puts the suggestion away
   for good; the switch itself stays under *When it runs*.
 
+### Fixed
+
+- The release workflow named its build artifact after the zip inside it, so the
+  download and its payload collided on disk and Archive Utility refused it with
+  "unsupported format". The artifact is now named separately from the app zip.
+- `workflow_dispatch` can attach its build to an existing release tag, so a
+  release whose build failed can be repaired without cutting a new version.
+
 ## [1.0.0] - 2026-08-20
 
 First public release.
