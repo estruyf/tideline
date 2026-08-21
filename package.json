@@ -1,6 +1,6 @@
 {
   "name": "tideline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "macOS app that files older downloads into folders named for the day they arrived",
   "license": "MIT",
   "author": "Elio Struyf",
