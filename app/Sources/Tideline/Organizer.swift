@@ -1,21 +1,48 @@
 import Foundation
 
+/// What a history entry records: a file filed away, or a dated folder cleared out.
+enum RecordKind: String, Codable {
+    case filed
+    case cleared
+}
+
 struct MoveRecord: Codable, Identifiable, Equatable {
     var id = UUID()
     var date: Date
     var name: String
     var folder: String
     var wasPreview: Bool
+    var kind: RecordKind = .filed
+}
+
+extension MoveRecord {
+    private enum CodingKeys: String, CodingKey {
+        case id, date, name, folder, wasPreview, kind
+    }
+
+    /// History written before clearing existed has no `kind`; it was all filing.
+    /// Decoded leniently so an upgrade never blanks the activity list.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        date = try container.decode(Date.self, forKey: .date)
+        name = try container.decode(String.self, forKey: .name)
+        folder = try container.decode(String.self, forKey: .folder)
+        wasPreview = try container.decodeIfPresent(Bool.self, forKey: .wasPreview) ?? false
+        kind = try container.decodeIfPresent(RecordKind.self, forKey: .kind) ?? .filed
+    }
 }
 
 struct RunResult {
     var moves: [MoveRecord] = []
+    var cleared: [MoveRecord] = []
     var inspected = 0
     var leftAlone = 0
     var errors: [String] = []
     var finishedAt = Date()
 
     var movedCount: Int { moves.count }
+    var clearedCount: Int { cleared.count }
 }
 
 enum OrganizerError: LocalizedError {

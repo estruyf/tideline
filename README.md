@@ -20,7 +20,7 @@ the day rolls over, yesterday's files move into yesterday's folder on their own.
 macOS 13 or later. A native 1.7 MB app — no Electron, no runtime, no helper
 daemon. It schedules itself and sits in the menu bar.
 
-![The Tideline window: status, when it runs, and what gets filed](./assets/tideline.png)
+![The Tideline window: status, when it runs, and what gets filed](./assets/tideline-1.1.0.png)
 
 **[Download the latest release](https://github.com/estruyf/tideline/releases/latest)**
 
@@ -56,119 +56,9 @@ the disk becomes reachable.
 ## Install
 
 Grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
-unzip it, and drag **Tideline.app** into `/Applications`. Or build it yourself:
+unzip it, and drag **Tideline.app** into `/Applications`.
 
-```bash
-npm run build:install    # builds, signs, copies to /Applications, opens it
-```
-
-`npm run build` on its own leaves the app in `app/dist/`. Requires Xcode or the
-Command Line Tools; it produces a universal (Apple silicon + Intel) binary
-stamped with the version from `package.json`.
-
-### Versioning
-
-`package.json` is the single source of truth. `build.sh` reads the version from
-it, so the bundle's `CFBundleShortVersionString` always matches:
-
-```bash
-npm version patch      # 1.0.0 -> 1.0.1, rebuilds, then commits and tags
-```
-
-The `version` lifecycle script rebuilds the app as part of the bump, so the
-bundle in `app/dist/` matches the tag rather than lagging a release behind. A
-failed build aborts the bump before anything is committed.
-
-`CFBundleVersion` is a build timestamp, regenerated on every build. Override
-either value for a one-off build with `VERSION=` or `BUILD_NUMBER=`.
-
-| Script | |
-| --- | --- |
-| `npm run build` | Build into `app/dist/` |
-| `npm run build:install` | Build, copy to `/Applications`, open it |
-| `npm run build:zip` | Build and zip it for release |
-| `npm run logs` | Follow the app's log |
-| `npm run quit` | Quit the running app |
-| `npm run clean` | Throw away build artefacts |
-| `npm run sign` | Build signed with your Developer ID, then zip |
-| `npm run notarize` | Sign, notarize with Apple, staple, zip |
-| `npm version patch` | Bump the version, rebuild, commit and tag |
-
-### Signing and notarizing
-
-An ad-hoc build runs fine on the machine that built it. To hand it to anyone
-else it needs to be signed with a **Developer ID Application** certificate *and*
-notarized by Apple — signing alone still trips Gatekeeper.
-
-One-time setup, using an [app-specific password](https://support.apple.com/en-us/102654):
-
-```bash
-xcrun notarytool store-credentials tideline \
-  --apple-id you@example.com --team-id TEAMID --password <app-specific-password>
-```
-
-Then per release:
-
-```bash
-npm run notarize
-```
-
-That signs with the hardened runtime and a secure timestamp, uploads the zip,
-waits for the ticket, staples it to the app, re-zips the stapled bundle, and
-finishes with `spctl --assess` so you know Gatekeeper accepts it before you
-publish it.
-
-The identity is picked from your keychain automatically; override it with
-`CODESIGN_IDENTITY=`, and the notary profile name with `NOTARY_PROFILE=`.
-Stapling has to happen on the `.app` rather than the zip, which is why the
-archive is rebuilt at the end — ship the zip produced *after* that step.
-
-### Releasing from GitHub Actions
-
-[`.github/workflows/release.yml`](.github/workflows/release.yml) builds, signs,
-notarizes and staples on a macOS runner whenever a release is **published**, then
-attaches `Tideline-<version>-macos-universal.zip` to that release and keeps
-it as a build artifact for 90 days. `workflow_dispatch` runs it by hand; give it
-a **tag** to attach the result to an existing release — useful when a release
-build failed halfway and you would rather repair it than cut a new version.
-
-The release asset is the download to hand to people. The Actions artifact is a
-zip inside a zip, because GitHub wraps every artifact in an archive of its own.
-
-It needs five repository secrets (**Settings → Secrets and variables → Actions**):
-
-| Secret | What it is |
-| --- | --- |
-| `MACOS_CERTIFICATE` | Developer ID Application `.p12`, base64-encoded |
-| `MACOS_CERTIFICATE_PWD` | Password you set when exporting the `.p12` |
-| `APPLE_ID` | Apple ID email for the developer account |
-| `APPLE_TEAM_ID` | Ten-character team ID |
-| `APPLE_APP_PASSWORD` | App-specific password, not the Apple ID password |
-
-Export the certificate from **Keychain Access → My Certificates**, right-click
-the *Developer ID Application* entry → *Export*, save as `.p12` with a password,
-then encode it:
-
-```bash
-base64 -i Certificates.p12 | pbcopy
-```
-
-The workflow imports it into a throwaway keychain, builds, and removes it again
-on the way out, whether the build passed or failed.
-
-A release cuts like this:
-
-```bash
-npm version patch        # bumps, rebuilds, commits, tags
-git push --follow-tags
-gh release create v1.0.1 --generate-notes
-```
-
-The workflow refuses to build if the tag and `package.json` disagree, so a
-mistagged release fails fast instead of shipping a mislabelled bundle.
-
-There is no npm dependency here — `package.json` is only a shortcut to
-`app/build.sh`, which you can call directly just as well.
+Prefer to build it yourself? See [Building](./docs/building.md).
 
 ## First launch
 
@@ -183,25 +73,37 @@ Privacy Settings** button. Switch on *Downloads Folder* for Tideline under
 
 The window also offers to start Tideline at login, since filing only happens
 while the app is running. **Open at Login** switches it on; **Not Now** hides
-the suggestion for good. Either way the same switch stays under *When it runs*.
+the suggestion for good. Either way the same switch stays on the **Status**
+tab, under the run summary.
 
 ## The window
 
-**Status** — whether filing is on, when it last ran, what it did, and when the
-next sweep is due. **File Now** runs one immediately.
+A header that stays put — the app's name, the master on/off switch, a sketch of
+how the folder will end up looking, and an orange banner if macOS is blocking
+access — above five tabs. The sketch follows the folder-name setting, so
+switching between daily and monthly shows its result straight away.
 
-**When it runs** — any combination of:
+### Status
+
+Whether filing is on, when it last ran, what it did, and when the next sweep is
+due. **File Now** runs one immediately, and **Open at login** decides whether
+Tideline is around to run at all — it starts in the background with no window
+and no Dock icon. Below that, the last dozen moves, with a link to the full log
+at `~/Library/Logs/Tideline.log`.
+
+### Schedule
+
+Any combination of:
 
 | Setting | What it does |
 | --- | --- |
 | As soon as the folder changes | Watches `~/Downloads` and sweeps once things go quiet for 8 seconds |
 | Once a day, at a time you pick | Default 00:05, so yesterday's files get filed on a quiet morning |
 | When the app starts | Covers a scheduled run missed because the Mac was off |
-| Open at login | Starts in the background at login, no window, no Dock icon |
 
 A run that is missed while the Mac sleeps fires as soon as it wakes.
 
-**What gets filed**
+### Filing
 
 | Setting | Options |
 | --- | --- |
@@ -212,17 +114,56 @@ A run that is missed while the Mac sleeps fires as soon as it wakes.
 | File folders too | Whether downloaded folders move like files |
 | Preview mode | Logs what *would* move and touches nothing |
 
-**Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). On top of
-your list, the app always leaves alone: today's downloads, hidden files, partial
-downloads (`.crdownload`, `.download`, `.part`, `.partial`, `.opdownload`,
-`.tmp`, `.temp`, `.aria2`, Safari's `.download` bundles), anything written to in
-the last 30 seconds, and the dated folders it created itself.
+**Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). It starts
+with `Inbox` and `Screenshots`; both can go. On top of your list, the app always
+leaves alone: today's downloads, hidden files, partial downloads
+(`.crdownload`, `.download`, `.part`, `.partial`, `.opdownload`, `.tmp`,
+`.temp`, `.aria2`, Safari's `.download` bundles), anything written to in the
+last 30 seconds, and the dated folders it created itself.
 
-**Recent activity** — the last dozen moves, with a link to the full log at
-`~/Library/Logs/Tideline.log`.
+### Clearing
 
-**About** — the version and build number (quote them in a bug report), plus
-links to the [source](https://github.com/estruyf/tideline),
+Old dated folders can go to the Trash once you have stopped
+needing them. This is the one part of the app that removes something, so it is
+deliberately narrow:
+
+| Setting | Options |
+| --- | --- |
+| Clear dated folders | Never, or older than a month, three months (default), six months, a year |
+| Always keep | The newest 1, 3 (default), 5 or 10 folders, whatever their age |
+| Clear on the daily sweep | Off by default — see below |
+
+Left as it comes, nothing is ever removed on its own: the age setting only
+decides what shows up when you go looking.
+
+**Review Old Folders…** lists everything that qualifies with its item count and
+size, all of it ticked. Untick anything you want to keep, then **Move n Folders
+to Trash**. Nothing is removed until you press that button.
+
+Switching on *Clear on the daily sweep* lets it happen unattended as part of the
+once-a-day run — never on a folder change, so a download landing can never
+trigger a removal.
+
+Three rules make this safe to leave on:
+
+- Only folders matching `YYYY-MM-DD` or `YYYY-MM` — the ones Tideline made
+  itself — are ever considered. Loose files, and folders you named yourself, are
+  invisible to it.
+- Age comes from the folder's *name*, measured from the end of the day or month
+  it covers, so a folder is never cleared sooner than its name suggests. The
+  folder's own timestamp is ignored; filing bumps that every time it drops
+  something new inside.
+- Folders go to the **Trash**, never straight to `unlink`. A setting you regret
+  is a drag back out of the Trash, not a restore from backup.
+
+Preview mode covers this too: it lists what would go and leaves it all in place.
+
+### General
+
+A notification when files are filed, buttons for the log and the Downloads
+folder, and **Uninstall…**. Below that the version and build number (quote them
+in a bug report), plus links to the
+[source](https://github.com/estruyf/tideline),
 [issues](https://github.com/estruyf/tideline/issues) and the author.
 
 Nothing is ever overwritten. A name that is already taken in the target folder
@@ -232,17 +173,22 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
-run, **File Downloads Now**, a **Filing Enabled** switch, **Open Downloads
-Folder**, **Settings…**, **Send Feedback…** and **Quit**.
+run, **File Downloads Now**, a **Filing Enabled** switch, **Review Old
+Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…** and
+**Quit**.
+
+**Review Old Folders…** brings the window up on the review sheet rather than
+clearing anything where you cannot see it; it is greyed out while clearing is
+set to *Never*.
 
 Launched at login it starts with no window and no Dock icon at all. Clicking the
 app in Finder or Launchpad brings the window back.
 
 ## Uninstall
 
-In the app: **Other › Uninstall…**. It removes the login item, its settings, the
-history and the log, then quits and opens Finder on the app so you can drag it
-to the Trash.
+In the app: **General › Other › Uninstall…**. It removes the login item, its
+settings, the history and the log, then quits and opens Finder on the app so you
+can drag it to the Trash.
 
 By hand, if you would rather:
 
@@ -264,26 +210,6 @@ Then, optionally, remove the leftovers macOS keeps:
 Your downloads and every dated folder stay exactly where they are. Uninstalling
 never moves a file back.
 
-## Distributing it
-
-Ad-hoc signing (the default) is fine on your own Mac, but anyone else will hit
-Gatekeeper. For a build other people can open:
-
-```bash
-CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" npm run build:zip
-
-xcrun notarytool submit "app/dist/Tideline.zip" \
-  --apple-id you@example.com --team-id TEAMID --password "app-specific-password" \
-  --wait
-xcrun stapler staple "app/dist/Tideline.app"
-```
-
-Re-zip after stapling and ship that. Signing also keeps the granted permission
-stable across updates — an ad-hoc signature changes on every rebuild, so macOS
-treats each build as a new app and asks again.
-
----
-
 ## Troubleshooting
 
 **Nothing moves.** Check the Status row in the app. An orange dot means macOS is
@@ -304,6 +230,17 @@ release. GitHub wraps every artifact in a zip of its own, so that download is a
 zip inside a zip — unpack it twice. Take the asset from the
 [latest release](https://github.com/estruyf/tideline/releases/latest) instead;
 it is the app, zipped once.
+
+## Build it yourself
+
+The app is a single SwiftPM executable and a shell script — no npm dependencies,
+no project file.
+
+- [Building](./docs/building.md) — requirements, scripts, versioning, layout
+- [Signing and notarizing](./docs/signing.md) — handing a build to other Macs
+- [Releasing](./docs/releasing.md) — the GitHub Actions workflow and its secrets
+
+What changed per version is in the [changelog](./CHANGELOG.md).
 
 ## 🔑 License
 

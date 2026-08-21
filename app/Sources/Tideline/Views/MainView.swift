@@ -4,98 +4,200 @@ import SwiftUI
 struct MainView: View {
     @ObservedObject private var settings = Settings.shared
     @ObservedObject private var controller = Controller.shared
+
     @State private var showUninstall = false
+    @State private var tab: MainTab = .status
 
     var body: some View {
         VStack(spacing: 0) {
             HeaderView()
+
+            // Losing access stops everything, so it is said once above the tabs
+            // rather than on a tab you might not be looking at.
+            if !controller.access.isUsable {
+                Divider()
+                AccessBanner()
+            }
+
+            Divider()
+            TabStrip(selection: $tab)
+                .background(.background)
             Divider()
 
-            Form {
-                if !controller.access.isUsable {
-                    Section { AccessCard() }
-                }
-
-                if showLoginSuggestion {
-                    Section { LoginSuggestionCard() }
-                }
-
-                Section {
-                    StatusRow()
-                } header: {
-                    Text("Status")
-                }
-
-                Section {
-                    ScheduleSection()
-                } header: {
-                    Text("When it runs")
-                } footer: {
-                    Text("A sweep is cheap — nothing moves unless a file is older than the window set below.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Section {
-                    RulesSection()
-                } header: {
-                    Text("What gets filed")
-                }
-
-                Section {
-                    SkipListSection()
-                } header: {
-                    Text("Never touch these")
-                } footer: {
-                    Text("Exact names, or patterns such as *.dmg. Partial downloads, hidden files and the dated folders themselves are always left alone.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
-                Section {
-                    ActivitySection()
-                } header: {
-                    Text("Recent activity")
-                }
-
-                Section {
-                    Toggle("Notify me when files are filed", isOn: $settings.notifyOnMove)
-                        .onChange(of: settings.notifyOnMove) { newValue in
-                            if newValue { controller.requestNotificationPermission() }
-                        }
-
-                    HStack {
-                        Button("Open Log File") { controller.openLogFile() }
-                        Button("Open Downloads Folder") { controller.revealDownloadsFolder() }
-                        Spacer()
-                        Button("Uninstall…") { showUninstall = true }
-                    }
-                } header: {
-                    Text("Other")
-                }
-
-                Section {
-                    AboutSection()
-                } header: {
-                    Text("About")
-                }
-            }
-            .formStyle(.grouped)
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 520, minHeight: 520)
+        .frame(minWidth: 520, minHeight: 460)
         .sheet(isPresented: $showUninstall) {
             UninstallView(isPresented: $showUninstall)
+        }
+        .sheet(isPresented: $controller.reviewingCleanup) {
+            CleanupView(isPresented: $controller.reviewingCleanup)
+        }
+        .onChange(of: controller.reviewingCleanup) { reviewing in
+            // Asked for from the menu bar, so dismissing the sheet leaves you on
+            // the tab the sheet came from rather than wherever you last were.
+            if reviewing { tab = .clearing }
         }
         .onAppear {
             controller.refreshLoginItem()
         }
     }
 
+    @ViewBuilder
+    private var content: some View {
+        switch tab {
+        case .status: StatusTab()
+        case .schedule: ScheduleTab()
+        case .filing: FilingTab()
+        case .clearing: ClearingTab()
+        case .general: GeneralTab(showUninstall: $showUninstall)
+        }
+    }
+}
+
+// MARK: - Status
+
+private struct StatusTab: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        Form {
+            if showLoginSuggestion {
+                Section { LoginSuggestionCard() }
+            }
+
+            Section {
+                StatusRow()
+
+                // Nothing else on this tab matters if the app is not running,
+                // so the switch that decides that sits with the status.
+                Toggle(isOn: Binding(
+                    get: { controller.loginItemEnabled },
+                    set: { controller.setLoginItem($0) }
+                )) {
+                    Text("Open at login")
+                    Text("Starts in the background with no window and no Dock icon.")
+                }
+            } header: {
+                Text("Status")
+            }
+
+            Section {
+                ActivitySection()
+            } header: {
+                Text("Recent activity")
+            }
+        }
+        .formStyle(.grouped)
+    }
+
     /// Nudge shown until the user either opts in or waves it away once.
     private var showLoginSuggestion: Bool {
         !settings.hasAnsweredLoginSuggestion && !controller.loginItemEnabled
+    }
+}
+
+// MARK: - Schedule
+
+private struct ScheduleTab: View {
+    var body: some View {
+        Form {
+            Section {
+                ScheduleSection()
+            } header: {
+                Text("When it runs")
+            } footer: {
+                Text("A sweep is cheap — nothing moves unless a file is older than the window set under Filing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Filing
+
+private struct FilingTab: View {
+    var body: some View {
+        Form {
+            Section {
+                RulesSection()
+            } header: {
+                Text("What gets filed")
+            }
+
+            Section {
+                SkipListSection()
+            } header: {
+                Text("Never touch these")
+            } footer: {
+                Text("Exact names, or patterns such as *.dmg. Partial downloads, hidden files and the dated folders themselves are always left alone.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - Clearing
+
+private struct ClearingTab: View {
+    var body: some View {
+        Form {
+            Section {
+                CleanupSection()
+            } header: {
+                Text("Clearing out")
+            } footer: {
+                Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+// MARK: - General
+
+private struct GeneralTab: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    @Binding var showUninstall: Bool
+
+    var body: some View {
+        Form {
+            Section {
+                Toggle("Notify me when files are filed", isOn: $settings.notifyOnMove)
+                    .onChange(of: settings.notifyOnMove) { newValue in
+                        if newValue { controller.requestNotificationPermission() }
+                    }
+
+                HStack {
+                    Button("Open Log File") { controller.openLogFile() }
+                    Button("Open Downloads Folder") { controller.revealDownloadsFolder() }
+                    Spacer()
+                    Button("Uninstall…") { showUninstall = true }
+                }
+            } header: {
+                Text("Other")
+            }
+
+            Section {
+                AboutSection()
+            } header: {
+                Text("About")
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 
@@ -138,11 +240,7 @@ private struct HeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "tray.full.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(.tint)
-                    .frame(width: 44, height: 44)
-                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                AppIconImage(size: 48)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Tideline")
@@ -161,6 +259,8 @@ private struct HeaderView: View {
                     .help(settings.isEnabled ? "Filing is on" : "Filing is paused")
             }
 
+            // Above the tabs, so it still reads as the picture of what the app
+            // does — and it keeps tracking the folder-name setting over on Filing.
             ExampleTree()
         }
         .padding(20)
@@ -200,30 +300,41 @@ private struct ExampleTree: View {
 
 // MARK: - Access
 
-private struct AccessCard: View {
+/// The same warning the form used to carry, restyled to sit above the tabs.
+private struct AccessBanner: View {
     @ObservedObject private var controller = Controller.shared
     @ObservedObject private var settings = Settings.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(title, systemImage: icon)
-                .font(.headline)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
                 .foregroundStyle(controller.access == .unknown ? Color.secondary : Color.orange)
 
-            Text(explanation)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.callout.weight(.medium))
 
-            HStack {
-                if controller.access == .denied {
-                    Button("Open Privacy Settings") { controller.openPrivacySettings() }
-                        .buttonStyle(.borderedProminent)
+                Text(explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack {
+                    if controller.access == .denied {
+                        Button("Open Privacy Settings") { controller.openPrivacySettings() }
+                    }
+                    Button("Check Again") { controller.refreshAccess() }
                 }
-                Button("Check Again") { controller.refreshAccess() }
+                .controlSize(.small)
+                .padding(.top, 2)
             }
+
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .background(Color.orange.opacity(0.08))
     }
 
     private var title: String {
@@ -239,7 +350,7 @@ private struct AccessCard: View {
         case .denied:
             return "macOS is blocking access. Open Privacy & Security › Files and Folders, switch on Downloads Folder for Tideline, then quit and reopen the app."
         case .missing:
-            return "\(settings.downloadsPath) is gone. Pick another folder below."
+            return "\(settings.downloadsPath) is gone. Pick another folder under Filing."
         default:
             return "Asking macOS for permission to read \(settings.downloadsPath)."
         }

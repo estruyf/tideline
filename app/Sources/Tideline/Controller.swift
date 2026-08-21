@@ -45,6 +45,14 @@ final class Controller: ObservableObject {
     @Published private(set) var busy = false
     @Published var loginItemEnabled = false
 
+    /// Dated folders old enough to clear, as of the last scan.
+    @Published private(set) var clearable: [CleanupCandidate] = []
+    /// Drives the review sheet. Owned here rather than by the view, so the menu
+    /// bar can ask for it too — clearing is never triggered without that sheet.
+    @Published var reviewingCleanup = false
+    @Published private(set) var scanning = false
+    @Published private(set) var clearing = false
+
     private init() {
         history = log.loadHistory()
         lastRunAt = UserDefaults.standard.object(forKey: "lastRunAt") as? Date
@@ -162,11 +170,25 @@ final class Controller: ObservableObject {
         busy = true
         let configuration = RunConfiguration(settings)
         let notify = settings.notifyOnMove
+        let cleanup = clearsAutomatically(on: trigger) ? CleanupConfiguration(settings) : nil
 
         runQueue.async { [weak self] in
             let outcome: Result<RunResult, Error>
             do {
-                outcome = .success(try Organizer.run(settings: configuration))
+                var result = try Organizer.run(settings: configuration)
+
+                // Filing first, then clearing, so a folder that just received
+                // today's straggler is measured with it already inside.
+                if let cleanup {
+                    let swept = Cleaner.clear(
+                        Cleaner.candidates(configuration: cleanup),
+                        dryRun: cleanup.dryRun
+                    )
+                    result.cleared = swept.cleared
+                    result.errors.append(contentsOf: swept.errors)
+                }
+
+                outcome = .success(result)
             } catch {
                 outcome = .failure(error)
             }
@@ -192,25 +214,20 @@ final class Controller: ObservableObject {
             lastRunAt = result.finishedAt
             UserDefaults.standard.set(result.finishedAt, forKey: "lastRunAt")
 
-            if !result.moves.isEmpty {
-                history.insert(contentsOf: result.moves.reversed(), at: 0)
-                history = Array(history.prefix(300))
-                log.save(history)
+            remember(result.moves + result.cleared)
 
-                for move in result.moves {
-                    let verb = move.wasPreview ? "would move" : "moved"
-                    log.write("\(verb) \(move.name) -> \(move.folder)/")
-                }
-
-                if notify, !configurationIsPreview(result) {
-                    postNotification(for: result)
-                }
+            if !result.moves.isEmpty, notify, !configurationIsPreview(result) {
+                postNotification(for: result)
             }
 
             let noun = result.movedCount == 1 ? "item" : "items"
-            lastRunSummary = result.movedCount == 0
+            var summary = result.movedCount == 0
                 ? "Nothing to file — checked \(result.inspected) \(result.inspected == 1 ? "item" : "items")"
                 : "Filed \(result.movedCount) \(noun)"
+            if result.clearedCount > 0 {
+                summary += " · cleared \(result.clearedCount) \(result.clearedCount == 1 ? "folder" : "folders")"
+            }
+            lastRunSummary = summary
 
             for failure in result.errors {
                 log.write("error: \(failure)")
@@ -220,6 +237,81 @@ final class Controller: ObservableObject {
 
     private func configurationIsPreview(_ result: RunResult) -> Bool {
         result.moves.allSatisfy { $0.wasPreview }
+    }
+
+    /// Clearing rides along with the daily sweep only — never with the watcher,
+    /// so a file landing in the folder can never trigger a removal.
+    private func clearsAutomatically(on trigger: RunTrigger) -> Bool {
+        trigger == .schedule && settings.cleanupOnSchedule && settings.cleanupAfterDays > 0
+    }
+
+    private func remember(_ records: [MoveRecord]) {
+        guard !records.isEmpty else { return }
+
+        history.insert(contentsOf: records.reversed(), at: 0)
+        history = Array(history.prefix(300))
+        log.save(history)
+
+        for record in records {
+            switch record.kind {
+            case .filed:
+                log.write("\(record.wasPreview ? "would move" : "moved") \(record.name) -> \(record.folder)/")
+            case .cleared:
+                log.write("\(record.wasPreview ? "would clear" : "cleared") \(record.name)/ -> Trash")
+            }
+        }
+    }
+
+    // MARK: - Clearing out
+
+    /// Looks for folders old enough to go. Measuring them touches every file
+    /// inside, so it runs off the main thread like a sweep does.
+    func findClearable(completion: @escaping ([CleanupCandidate]) -> Void = { _ in }) {
+        scanning = true
+        let configuration = CleanupConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let found = Cleaner.candidates(configuration: configuration)
+            DispatchQueue.main.async {
+                self?.clearable = found
+                self?.scanning = false
+                completion(found)
+            }
+        }
+    }
+
+    func clear(_ selected: [CleanupCandidate], completion: @escaping (CleanupResult) -> Void) {
+        guard !clearing, !selected.isEmpty else { return }
+        clearing = true
+        let dryRun = settings.dryRun
+
+        runQueue.async { [weak self] in
+            let outcome = Cleaner.clear(selected, dryRun: dryRun)
+            DispatchQueue.main.async {
+                self?.finishClearing(outcome)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishClearing(_ outcome: CleanupResult) {
+        clearing = false
+        lastError = outcome.errors.first
+        remember(outcome.cleared)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        if !outcome.cleared.isEmpty {
+            let gone = Set(outcome.cleared.map(\.name))
+            clearable.removeAll { gone.contains($0.name) }
+
+            let noun = outcome.clearedCount == 1 ? "folder" : "folders"
+            lastRunSummary = outcome.cleared.allSatisfy(\.wasPreview)
+                ? "Previewed clearing \(outcome.clearedCount) \(noun)"
+                : "Cleared \(outcome.clearedCount) \(noun) to the Trash"
+        }
     }
 
     // MARK: - Access

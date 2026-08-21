@@ -78,6 +78,9 @@ final class Settings: ObservableObject {
         static let includeFolders = "includeFolders"
         static let notifyOnMove = "notifyOnMove"
         static let skipNames = "skipNames"
+        static let cleanupAfterDays = "cleanupAfterDays"
+        static let cleanupOnSchedule = "cleanupOnSchedule"
+        static let cleanupKeepNewest = "cleanupKeepNewest"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
     }
@@ -97,6 +100,9 @@ final class Settings: ObservableObject {
             Key.includeFolders: true,
             Key.notifyOnMove: false,
             Key.skipNames: Settings.defaultSkipNames,
+            Key.cleanupAfterDays: 90,
+            Key.cleanupOnSchedule: false,
+            Key.cleanupKeepNewest: 3,
         ])
 
         isEnabled = defaults.bool(forKey: Key.isEnabled)
@@ -113,6 +119,9 @@ final class Settings: ObservableObject {
         includeFolders = defaults.bool(forKey: Key.includeFolders)
         notifyOnMove = defaults.bool(forKey: Key.notifyOnMove)
         skipNames = defaults.stringArray(forKey: Key.skipNames) ?? Settings.defaultSkipNames
+        cleanupAfterDays = defaults.integer(forKey: Key.cleanupAfterDays)
+        cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
+        cleanupKeepNewest = defaults.integer(forKey: Key.cleanupKeepNewest)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
     }
 
@@ -137,6 +146,14 @@ final class Settings: ObservableObject {
     @Published var includeFolders: Bool { didSet { store(includeFolders, Key.includeFolders) } }
     @Published var notifyOnMove: Bool { didSet { store(notifyOnMove, Key.notifyOnMove) } }
     @Published var skipNames: [String] { didSet { store(skipNames, Key.skipNames) } }
+
+    /// How old a dated folder has to be before it may be cleared. `0` means never.
+    /// Nothing is ever removed on this setting alone — clearing runs by hand,
+    /// unless `cleanupOnSchedule` is switched on as well.
+    @Published var cleanupAfterDays: Int { didSet { store(cleanupAfterDays, Key.cleanupAfterDays) } }
+    @Published var cleanupOnSchedule: Bool { didSet { store(cleanupOnSchedule, Key.cleanupOnSchedule) } }
+    /// The newest folders are held back whatever their age.
+    @Published var cleanupKeepNewest: Int { didSet { store(cleanupKeepNewest, Key.cleanupKeepNewest) } }
 
     /// Set once the user has either accepted or waved away the open-at-login suggestion.
     /// Kept out of `store` so answering it never triggers a reconfigure.
@@ -182,6 +199,9 @@ final class Settings: ObservableObject {
         includeFolders = true
         skipNames = Settings.defaultSkipNames
         downloadsPath = Settings.defaultDownloadsPath
+        cleanupAfterDays = 90
+        cleanupOnSchedule = false
+        cleanupKeepNewest = 3
     }
 
     private func store(_ value: Any, _ key: String) {

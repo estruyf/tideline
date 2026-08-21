@@ -5,7 +5,6 @@ import SwiftUI
 
 struct ScheduleSection: View {
     @ObservedObject private var settings = Settings.shared
-    @ObservedObject private var controller = Controller.shared
 
     private var runTime: Binding<Date> {
         Binding(get: { settings.dailyRunTime }, set: { settings.dailyRunTime = $0 })
@@ -41,14 +40,6 @@ struct ScheduleSection: View {
         Toggle(isOn: $settings.runOnLaunch) {
             Text("When the app starts")
             Text("Catches up after the Mac was shut down at the scheduled time.")
-        }
-
-        Toggle(isOn: Binding(
-            get: { controller.loginItemEnabled },
-            set: { controller.setLoginItem($0) }
-        )) {
-            Text("Open at login")
-            Text("Starts in the background with no window and no Dock icon.")
         }
     }
 }
@@ -128,6 +119,55 @@ struct RulesSection: View {
     }
 }
 
+// MARK: - Clearing out
+
+struct CleanupSection: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        Picker(selection: $settings.cleanupAfterDays.animation(.easeInOut(duration: 0.18))) {
+            Text("Never").tag(0)
+            Text("Older than a month").tag(30)
+            Text("Older than three months").tag(90)
+            Text("Older than six months").tag(180)
+            Text("Older than a year").tag(365)
+        } label: {
+            Text("Clear dated folders")
+            Text("Measured from the end of the day or month the folder is named for.")
+        }
+
+        if settings.cleanupAfterDays > 0 {
+            Picker(selection: $settings.cleanupKeepNewest) {
+                Text("The newest folder").tag(1)
+                Text("The newest 3 folders").tag(3)
+                Text("The newest 5 folders").tag(5)
+                Text("The newest 10 folders").tag(10)
+            } label: {
+                Text("Always keep")
+                Text("Held back whatever their age, so a quiet month never empties the folder.")
+            }
+
+            Toggle(isOn: $settings.cleanupOnSchedule) {
+                Text("Clear on the daily sweep")
+                Text("Off by default. Left off, folders only go when you review them below.")
+            }
+
+            HStack {
+                Button("Review Old Folders…") {
+                    controller.reviewingCleanup = true
+                }
+                Spacer()
+                if settings.cleanupOnSchedule {
+                    Label("Runs unattended", systemImage: "clock.arrow.circlepath")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Skip list
 
 struct SkipListSection: View {
@@ -180,22 +220,27 @@ struct ActivitySection: View {
                 .foregroundStyle(.secondary)
         } else {
             ForEach(controller.history.prefix(12)) { record in
-                HStack(spacing: 8) {
-                    Image(systemName: record.wasPreview ? "eye" : "arrow.right.doc.on.clipboard")
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Image(systemName: icon(for: record))
+                        .font(.system(size: 12))
+                        .foregroundStyle(tint(for: record))
                         .frame(width: 16)
-                    Text(record.name)
+                    Text(record.kind == .cleared ? "\(record.name)/" : record.name)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer(minLength: 12)
                     Text(record.folder)
+                        .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
-                        .font(.callout.monospacedDigit())
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color.primary.opacity(0.06), in: Capsule())
                 }
+                .padding(.vertical, 1)
             }
 
             HStack {
-                Text("\(controller.history.count) filed in total")
+                Text(tally)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -204,6 +249,27 @@ struct ActivitySection: View {
             }
         }
     }
+
+    private func icon(for record: MoveRecord) -> String {
+        if record.wasPreview { return "eye" }
+        return record.kind == .cleared ? "trash" : "arrow.right.doc.on.clipboard"
+    }
+
+    private func tint(for record: MoveRecord) -> Color {
+        if record.wasPreview { return .secondary }
+        return record.kind == .cleared ? .orange : .accentColor
+    }
+
+    /// The list holds both kinds now, so "filed in total" would undercount.
+    private var tally: String {
+        let filed = controller.history.filter { $0.kind == .filed }.count
+        let cleared = controller.history.count - filed
+
+        var parts: [String] = []
+        if filed > 0 { parts.append("\(filed) filed") }
+        if cleared > 0 { parts.append("\(cleared) cleared") }
+        return parts.joined(separator: " · ")
+    }
 }
 
 // MARK: - About
@@ -211,11 +277,7 @@ struct ActivitySection: View {
 struct AboutSection: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: "tray.full.fill")
-                .font(.system(size: 20))
-                .foregroundStyle(.tint)
-                .frame(width: 32, height: 32)
-                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            AppIconImage(size: 38)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(AppInfo.name)

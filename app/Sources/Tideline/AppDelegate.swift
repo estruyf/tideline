@@ -64,8 +64,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.titlebarAppearsTransparent = true
             window.isReleasedWhenClosed = false
             window.delegate = self
-            window.setContentSize(NSSize(width: 560, height: 720))
-            window.contentMinSize = NSSize(width: 520, height: 520)
+            window.setContentSize(NSSize(width: 580, height: 640))
+            window.contentMinSize = NSSize(width: 520, height: 460)
             window.center()
             self.window = window
         }
@@ -125,6 +125,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(.separator())
 
+        menu.addItem(withTitle: "Review Old Folders…", action: #selector(reviewCleanup), keyEquivalent: "")
+            .target = self
+
+        menu.addItem(.separator())
+
         menu.addItem(withTitle: "Open Downloads Folder", action: #selector(openDownloads), keyEquivalent: "")
             .target = self
         menu.addItem(withTitle: "Settings…", action: #selector(showWindow(_:)), keyEquivalent: ",")
@@ -152,6 +157,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     @objc private func toggleEnabled() {
         settings.isEnabled.toggle()
+    }
+
+    /// Opens the window on the review sheet. The menu never clears anything by
+    /// itself — the sheet is the only place a folder is agreed to.
+    @objc private func reviewCleanup() {
+        showWindow(nil)
+        // A turn later, so the window is on screen before the sheet is asked for.
+        DispatchQueue.main.async {
+            Controller.shared.reviewingCleanup = true
+        }
     }
 
     @objc private func openDownloads() {
@@ -201,6 +216,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         NSApp.mainMenu = mainMenu
         NSApp.windowsMenu = windowMenu
+    }
+}
+
+@MainActor
+extension AppDelegate: NSMenuItemValidation {
+    /// Reviewing is only meaningful once an age has been picked; with clearing
+    /// set to Never there is nothing the sheet could offer.
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        guard menuItem.action == #selector(reviewCleanup) else { return true }
+        return settings.cleanupAfterDays > 0
     }
 }
 

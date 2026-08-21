@@ -5,13 +5,33 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-08-21
 
 ### Added
 
+- **Clearing out**: dated folders can now be sent to the Trash once they are
+  older than a month, three months, six months or a year. Manual by default —
+  **Review Old Folders…** lists what qualifies with item counts and sizes, all
+  ticked, and nothing goes until you press **Move n Folders to Trash**. A
+  *Clear on the daily sweep* switch, off by default, makes it unattended as part
+  of the once-a-day run; it never rides along with a folder-change sweep.
+  Only folders named `YYYY-MM-DD` or `YYYY-MM` — the ones Tideline made itself —
+  are ever considered, age is read from the folder's name rather than its
+  timestamp, the newest few are always held back whatever their age, and
+  everything goes to the Trash rather than being deleted outright. Preview mode
+  applies here as well. The menu bar has a **Review Old Folders…** item, which
+  opens the window on that sheet rather than clearing out of sight, and greys
+  out while clearing is set to *Never*.
+- The window is now split into **Status**, **Schedule**, **Filing**,
+  **Clearing** and **General** tabs, rather than one long scroll. The app's name
+  and the master on/off switch stay above the tabs, as does the no-access
+  warning — losing access stops everything, so it should not be hidden behind a
+  tab you are not looking at. So does the sketch of how the folder will look,
+  which now doubles as a live preview of the folder-name setting over on
+  *Filing*.
 - The window now suggests opening Tideline at login, since filing only happens
   while the app runs. Accepting or dismissing it once puts the suggestion away
-  for good; the switch itself stays under *When it runs*.
+  for good; the switch itself sits on the *Status* tab, beside the run summary.
 
 ### Fixed
 
