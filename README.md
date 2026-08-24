@@ -110,7 +110,7 @@ A run that is missed while the Mac sleeps fires as soon as it wakes.
 | Folder | `~/Downloads` by default; pick any folder |
 | Leave loose in the root | Today only, today and yesterday, the last 3 days, the last week |
 | Folder name | One folder per day (`2026-08-19`) or per month (`2026-08`) |
-| Sort by | Date added to disk, or date last modified |
+| Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
 | File folders too | Whether downloaded folders move like files |
 | Preview mode | Logs what *would* move and touches nothing |
 

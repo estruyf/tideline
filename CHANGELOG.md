@@ -5,6 +5,21 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-08-24
+
+### Fixed
+
+- Files now go by **Date Added** — the day they turned up in the folder — rather
+  than the day they were created. An AirDropped photo carries the day it was
+  shot as its creation date, so a picture taken yesterday and sent over today
+  was filed away the moment it landed instead of staying loose for the day.
+
+### Changed
+
+- **Sort by** gains a third option. *Date added to the folder* is the new
+  default; *Date the file was created* keeps the old behaviour for anyone who
+  wants it, and *Date last modified* is unchanged.
+
 ## [1.1.0] - 2026-08-21
 
 ### Added

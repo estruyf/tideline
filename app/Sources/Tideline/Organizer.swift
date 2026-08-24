@@ -89,7 +89,8 @@ enum Organizer {
         }
 
         let keys: [URLResourceKey] = [
-            .isDirectoryKey, .creationDateKey, .contentModificationDateKey, .fileSizeKey,
+            .isDirectoryKey, .addedToDirectoryDateKey, .creationDateKey, .contentModificationDateKey,
+            .fileSizeKey,
         ]
 
         let entries: [URL]
@@ -200,9 +201,17 @@ enum Organizer {
         return false
     }
 
+    /// `addedToDirectoryDate` is Finder's "Date Added": the moment the item turned up in
+    /// this folder, whatever it had been through before. A photo AirDropped today carries
+    /// the day it was shot as its creation date, so that is the wrong day to file it under.
+    /// Volumes that don't keep the attribute return nil, hence the fallbacks.
     private static func date(of url: URL, basis: DateBasis) -> Date? {
-        let values = try? url.resourceValues(forKeys: [.creationDateKey, .contentModificationDateKey])
+        let values = try? url.resourceValues(forKeys: [
+            .addedToDirectoryDateKey, .creationDateKey, .contentModificationDateKey,
+        ])
         switch basis {
+        case .added:
+            return values?.addedToDirectoryDate ?? values?.creationDate ?? values?.contentModificationDate
         case .created:
             return values?.creationDate ?? values?.contentModificationDate
         case .modified:
@@ -255,7 +264,7 @@ struct RunConfiguration {
     var root: URL
     var keepRecentDays: Int = 0
     var folderFormat: FolderFormat = .daily
-    var dateBasis: DateBasis = .created
+    var dateBasis: DateBasis = .added
     var includeFolders: Bool = true
     var dryRun: Bool = false
     var skipNames: [String] = []

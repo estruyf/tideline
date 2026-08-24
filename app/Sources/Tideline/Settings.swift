@@ -35,6 +35,8 @@ enum FolderFormat: String, CaseIterable, Identifiable {
 }
 
 enum DateBasis: String, CaseIterable, Identifiable {
+    /// Finder's "Date Added" — when the item arrived in the folder it sits in now.
+    case added
     case created
     case modified
 
@@ -42,14 +44,16 @@ enum DateBasis: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .created: return "Date added to disk"
+        case .added: return "Date added to the folder"
+        case .created: return "Date the file was created"
         case .modified: return "Date last modified"
         }
     }
 
     var explanation: String {
         switch self {
-        case .created: return "The day the file landed in the folder. Editing an old file leaves it where it is."
+        case .added: return "The day the file arrived in the folder, even when it was made earlier — an AirDropped photo keeps the day it was shot as its creation date."
+        case .created: return "The day the file itself was created, which for an AirDrop or a copy can pre-date its arrival."
         case .modified: return "The day the file was last written to. Editing an old file re-files it."
         }
     }
@@ -90,7 +94,7 @@ final class Settings: ObservableObject {
             Key.isEnabled: true,
             Key.keepRecentDays: 0,
             Key.folderFormat: FolderFormat.daily.rawValue,
-            Key.dateBasis: DateBasis.created.rawValue,
+            Key.dateBasis: DateBasis.added.rawValue,
             Key.watchFolder: true,
             Key.dailyRunEnabled: true,
             Key.dailyRunHour: 0,
@@ -109,7 +113,7 @@ final class Settings: ObservableObject {
         downloadsPath = defaults.string(forKey: Key.downloadsPath) ?? Settings.defaultDownloadsPath
         keepRecentDays = defaults.integer(forKey: Key.keepRecentDays)
         folderFormat = FolderFormat(rawValue: defaults.string(forKey: Key.folderFormat) ?? "") ?? .daily
-        dateBasis = DateBasis(rawValue: defaults.string(forKey: Key.dateBasis) ?? "") ?? .created
+        dateBasis = DateBasis(rawValue: defaults.string(forKey: Key.dateBasis) ?? "") ?? .added
         watchFolder = defaults.bool(forKey: Key.watchFolder)
         dailyRunEnabled = defaults.bool(forKey: Key.dailyRunEnabled)
         dailyRunHour = defaults.integer(forKey: Key.dailyRunHour)
@@ -189,7 +193,7 @@ final class Settings: ObservableObject {
     func resetToDefaults() {
         keepRecentDays = 0
         folderFormat = .daily
-        dateBasis = .created
+        dateBasis = .added
         watchFolder = true
         dailyRunEnabled = true
         dailyRunHour = 0
