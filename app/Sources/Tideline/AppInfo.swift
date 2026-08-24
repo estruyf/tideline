@@ -10,6 +10,9 @@ enum AppInfo {
     static let issues = URL(string: "https://github.com/estruyf/tideline/issues")!
     static let newIssue = URL(string: "https://github.com/estruyf/tideline/issues/new")!
     static let authorProfile = URL(string: "https://github.com/estruyf")!
+    static let releasesPage = URL(string: "https://github.com/estruyf/tideline/releases")!
+    /// The one endpoint the updater reads: the newest published, non-draft release.
+    static let latestReleaseAPI = URL(string: "https://api.github.com/repos/estruyf/tideline/releases/latest")!
 
     /// Stamped into Info.plist at build time from package.json.
     static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"

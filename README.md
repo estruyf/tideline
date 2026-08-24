@@ -58,6 +58,9 @@ the disk becomes reachable.
 Grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
 unzip it, and drag **Tideline.app** into `/Applications`.
 
+Once it is in `/Applications` it keeps itself current: Tideline looks for a
+newer release once a day and offers it — see [Updates](#updates).
+
 Prefer to build it yourself? See [Building](./docs/building.md).
 
 ## First launch
@@ -161,10 +164,35 @@ Preview mode covers this too: it lists what would go and leaves it all in place.
 ### General
 
 A notification when files are filed, buttons for the log and the Downloads
-folder, and **Uninstall…**. Below that the version and build number (quote them
-in a bug report), plus links to the
+folder, and **Uninstall…**. Then [Updates](#updates), and below that the version
+and build number (quote them in a bug report), plus links to the
 [source](https://github.com/estruyf/tideline),
 [issues](https://github.com/estruyf/tideline/issues) and the author.
+
+#### Updates
+
+Tideline checks the [GitHub releases](https://github.com/estruyf/tideline/releases)
+page for a newer version once a day, and **Check Now** asks straight away. The
+check reads one public endpoint and sends nothing about you or your files.
+
+When there is something newer, the **Status** tab and the menu bar say so, and
+**Update & Restart** does the rest: it downloads the release build, unpacks it,
+and only installs it once the copy passes three tests — it is Tideline, it is
+the version the release advertised, and it carries the same Developer ID
+signature and Apple notarisation as the copy you are running. Anything less and
+the download is thrown away untouched.
+
+The swap itself is the last step. The app quits, the new bundle replaces the old
+one, and Tideline reopens on the new version. If the copy fails halfway the old
+app is put straight back and reopened, so a bad download never leaves you
+without the app.
+
+Nothing downloads or installs on its own — a check only ever offers.
+**Skip This Version** silences one release without silencing the next, and
+*Check for updates automatically* switches the daily look off entirely. If the
+app cannot replace itself — it sits somewhere you cannot write to, or macOS is
+running it from a read-only quarantine copy — it says so and points you at the
+releases page.
 
 Nothing is ever overwritten. A name that is already taken in the target folder
 becomes `report-1.pdf`, `report-2.pdf`, and so on.
@@ -174,8 +202,11 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
 run, **File Downloads Now**, a **Filing Enabled** switch, **Review Old
-Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…** and
-**Quit**.
+Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…**,
+**Check for Updates…** and **Quit**.
+
+**Check for Updates…** reads **Update to 1.3.0…** once a check has found one,
+so a new version is visible without opening the window.
 
 **Review Old Folders…** brings the window up on the review sheet rather than
 clearing anything where you cannot see it; it is greyed out while clearing is

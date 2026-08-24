@@ -87,6 +87,9 @@ final class Settings: ObservableObject {
         static let cleanupKeepNewest = "cleanupKeepNewest"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
+        static let automaticUpdateChecks = "automaticUpdateChecks"
+        static let lastUpdateCheckAt = "lastUpdateCheckAt"
+        static let skippedUpdateVersion = "skippedUpdateVersion"
     }
 
     private init() {
@@ -107,6 +110,7 @@ final class Settings: ObservableObject {
             Key.cleanupAfterDays: 90,
             Key.cleanupOnSchedule: false,
             Key.cleanupKeepNewest: 3,
+            Key.automaticUpdateChecks: true,
         ])
 
         isEnabled = defaults.bool(forKey: Key.isEnabled)
@@ -127,6 +131,7 @@ final class Settings: ObservableObject {
         cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
         cleanupKeepNewest = defaults.integer(forKey: Key.cleanupKeepNewest)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
+        automaticUpdateChecks = defaults.bool(forKey: Key.automaticUpdateChecks)
     }
 
     static var defaultDownloadsPath: String {
@@ -163,6 +168,25 @@ final class Settings: ObservableObject {
     /// Kept out of `store` so answering it never triggers a reconfigure.
     @Published var hasAnsweredLoginSuggestion: Bool {
         didSet { defaults.set(hasAnsweredLoginSuggestion, forKey: Key.hasAnsweredLoginSuggestion) }
+    }
+
+    /// Checked once a day at most, and never installs anything on its own —
+    /// finding an update only offers it. Kept out of `store` so switching it
+    /// never triggers a reconfigure of the watcher and the timer.
+    @Published var automaticUpdateChecks: Bool {
+        didSet { defaults.set(automaticUpdateChecks, forKey: Key.automaticUpdateChecks) }
+    }
+
+    /// When the last check for updates finished.
+    var lastUpdateCheckAt: Date? {
+        get { defaults.object(forKey: Key.lastUpdateCheckAt) as? Date }
+        set { defaults.set(newValue, forKey: Key.lastUpdateCheckAt) }
+    }
+
+    /// A version the user waved away; a newer one is still offered.
+    var skippedUpdateVersion: String? {
+        get { defaults.string(forKey: Key.skippedUpdateVersion) }
+        set { defaults.set(newValue, forKey: Key.skippedUpdateVersion) }
     }
 
     /// Set once the very first launch has shown the welcome screen.
@@ -206,6 +230,7 @@ final class Settings: ObservableObject {
         cleanupAfterDays = 90
         cleanupOnSchedule = false
         cleanupKeepNewest = 3
+        automaticUpdateChecks = true
     }
 
     private func store(_ value: Any, _ key: String) {

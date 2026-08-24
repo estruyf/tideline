@@ -4,6 +4,7 @@ import SwiftUI
 struct MainView: View {
     @ObservedObject private var settings = Settings.shared
     @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var updater = Updater.shared
 
     @State private var showUninstall = false
     @State private var tab: MainTab = .status
@@ -34,6 +35,14 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingCleanup) {
             CleanupView(isPresented: $controller.reviewingCleanup)
         }
+        .onChange(of: updater.reveal) { reveal in
+            // "Check for Updates…" in the menu bar lands on the section that
+            // shows what the check found.
+            if reveal {
+                tab = .general
+                updater.reveal = false
+            }
+        }
         .onChange(of: controller.reviewingCleanup) { reviewing in
             // Asked for from the menu bar, so dismissing the sheet leaves you on
             // the tab the sheet came from rather than wherever you last were.
@@ -61,11 +70,17 @@ struct MainView: View {
 private struct StatusTab: View {
     @ObservedObject private var settings = Settings.shared
     @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var updater = Updater.shared
 
     var body: some View {
         Form {
             if showLoginSuggestion {
                 Section { LoginSuggestionCard() }
+            }
+
+            // Only ever there when there is something to say about an update.
+            if updater.hasNews {
+                Section { UpdateBanner() }
             }
 
             Section {
@@ -189,6 +204,12 @@ private struct GeneralTab: View {
                 }
             } header: {
                 Text("Other")
+            }
+
+            Section {
+                UpdateSection()
+            } header: {
+                Text("Updates")
             }
 
             Section {

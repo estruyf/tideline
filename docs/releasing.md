@@ -5,6 +5,35 @@ signs, notarizes and staples on a macOS runner whenever a release is
 **published**, then attaches `Tideline-<version>-macos-universal.zip` to that
 release and keeps it as a build artifact for 90 days.
 
+## What the in-app updater expects
+
+Every installed copy reads
+`https://api.github.com/repos/estruyf/tideline/releases/latest` once a day, so a
+release is also the thing that tells people an update exists. Three details of a
+release matter to it:
+
+- **The tag is the version.** `v1.3.0` is compared against the running
+  `CFBundleShortVersionString`. A tag that does not parse as a version is
+  ignored, and the workflow already refuses a tag that disagrees with
+  `package.json`.
+- **The zip is the asset.** The updater looks for
+  `Tideline-<version>-macos-universal.zip` first, and falls back to any attached
+  `.zip` with *tideline* in its name. A release with no zip yet reports "no
+  macOS build attached", which is what people see in the window between
+  publishing and the workflow finishing.
+- **Signed and notarized, as the workflow already does.** The updater refuses to
+  install a build that is not signed by the same team as the running copy, and
+  refuses one Gatekeeper turns down. An unsigned or ad-hoc build attached to a
+  release cannot be installed this way — it can only be downloaded by hand.
+
+Drafts and pre-releases are skipped: `releases/latest` never returns them. The
+workflow runs on **publish**, though, so for the few minutes between publishing
+and the zip landing there is a real release with no build attached. A daily
+check that lands in that window stays quiet and looks again later; someone
+pressing **Check Now** is told the build is not up yet. Nothing is lost either
+way, but it is a reason not to announce a release before the workflow is
+green.
+
 ## Cutting a release
 
 ```bash
@@ -74,3 +103,6 @@ Archive Utility gives up with *"unsupported format"*.
 - [ ] Workflow green, and the zip is attached to the release
 - [ ] Download the asset on another Mac and open it — Gatekeeper should not
       complain
+- [ ] An older copy offers the update: **General › Updates › Check Now** on a
+      previous version finds it, and **Update & Restart** comes back on the new
+      one

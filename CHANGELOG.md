@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.0] - 2026-08-24
 
+### Added
+
+- **Check for updates**, straight from the app. Tideline looks at the GitHub
+  releases page once a day — and on demand from **General › Updates › Check
+  Now** or **Check for Updates…** in the menu bar — and says so on the **Status**
+  tab when there is a newer version. **Update & Restart** downloads the release
+  build, checks that it is Tideline, that it is the version the release
+  advertised, and that it carries the same Developer ID signature and Apple
+  notarisation as the running copy, then swaps it in and reopens on the new
+  version. A download that fails any of those checks is thrown away, and a copy
+  that fails halfway puts the old app straight back. Nothing installs by itself:
+  a check only offers. **Skip This Version** silences one release without
+  silencing the next, and the daily look can be switched off altogether.
+
 ### Fixed
 
 - Files now go by **Date Added** — the day they turned up in the folder — rather
@@ -97,5 +111,6 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
-[Unreleased]: https://github.com/estruyf/tideline/compare/v1.0.0...HEAD
+[1.2.0]: https://github.com/estruyf/tideline/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/estruyf/tideline/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/estruyf/tideline/releases/tag/v1.0.0

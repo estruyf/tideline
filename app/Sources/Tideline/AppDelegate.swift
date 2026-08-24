@@ -28,6 +28,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             controller.requestNotificationPermission()
         }
 
+        Updater.shared.start()
+
         if !settings.hasCompletedFirstRun || !wasLaunchedAtLogin {
             showWindow(nil)
         } else {
@@ -137,6 +139,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
             .target = self
 
+        let updates = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
+        updates.tag = 3
+        updates.target = self
+        menu.addItem(updates)
+
         menu.addItem(.separator())
 
         menu.addItem(withTitle: "Quit Tideline", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -177,6 +184,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSWorkspace.shared.open(AppInfo.newIssue)
     }
 
+    /// Opens the window on the update section and looks straight away, so the
+    /// answer arrives where it can be acted on.
+    @objc private func checkForUpdates() {
+        showWindow(nil)
+        DispatchQueue.main.async {
+            Updater.shared.reveal = true
+            Updater.shared.check(userInitiated: true)
+        }
+    }
+
     // MARK: - Main menu
 
     private func buildMainMenu() {
@@ -186,6 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "About Tideline",
                         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Settings…", action: #selector(showWindow(_:)), keyEquivalent: ",").target = self
         appMenu.addItem(.separator())
@@ -247,6 +265,13 @@ extension AppDelegate: NSMenuDelegate {
 
         if let enabled = menu.item(withTag: 2) {
             enabled.state = settings.isEnabled ? .on : .off
+        }
+
+        // Says what the last check found, rather than making you open the window
+        // to learn there is nothing to do.
+        if let updates = menu.item(withTag: 3) {
+            let updater = Updater.shared
+            updates.title = updater.pending.map { "Update to \($0.version)…" } ?? "Check for Updates…"
         }
     }
 }
