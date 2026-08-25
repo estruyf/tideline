@@ -1,0 +1,15 @@
+{
+  "name": "tideline-windows",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The Windows build of Tideline",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "cargo test --workspace --manifest-path src-tauri/Cargo.toml",
+    "check": "cargo check --workspace --manifest-path src-tauri/Cargo.toml --target x86_64-pc-windows-msvc"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -1,0 +1,579 @@
+/* Follows the system theme rather than picking one: a tray app that is open all
+   day should not be the one bright window on a dark desktop.
+
+   The palette, the 4px control corners and the underline that sits beneath the
+   selected tab are all Windows 11's own, so the window reads as an app that
+   belongs beside Settings rather than a web page in a frame. */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f3f3f3;
+  --panel: #ffffff;
+  --panel-2: #fafafa;
+  --text: #1b1b1b;
+  --muted: #5c5c5c;
+  --line: #e5e5e5;
+  /* Fluent draws a darker edge along the bottom of a resting control; that one
+     hairline is most of why a text field looks pressed into the page. */
+  --line-strong: #d0d0d0;
+  --hover: rgba(0, 0, 0, 0.04);
+  --pressed: rgba(0, 0, 0, 0.08);
+  --accent: #005fb8;
+  --accent-hover: #1a6ec0;
+  --accent-pressed: #4a90ce;
+  --on-accent: #ffffff;
+  --warn-bg: #fff4e5;
+  --warn-line: #c77700;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%235c5c5c' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
+  --radius: 8px;
+  --control-radius: 4px;
+  /* One gutter for every band in the window, so the sticky header, the tab
+     strip and the panels all line up. It grows on a wide window rather than
+     letting a line of text run the full width. */
+  --pad-x: max(20px, calc((100% - 660px) / 2));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202020;
+    --panel: #2b2b2b;
+    --panel-2: #303030;
+    --text: #f2f2f2;
+    --muted: #a4a4a4;
+    --line: #383838;
+    --line-strong: #4a4a4a;
+    --hover: rgba(255, 255, 255, 0.05);
+    --pressed: rgba(255, 255, 255, 0.09);
+    --accent: #4cc2ff;
+    --accent-hover: #48b2e3;
+    --accent-pressed: #42a1cc;
+    /* Windows puts dark text on its light dark-mode accent, not white. */
+    --on-accent: #000000;
+    --warn-bg: #33291a;
+    --warn-line: #d0a215;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%23a4a4a4' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* `hidden` is how the panels, the banner and the preview button come and go, so
+   it has to outrank the display any of them is given below. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  padding: 0 0 24px;
+  font: 13px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  scrollbar-width: thin;
+}
+
+/* The header stays put; only the tab panel below it scrolls. It spans the full
+   width so content passes under it rather than beside it. */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 16px var(--pad-x) 12px;
+  background: var(--bg);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sketch {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  font: 11px/1.7 "Cascadia Mono", ui-monospace, Consolas, monospace;
+  color: var(--muted);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Fluent's InfoBar: a tinted strip with the accent down its leading edge and a
+   glyph, so a missing folder is legible before the sentence is read. */
+.banner {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 14px;
+  background: var(--warn-bg);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn-line);
+  border-radius: var(--control-radius);
+}
+
+.banner::before {
+  content: "⚠";
+  color: var(--warn-line);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* -- Tabs ------------------------------------------------------------------
+   The Windows 11 pivot: no chrome at rest, a soft rounded hover, and a short
+   accent bar that grows under the selected one. The selected label is never
+   re-weighted, so nothing shifts as the strip is clicked along. */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin: 16px 0 18px;
+  padding: 0 var(--pad-x);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.tabs button {
+  position: relative;
+  padding: 8px 14px 11px;
+  border: 0;
+  border-radius: var(--control-radius) var(--control-radius) 0 0;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.tabs button:hover { background: var(--hover); color: var(--text); }
+.tabs button:active { background: var(--pressed); }
+.tabs button.active { color: var(--text); }
+
+.tabs button::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: calc(100% - 28px);
+  height: 2.5px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateX(-50%) scaleX(0);
+  transition: transform 0.16s ease;
+}
+
+.tabs button.active::after { transform: translateX(-50%) scaleX(1); }
+
+/* -- Panels ---------------------------------------------------------------- */
+
+.tab { padding: 0 var(--pad-x); }
+
+/* Toggling `hidden` takes the panel out of the flow and back, which restarts
+   the animation for free — no class to add and remove on every switch. */
+.tab:not([hidden]) { animation: rise 0.16s ease-out; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.summary { margin: 0 0 4px; font-size: 14px; }
+.next { margin: 0 0 16px; color: var(--muted); }
+
+.row { display: flex; gap: 8px; margin-bottom: 18px; }
+
+/* -- Controls -------------------------------------------------------------- */
+
+button {
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+  transition: background 0.1s ease, opacity 0.1s ease;
+}
+
+button:hover { background: var(--accent-hover); }
+button:active { background: var(--accent-pressed); box-shadow: none; opacity: 0.85; }
+
+button.secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--line-strong);
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+}
+
+button.secondary:hover { background: var(--panel-2); }
+button.secondary:active { background: var(--pressed); color: var(--muted); }
+
+button:disabled { opacity: 0.45; cursor: default; }
+button:disabled:hover { background: var(--accent); }
+button.secondary:disabled:hover { background: var(--panel); }
+
+/* One ring for everything. Drawing it in the text colour keeps it visible on
+   both themes without a third accent. */
+:is(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+.field { display: block; margin-bottom: 16px; }
+
+.field > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="time"],
+select,
+textarea {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--control-radius);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+/* The accent underline thickens on focus as an inset shadow rather than a
+   border, so the field does not jump a pixel when it is clicked into. */
+input[type="text"],
+input[type="time"],
+textarea {
+  box-shadow: inset 0 -1px 0 var(--line-strong);
+}
+
+input[type="text"]:hover,
+input[type="time"]:hover,
+textarea:hover { background: var(--panel-2); }
+
+input[type="text"]:focus,
+input[type="time"]:focus,
+textarea:focus {
+  outline: none;
+  background: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+select {
+  appearance: none;
+  padding-right: 32px;
+  background-image: var(--chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+select:hover { background-color: var(--panel-2); }
+
+textarea {
+  resize: vertical;
+  font-family: "Cascadia Mono", ui-monospace, monospace;
+  line-height: 1.6;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.check input[type="time"] { width: auto; }
+
+/* Fluent's checkbox: a rounded square that fills with the accent and draws its
+   tick, rather than whatever the platform hands us. */
+.check input[type="checkbox"],
+.rule input[type="checkbox"] {
+  position: relative;
+  flex: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--muted);
+  border-radius: var(--control-radius);
+  background: var(--panel);
+  cursor: pointer;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.check input[type="checkbox"]:hover,
+.rule input[type="checkbox"]:hover { background: var(--panel-2); border-color: var(--text); }
+
+.check input[type="checkbox"]:checked,
+.rule input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }
+
+.check input[type="checkbox"]::after,
+.rule input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  left: 5.5px;
+  top: 2.5px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--on-accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0.4);
+  opacity: 0;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.check input[type="checkbox"]:checked::after,
+.rule input[type="checkbox"]:checked::after {
+  transform: rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+/* The one switch in the window is the one that stops the app doing anything, so
+   it gets the Fluent toggle rather than another checkbox in the row of them. */
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.switch input[type="checkbox"] {
+  position: relative;
+  appearance: none;
+  width: 40px;
+  height: 20px;
+  margin: 0;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  background: var(--panel);
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.switch input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--text);
+  transform: translate(0, -50%);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.switch input[type="checkbox"]:hover { background: var(--hover); }
+
+.switch input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.switch input[type="checkbox"]:checked::after {
+  background: var(--on-accent);
+  transform: translate(20px, -50%);
+}
+
+.switch:has(input:checked) { color: var(--text); }
+
+.hint {
+  margin: -8px 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hint code {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: var(--hover);
+  font-family: "Cascadia Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+/* -- Type folders ---------------------------------------------------------- */
+
+.rules {
+  margin: 22px 0 0;
+  padding: 6px 14px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.rules legend {
+  padding: 0 6px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.rules .hint { margin: 4px 0 12px; }
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.rule:first-child { border-top: 0; }
+.rule .exts { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+/* -- About ----------------------------------------------------------------- */
+
+.about {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.about-icon { flex: none; border-radius: 6px; }
+
+.about-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.about-name strong { font-size: 15px; font-weight: 600; }
+
+/* Selectable, because the one job of a version line is to be pasted into a bug
+   report. */
+.version {
+  color: var(--muted);
+  font-size: 12px;
+  user-select: text;
+  cursor: text;
+}
+
+/* A label-and-value list, the plain-HTML answer to a SwiftUI LabeledContent. */
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0;
+  margin: 18px 0 16px;
+}
+
+.facts dt,
+.facts dd {
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.facts dt:first-of-type,
+.facts dt:first-of-type + dd { border-top: 0; }
+
+.facts dt {
+  padding-right: 16px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+  text-align: right;
+}
+
+/* A button that reads as a link: the action is going somewhere, so it should
+   not look like the buttons that file things. */
+button.link {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  box-shadow: none;
+  color: var(--accent);
+  font: inherit;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+button.link:hover { background: none; text-decoration: underline; }
+button.link:active { background: none; opacity: 0.7; }
+
+#about-settings {
+  font-family: "Cascadia Mono", ui-monospace, monospace;
+  font-size: 12px;
+  /* Right-to-left so a long path loses its front rather than its file name.
+     The <bdi> inside keeps the path itself reading the way it was written. */
+  direction: rtl;
+}
+
+/* -- Activity -------------------------------------------------------------- */
+
+.activity {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity:not(:empty) {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.activity li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.activity li:first-child { border-top: 0; }
+.activity .folder { color: var(--muted); white-space: nowrap; }
+.activity .empty { justify-content: center; color: var(--muted); }
+
+footer {
+  margin-top: 20px;
+  padding: 0 var(--pad-x);
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Everything above is decoration on top of a window that works without it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,17 @@
+[package]
+name = "tideline-core"
+version = "0.1.0"
+edition = "2021"
+description = "The filing engine: which downloads move, and where to."
+license = "MIT"
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(windows)'.dependencies]
+trash = "5"
+
+[dev-dependencies]
+tempfile = "3"

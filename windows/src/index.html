@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tideline</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="title">
+        <h1>Tideline</h1>
+        <label class="switch">
+          <input type="checkbox" id="enabled" />
+          <span>Filing enabled</span>
+        </label>
+      </div>
+      <!-- The sketch follows the folder-name setting, so switching between
+           daily and monthly shows its result straight away. -->
+      <pre class="sketch" id="sketch"></pre>
+      <div class="banner" id="banner" hidden></div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="status" class="active"
+              id="tab-status" aria-controls="panel-status" aria-selected="true">Status</button>
+      <button type="button" role="tab" data-tab="filing"
+              id="tab-filing" aria-controls="panel-filing" aria-selected="false">Filing</button>
+      <button type="button" role="tab" data-tab="schedule"
+              id="tab-schedule" aria-controls="panel-schedule" aria-selected="false">Schedule</button>
+      <button type="button" role="tab" data-tab="about"
+              id="tab-about" aria-controls="panel-about" aria-selected="false">About</button>
+    </nav>
+
+    <section class="tab" data-panel="status" role="tabpanel"
+             id="panel-status" aria-labelledby="tab-status">
+      <p class="summary" id="summary">Not run yet.</p>
+      <p class="next" id="next"></p>
+      <div class="row">
+        <button id="run">File Now</button>
+        <button id="preview" class="secondary">Preview a Sweep…</button>
+      </div>
+      <ul class="activity" id="activity"></ul>
+    </section>
+
+    <section class="tab" data-panel="filing" role="tabpanel"
+             id="panel-filing" aria-labelledby="tab-filing" hidden>
+      <label class="field">
+        <span>Folder</span>
+        <input type="text" id="downloads-path" spellcheck="false" />
+      </label>
+
+      <label class="field">
+        <span>Leave loose in the root</span>
+        <select id="keep-recent-days">
+          <option value="0">Today only</option>
+          <option value="1">Today and yesterday</option>
+          <option value="3">The last 3 days</option>
+          <option value="7">The last week</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Folder name</span>
+        <select id="folder-format">
+          <option value="daily">One folder per day</option>
+          <option value="monthly">One folder per month</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Sort by</span>
+        <select id="date-basis">
+          <option value="added">Date the file arrived</option>
+          <option value="created">Date the file was created</option>
+          <option value="modified">Date last modified</option>
+        </select>
+      </label>
+      <p class="hint" id="basis-hint"></p>
+
+      <label class="check">
+        <input type="checkbox" id="include-folders" />
+        <span>File folders too</span>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="dry-run" />
+        <span>Preview mode — show what would move, and touch nothing</span>
+      </label>
+
+      <label class="field">
+        <span>Never touch these</span>
+        <textarea id="skip-names" rows="3" spellcheck="false"></textarea>
+      </label>
+      <p class="hint">One per line. Exact names (<code>Inbox</code>) or patterns (<code>*.iso</code>).</p>
+
+      <fieldset class="rules">
+        <legend>Type folders</legend>
+        <p class="hint">
+          A folder at the root that takes everything with one of its extensions,
+          instead of the dated folder. All off to begin with.
+        </p>
+        <div id="type-rules"></div>
+      </fieldset>
+    </section>
+
+    <section class="tab" data-panel="schedule" role="tabpanel"
+             id="panel-schedule" aria-labelledby="tab-schedule" hidden>
+      <label class="check">
+        <input type="checkbox" id="daily-run-enabled" />
+        <span>Once a day, at</span>
+        <input type="time" id="daily-run-time" />
+      </label>
+      <label class="check">
+        <input type="checkbox" id="run-on-launch" />
+        <span>When the app starts</span>
+      </label>
+      <p class="hint">
+        A run missed because the machine was off or asleep fires as soon as it is
+        back.
+      </p>
+
+      <label class="check">
+        <input type="checkbox" id="open-at-login" />
+        <span>Start Tideline when I sign in</span>
+      </label>
+      <p class="hint">
+        Filing only happens while Tideline is running, so without this a sweep
+        set for the small hours never fires. It starts in the tray with no
+        window.
+      </p>
+    </section>
+
+    <section class="tab" data-panel="about" role="tabpanel"
+             id="panel-about" aria-labelledby="tab-about" hidden>
+      <div class="about">
+        <img class="about-icon" src="icon.png" alt="" width="48" height="48" />
+        <div class="about-name">
+          <strong id="about-name">Tideline</strong>
+          <!-- Selectable: the whole point of a version line is to be pasted
+               into a bug report. -->
+          <span class="version" id="about-version"></span>
+        </div>
+        <button type="button" class="secondary" data-link="new-issue">Send Feedback</button>
+      </div>
+
+      <dl class="facts">
+        <dt>Source code</dt>
+        <dd><button type="button" class="link" data-link="repository" id="about-repository"></button></dd>
+
+        <dt>Issues and ideas</dt>
+        <dd><button type="button" class="link" data-link="issues">Open on GitHub</button></dd>
+
+        <dt>Made by</dt>
+        <dd><button type="button" class="link" data-link="author" id="about-author"></button></dd>
+
+        <dt>Settings file</dt>
+        <dd><button type="button" class="link" id="about-settings"><bdi></bdi></button></dd>
+      </dl>
+      <p class="hint">
+        Settings are one JSON file under your profile; the button opens the
+        folder with it selected. Worth knowing before reinstalling, and worth
+        copying if you want the same setup on another machine.
+      </p>
+    </section>
+
+    <footer>
+      <span id="saved-note"></span>
+    </footer>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

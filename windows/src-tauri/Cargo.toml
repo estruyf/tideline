@@ -1,0 +1,42 @@
+[workspace]
+members = [".", "crates/tideline-core"]
+
+[package]
+name = "tideline"
+version = "0.1.0"
+edition = "2021"
+description = "Keeps Downloads tidy without hiding what you just downloaded."
+authors = ["Elio Struyf"]
+license = "MIT"
+# The Tauri template's binary and library share a name; this quiets the warning.
+default-run = "tideline"
+
+[lib]
+name = "tideline_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tideline-core = { path = "crates/tideline-core" }
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"
+
+[profile.release]
+# The macOS app is 1.7 MB and the README says so. This is the Windows side of
+# keeping that promise: strip symbols, optimise for size, and let LTO drop
+# everything the app never calls.
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

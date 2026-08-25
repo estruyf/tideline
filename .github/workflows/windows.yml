@@ -1,0 +1,112 @@
+name: Windows
+
+# The macOS build is in release.yml and is untouched by this. The two ship
+# separately: the Windows app is not at feature parity yet, so it is built on
+# demand rather than on every release tag. Swap the trigger for
+# `release: types: [published]` once it is.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Attach the installer to this release tag, e.g. v1.6.0 (leave empty to only keep the artifact)"
+        type: string
+        default: ""
+  pull_request:
+    paths:
+      - "windows/**"
+      - "fixtures/**"
+      - ".github/workflows/windows.yml"
+  push:
+    branches: [main]
+    paths:
+      - "windows/**"
+      - "fixtures/**"
+
+permissions:
+  contents: write
+
+jobs:
+  # The rules are platform-independent, so they are checked on Linux where a
+  # runner is cheapest and quickest. This is the job that guards the shared
+  # fixtures.
+  test:
+    name: Test the engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: windows/src-tauri
+
+      # Only the engine: the Tauri crate needs the webview libraries, which is
+      # the Windows job's business.
+      - name: Test
+        run: cargo test -p tideline-core --manifest-path windows/src-tauri/Cargo.toml
+
+      - name: Lint
+        run: |
+          cargo fmt --manifest-path windows/src-tauri/Cargo.toml -- --check
+          cargo clippy -p tideline-core --manifest-path windows/src-tauri/Cargo.toml -- -D warnings
+
+  build:
+    name: Build the installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    needs: test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: windows/src-tauri
+
+      - name: Install the CLI
+        working-directory: windows
+        run: npm ci
+
+      # The whole workspace this time, webview and all — this is the only
+      # runner that can compile the Tauri crate for its own platform.
+      - name: Test on Windows
+        working-directory: windows
+        run: cargo test --workspace --manifest-path src-tauri/Cargo.toml
+
+      - name: Build
+        working-directory: windows
+        run: npx tauri build
+
+      - name: Report the size
+        shell: bash
+        working-directory: windows
+        run: |
+          # The macOS app is 1.7 MB and the README says so; this is the number
+          # to watch if the Windows one is to make a comparable claim.
+          find src-tauri/target/release -maxdepth 1 -name 'tideline.exe' -exec ls -lh {} \;
+          find src-tauri/target/release/bundle -type f \( -name '*.exe' -o -name '*.msi' \) -exec ls -lh {} \;
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tideline-windows
+          path: |
+            windows/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+
+      - name: Attach it to the release
+        if: inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release upload "${{ inputs.tag }}" \
+            windows/src-tauri/target/release/bundle/nsis/*.exe --clobber
