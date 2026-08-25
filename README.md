@@ -24,6 +24,13 @@ daemon. It schedules itself and sits in the menu bar.
 
 **[Download the latest release](https://github.com/estruyf/tideline/releases/latest)**
 
+> **Windows.** A Windows build is in progress under [`windows/`](./windows) —
+> the same filing rules, rewritten in Rust with a [Tauri](https://tauri.app)
+> window and tray icon. The filing engine is done and tested; clearing,
+> duplicates and the big-file review are not yet. The macOS app is unaffected by
+> it. See [the Windows README](./windows/README.md) for what works and what is
+> still to come.
+
 ## Why
 
 Downloading the same build artifact from GitHub twice is all it takes. The second
@@ -380,6 +387,8 @@ no project file.
 - [Building](./docs/building.md) — requirements, scripts, versioning, layout
 - [Signing and notarizing](./docs/signing.md) — handing a build to other Macs
 - [Releasing](./docs/releasing.md) — the GitHub Actions workflow and its secrets
+- [Filing behaviour](./docs/behaviour.md) — the rules both platforms implement
+- [Windows](./windows/README.md) — the Tauri build, and where the two differ
 
 What changed per version is in the [changelog](./CHANGELOG.md).
 

@@ -1,7 +1,7 @@
 {
   "name": "tideline",
   "version": "1.5.0",
-  "description": "macOS app that files older downloads into folders named for the day they arrived",
+  "description": "Files older downloads into folders named for the day they arrived. Native on macOS, Tauri on Windows.",
   "license": "MIT",
   "author": "Elio Struyf",
   "homepage": "https://github.com/estruyf/tideline",
@@ -24,6 +24,10 @@
     "quit": "osascript -e 'quit app \"Tideline\"' || true",
     "logs": "tail -f \"$HOME/Library/Logs/Tideline.log\"",
     "icon": "cd app && swift Tools/make-icon.swift dist/AppIcon.iconset && open dist/AppIcon.iconset",
-    "clean": "rm -rf app/.build app/dist"
+    "clean": "rm -rf app/.build app/dist",
+    "win:dev": "cd windows && npx tauri dev",
+    "win:build": "cd windows && npx tauri build",
+    "win:test": "cargo test --workspace --manifest-path windows/src-tauri/Cargo.toml",
+    "win:check": "cargo check -p tideline-core --manifest-path windows/src-tauri/Cargo.toml --target x86_64-pc-windows-msvc"
   }
 }
