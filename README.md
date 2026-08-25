@@ -91,7 +91,15 @@ switching between daily and monthly shows its result straight away.
 Whether filing is on, when it last ran, what it did, and when the next sweep is
 due. **File Now** runs one immediately, and **Open at login** decides whether
 Tideline is around to run at all — it starts in the background with no window
-and no Dock icon. Below that, the last dozen moves, with a link to the full log
+and no Dock icon.
+
+Under that, what the folder is actually holding: *Downloads holds 14.2 GB*, and
+where it sits — how much is still loose in the root, how much is filed away, and
+how many folders that is. Filing tidies a folder; it does not shrink one, and
+this is the line that says so. It is measured in the background after every
+sweep, and the button beside it asks for a fresh look.
+
+Below that, the last dozen moves, with a link to the full log
 at `~/Library/Logs/Tideline.log`.
 
 ### Schedule
@@ -116,7 +124,8 @@ A run that is missed while the Mac sleeps fires as soon as it wakes.
 | Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
 | File folders too | Whether downloaded folders move like files |
 | Type folders | Send an extension to a folder of its own instead of a dated one |
-| Preview mode | Logs what *would* move and touches nothing |
+| Duplicates | Find files that are here more than once and keep one copy |
+| Preview mode | Shows what *would* move and touches nothing |
 
 **Type folders** — a folder at the root that takes everything with one of its
 extensions, instead of the dated folder. Switch on `Installers` and every
@@ -147,6 +156,26 @@ that goes to the Trash. Folders you made yourself are never opened, and a name
 already taken in the type folder is never overwritten — `report.pdf` arrives as
 `report-1.pdf`.
 
+**Duplicates** — downloading the same file twice is what a Downloads folder
+does. The second one lands as `artifact-1.zip`, the third as `artifact-2.zip`,
+and the name stops telling you anything. **Review Duplicates…** finds them: it
+compares the root and the folders Tideline made, groups files whose names match
+once a copy suffix is taken off, and reads through the ones that also match in
+size to check they really are the same file, byte for byte. Two files that
+merely look alike are never called copies.
+
+Each group starts with the newest copy kept and the rest ticked for the Trash;
+untick anything you would rather hold on to. A group always keeps a copy — the
+last one standing cannot be ticked. Nothing is compared until you ask, nothing
+goes until the sheet says so, and everything goes to the Trash rather than being
+deleted outright.
+
+With the other copies gone, the one that stays can have its plain name back:
+`artifact-1.zip` becomes `artifact.zip`, but only where that name is free.
+Switch that off in the sheet if you would rather it kept the name it has. A
+dated folder left empty by the removals goes to the Trash, as it does after
+catching up; a type folder is left alone either way. Preview mode previews it.
+
 A type folder decides *where* something goes, not *when*. A `.dmg` downloaded
 today still sits loose in the root until it is older than the **Leave loose in
 the root** window — it just goes to `Installers/` rather than to a dated folder
@@ -154,6 +183,12 @@ when its time comes. Type folders are flat, they are never filed away
 themselves, and **Clearing** never touches them: only dated folders are ever
 cleared. Where two folders claim the same extension, the one higher up the list
 takes it, and the window says so.
+
+**Preview mode** — a sweep that touches nothing. **Preview Now**, on the
+*Status* tab or in the menu bar, walks the folder exactly as a real sweep would
+and then shows what it would have done: every item, grouped by the folder it
+would have landed in, with what that adds up to. It is still written to the log
+as before.
 
 **Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). It starts
 with `Inbox` and `Screenshots`; both can go. On top of your list, the app always
@@ -201,8 +236,8 @@ Preview mode covers this too: it lists what would go and leaves it all in place.
 
 ### General
 
-A notification when files are filed, buttons for the log and the Downloads
-folder, and **Uninstall…**. Then [Updates](#updates), and below that the version
+A notification when files are filed, whether the folder's size sits next to the
+menu bar icon, buttons for the log and the Downloads folder, and **Uninstall…**. Then [Updates](#updates), and below that the version
 and build number (quote them in a bug report), plus links to the
 [source](https://github.com/estruyf/tideline),
 [issues](https://github.com/estruyf/tideline/issues) and the author.
@@ -239,9 +274,16 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
-run, **File Downloads Now**, a **Filing Enabled** switch, **Review Old
-Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…**,
-**Check for Updates…** and **Quit**.
+run and what the folder is holding, **File Downloads Now**, a **Filing Enabled**
+switch, **Review Duplicates…**, **Review Old Folders…**, **Open Downloads
+Folder**, **Settings…**, **Send Feedback…**, **Check for Updates…** and
+**Quit**.
+
+**File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
+opens the window on the sheet that lists what a sweep would have moved.
+
+The size can sit next to the icon as well as inside the menu — **General ›
+Other › Show the folder size in the menu bar**, off by default.
 
 **Check for Updates…** reads **Update to 1.3.0…** once a check has found one,
 so a new version is visible without opening the window.

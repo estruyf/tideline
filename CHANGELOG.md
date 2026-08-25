@@ -5,6 +5,43 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-08-25
+
+### Added
+
+- **Review Duplicates…**, under **Filing**. Downloading the same file twice
+  leaves `artifact.zip` and `artifact-1.zip`, and the name stops telling you
+  anything. This finds them: files in the root and in the folders Tideline made
+  whose names match once a copy suffix (`-1`, ` (1)`) is taken off, which are
+  also the same size, and which are then read through and compared byte for
+  byte. Two files that merely look alike are never called copies. Each group
+  starts with the newest kept and the rest ticked for the Trash, a group can
+  never have every copy ticked, and nothing goes until the sheet says so. With
+  the others gone, the copy that stays can have its plain name back —
+  `artifact-1.zip` becomes `artifact.zip`, but only where that name is free —
+  which the sheet can switch off. A dated folder left empty by the removals goes
+  to the Trash, as it does after catching up; type folders are left alone.
+  Preview mode previews it. Also on the menu bar, as **Review Duplicates…**.
+- **What the folder holds**, on the **Status** tab: *Downloads holds 14.2 GB*,
+  with how much of that is still loose in the root, how much is filed away, and
+  in how many folders. Filing tidies a folder; it does not shrink one, and this
+  is the line that says so. Measured in the background after every sweep, after
+  clearing and after collapsing duplicates, with a button for a fresh look. The
+  menu bar carries the same figure, and **General › Show the folder size in the
+  menu bar** puts it next to the icon as well — off by default.
+
+### Changed
+
+- **Preview mode** now shows what a sweep would do rather than only writing it
+  to the log. **Preview Now** lists every item it would have moved, grouped by
+  the folder it would have landed in, in the same kind of sheet **Catch Up…**
+  and **Review Old Folders…** already use. The log line is unchanged. In the
+  menu bar, **File Downloads Now** reads **Preview a Sweep…** while preview mode
+  is on.
+- Filing works from a plan it draws up first, rather than deciding as it walks.
+  A preview and a real sweep now read the same folder the same way and cannot
+  drift apart, since a preview is that plan and a sweep is that plan carried out.
+
 ## [1.3.0] - 2026-08-25
 
 ### Added
@@ -136,6 +173,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.4.0]: https://github.com/estruyf/tideline/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/estruyf/tideline/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/estruyf/tideline/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/estruyf/tideline/compare/v1.0.0...v1.1.0

@@ -38,6 +38,12 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingRegroup) {
             RegroupView(isPresented: $controller.reviewingRegroup)
         }
+        .sheet(isPresented: $controller.reviewingDuplicates) {
+            DuplicateView(isPresented: $controller.reviewingDuplicates)
+        }
+        .sheet(isPresented: $controller.reviewingPlan) {
+            PreviewView(isPresented: $controller.reviewingPlan)
+        }
         .onChange(of: updater.reveal) { reveal in
             // "Check for Updates…" in the menu bar lands on the section that
             // shows what the check found.
@@ -51,8 +57,12 @@ struct MainView: View {
             // the tab the sheet came from rather than wherever you last were.
             if reviewing { tab = .clearing }
         }
+        .onChange(of: controller.reviewingDuplicates) { reviewing in
+            if reviewing { tab = .filing }
+        }
         .onAppear {
             controller.refreshLoginItem()
+            controller.refreshUsage()
         }
     }
 
@@ -88,6 +98,10 @@ private struct StatusTab: View {
 
             Section {
                 StatusRow()
+
+                // How much the folder is actually holding. Filing tidies a
+                // folder; it does not shrink one, and this is where that shows.
+                UsageRow()
 
                 // Nothing else on this tab matters if the app is not running,
                 // so the switch that decides that sits with the status.
@@ -160,6 +174,17 @@ private struct FilingTab: View {
             }
 
             Section {
+                DuplicateSection()
+            } header: {
+                Text("Duplicates")
+            } footer: {
+                Text("Copies are found by name and contents, in the root and in the folders Tideline made. Nothing is compared until you ask, nothing goes without being reviewed, and a set always keeps one copy.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Section {
                 SkipListSection()
             } header: {
                 Text("Never touch these")
@@ -209,6 +234,11 @@ private struct GeneralTab: View {
                     .onChange(of: settings.notifyOnMove) { newValue in
                         if newValue { controller.requestNotificationPermission() }
                     }
+
+                Toggle(isOn: $settings.showSizeInMenuBar) {
+                    Text("Show the folder size in the menu bar")
+                    Text("Next to the icon, rather than only inside the menu.")
+                }
 
                 HStack {
                     Button("Open Log File") { controller.openLogFile() }
@@ -409,6 +439,74 @@ private struct AccessBanner: View {
 
 // MARK: - Status
 
+/// What the watched folder is holding right now, and where it sits: loose in
+/// the root, or filed away. Measured off the main thread and cached — the
+/// button asks for a fresh look.
+private struct UsageRow: View {
+    @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var settings = Settings.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "internaldrive")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .frame(width: 16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(headline)
+                    .font(.body.weight(.medium))
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                controller.refreshUsage(force: true)
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.borderless)
+            .help("Measure the folder again")
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var folderName: String { settings.downloadsURL.lastPathComponent }
+
+    private var headline: String {
+        if let usage = controller.usage { return "\(folderName) holds \(usage.totalDescription)" }
+        return controller.access.isUsable
+            ? "Measuring \(folderName)…"
+            : "\(folderName) has not been measured"
+    }
+
+    private var detail: String {
+        guard let usage = controller.usage else {
+            return controller.access.isUsable
+                ? "Adding up what is in there."
+                : "Nothing to measure until macOS grants access."
+        }
+
+        let items = usage.looseItems == 1 ? "item" : "items"
+        var parts = ["\(usage.looseDescription) loose in \(usage.looseItems) \(items)"]
+
+        if usage.managedFolders > 0 {
+            let folders = usage.managedFolders == 1 ? "folder" : "folders"
+            parts.append("\(usage.filedDescription) in \(usage.managedFolders) filed \(folders)")
+        }
+        if usage.otherFolders > 0 {
+            let folders = usage.otherFolders == 1 ? "folder" : "folders"
+            parts.append("\(usage.otherFolders) \(folders) of your own")
+        }
+
+        return parts.joined(separator: " · ")
+    }
+}
+
 private struct StatusRow: View {
     @ObservedObject private var controller = Controller.shared
     @ObservedObject private var settings = Settings.shared
@@ -428,7 +526,9 @@ private struct StatusRow: View {
                 }
                 Spacer()
                 Button {
-                    controller.run(trigger: .manual)
+                    // In preview mode the sweep touches nothing and what it
+                    // would have done opens in a sheet, like the other reviews.
+                    controller.run(trigger: .manual, showingPlan: settings.dryRun)
                 } label: {
                     if controller.busy {
                         ProgressView().controlSize(.small)

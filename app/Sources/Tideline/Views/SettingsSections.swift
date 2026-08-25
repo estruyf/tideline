@@ -419,6 +419,45 @@ struct TypeFolderSection: View {
     }
 }
 
+// MARK: - Duplicates
+
+/// Downloading the same file twice is what a Downloads folder does. This is
+/// the way back out of it: compare, review, keep one.
+struct DuplicateSection: View {
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("The same file, more than once")
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Review Duplicates…") { controller.reviewingDuplicates = true }
+                .disabled(controller.duplicateScanning)
+        }
+    }
+
+    /// Once a scan has run, say what it found rather than repeating the pitch.
+    private var subtitle: String {
+        if controller.duplicateScanning { return "Comparing files…" }
+
+        let groups = controller.duplicates
+        guard !groups.isEmpty else {
+            return "artifact.zip and artifact-1.zip, byte for byte the same. The newest is kept, the rest go to the Trash."
+        }
+
+        let noun = groups.count == 1 ? "file is" : "files are"
+        let bytes = groups.reduce(Int64(0)) { $0 + $1.reclaimable }
+        return "\(groups.count) \(noun) here more than once · \(FolderUsage.bytes.string(fromByteCount: bytes)) to reclaim"
+    }
+}
+
 // MARK: - Skip list
 
 struct SkipListSection: View {
@@ -476,9 +515,20 @@ struct ActivitySection: View {
                         .font(.system(size: 12))
                         .foregroundStyle(tint(for: record))
                         .frame(width: 16)
-                    Text(record.kind == .cleared ? "\(record.name)/" : record.name)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(record.kind == .cleared ? "\(record.name)/" : record.name)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        // Only duplicates carry one: what a copy was a copy of,
+                        // or the name a kept copy got back.
+                        if let detail = record.detail {
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
                     Spacer(minLength: 12)
                     Text(record.folder)
                         .font(.caption.monospacedDigit())
@@ -503,22 +553,32 @@ struct ActivitySection: View {
 
     private func icon(for record: MoveRecord) -> String {
         if record.wasPreview { return "eye" }
-        return record.kind == .cleared ? "trash" : "arrow.right.doc.on.clipboard"
+        switch record.kind {
+        case .filed: return "arrow.right.doc.on.clipboard"
+        case .cleared: return "trash"
+        case .removed: return "doc.on.doc"
+        case .renamed: return "character.cursor.ibeam"
+        }
     }
 
     private func tint(for record: MoveRecord) -> Color {
         if record.wasPreview { return .secondary }
-        return record.kind == .cleared ? .orange : .accentColor
+        switch record.kind {
+        case .filed, .renamed: return .accentColor
+        case .cleared, .removed: return .orange
+        }
     }
 
-    /// The list holds both kinds now, so "filed in total" would undercount.
+    /// The list holds four kinds now, so "filed in total" would undercount.
     private var tally: String {
-        let filed = controller.history.filter { $0.kind == .filed }.count
-        let cleared = controller.history.count - filed
+        var counts: [RecordKind: Int] = [:]
+        for record in controller.history { counts[record.kind, default: 0] += 1 }
 
         var parts: [String] = []
-        if filed > 0 { parts.append("\(filed) filed") }
-        if cleared > 0 { parts.append("\(cleared) cleared") }
+        if let filed = counts[.filed] { parts.append("\(filed) filed") }
+        if let cleared = counts[.cleared] { parts.append("\(cleared) cleared") }
+        if let removed = counts[.removed] { parts.append("\(removed) duplicates trashed") }
+        if let renamed = counts[.renamed] { parts.append("\(renamed) renamed") }
         return parts.joined(separator: " · ")
     }
 }

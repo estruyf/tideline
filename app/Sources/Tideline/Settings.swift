@@ -88,6 +88,8 @@ final class Settings: ObservableObject {
         static let cleanupKeepNewest = "cleanupKeepNewest"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
+        static let duplicateRestoreNames = "duplicateRestoreNames"
+        static let showSizeInMenuBar = "showSizeInMenuBar"
         static let automaticUpdateChecks = "automaticUpdateChecks"
         static let lastUpdateCheckAt = "lastUpdateCheckAt"
         static let skippedUpdateVersion = "skippedUpdateVersion"
@@ -111,6 +113,8 @@ final class Settings: ObservableObject {
             Key.cleanupAfterDays: 90,
             Key.cleanupOnSchedule: false,
             Key.cleanupKeepNewest: 3,
+            Key.duplicateRestoreNames: true,
+            Key.showSizeInMenuBar: false,
             Key.automaticUpdateChecks: true,
         ])
 
@@ -132,6 +136,8 @@ final class Settings: ObservableObject {
         cleanupAfterDays = defaults.integer(forKey: Key.cleanupAfterDays)
         cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
         cleanupKeepNewest = defaults.integer(forKey: Key.cleanupKeepNewest)
+        duplicateRestoreNames = defaults.bool(forKey: Key.duplicateRestoreNames)
+        showSizeInMenuBar = defaults.bool(forKey: Key.showSizeInMenuBar)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
         automaticUpdateChecks = defaults.bool(forKey: Key.automaticUpdateChecks)
     }
@@ -169,6 +175,20 @@ final class Settings: ObservableObject {
     @Published var cleanupOnSchedule: Bool { didSet { store(cleanupOnSchedule, Key.cleanupOnSchedule) } }
     /// The newest folders are held back whatever their age.
     @Published var cleanupKeepNewest: Int { didSet { store(cleanupKeepNewest, Key.cleanupKeepNewest) } }
+
+    /// After the other copies of a file go to the Trash, the one left standing
+    /// can have its plain name back — `artifact-1.zip` becomes `artifact.zip`,
+    /// but only where that name is free. Kept out of `store`: it changes
+    /// nothing about filing, so it need not rebuild the watcher.
+    @Published var duplicateRestoreNames: Bool {
+        didSet { defaults.set(duplicateRestoreNames, forKey: Key.duplicateRestoreNames) }
+    }
+
+    /// Puts the folder's size next to the menu bar icon, rather than only in
+    /// the menu itself.
+    @Published var showSizeInMenuBar: Bool {
+        didSet { defaults.set(showSizeInMenuBar, forKey: Key.showSizeInMenuBar) }
+    }
 
     /// Set once the user has either accepted or waved away the open-at-login suggestion.
     /// Kept out of `store` so answering it never triggers a reconfigure.
@@ -237,6 +257,8 @@ final class Settings: ObservableObject {
         cleanupAfterDays = 90
         cleanupOnSchedule = false
         cleanupKeepNewest = 3
+        duplicateRestoreNames = true
+        showSizeInMenuBar = false
         automaticUpdateChecks = true
     }
 

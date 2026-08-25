@@ -1,0 +1,389 @@
+import CryptoKit
+import Foundation
+
+/// One copy of a file that exists more than once.
+struct DuplicateCopy: Identifiable, Equatable {
+    var id: String { url.path }
+    var url: URL
+    var name: String
+    /// The folder it sits in, as the window says it — the root's own name for
+    /// a loose file, otherwise the dated or type folder holding it.
+    var folder: String
+    var date: Date
+    var byteSize: Int64
+    /// Its name carries a copy suffix: `artifact-1.zip`, `artifact (2).zip`.
+    var isSuffixed: Bool
+}
+
+/// A set of files with the same name, bar a copy suffix, and the same contents.
+struct DuplicateGroup: Identifiable, Equatable {
+    var id: String
+    /// The name without the suffix — `artifact.zip`.
+    var baseName: String
+    /// Newest first, so the one to keep is the one at the top.
+    var copies: [DuplicateCopy]
+    /// What one copy takes up; they are byte-for-byte identical.
+    var byteSize: Int64
+
+    /// What would come back by keeping only one of them.
+    var reclaimable: Int64 { byteSize * Int64(max(0, copies.count - 1)) }
+}
+
+struct DedupeResult {
+    var removed: [MoveRecord] = []
+    var renamed: [MoveRecord] = []
+    /// Dated folders that the removals left with nothing in them.
+    var emptied: [MoveRecord] = []
+    var errors: [String] = []
+    var reclaimedBytes: Int64 = 0
+
+    var removedCount: Int { removed.count }
+}
+
+/// Downloading the same file twice is what a Downloads folder does. The second
+/// one lands as `artifact-1.zip`, the third as `artifact-2.zip`, and the name
+/// stops telling you anything.
+///
+/// This finds those: files whose names match once a copy suffix is taken off,
+/// which are the same size, and whose contents hash identically. Nothing else
+/// counts as a duplicate — two files that merely look alike are left alone —
+/// and a group always keeps at least one copy, whatever is ticked.
+enum Deduper {
+
+    /// Files bigger than this are hashed in chunks rather than read whole; the
+    /// chunk size only decides memory, never what counts as a duplicate.
+    private static let chunkSize = 1 << 20
+
+    // MARK: - Finding
+
+    static func scan(configuration: DedupeConfiguration) -> [DuplicateGroup] {
+        let fileManager = FileManager.default
+        let root = configuration.root
+        // Every rule's folder, on or off: a rule switched off still has files
+        // sitting in the folder it made while it was on.
+        let router = TypeRouter(rules: configuration.typeRules)
+
+        guard let entries = try? fileManager.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        // The root itself, plus the folders Tideline made. Folders you made
+        // yourself are never opened, exactly as filing never opens them.
+        var places: [(url: URL, label: String)] = [(root, root.lastPathComponent)]
+        for entry in entries.sorted(by: { $0.lastPathComponent > $1.lastPathComponent }) {
+            let name = entry.lastPathComponent
+            guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            guard Organizer.isManagedFolderName(name) || router.owns(name) else { continue }
+            places.append((entry, name))
+        }
+
+        var buckets: [String: [DuplicateCopy]] = [:]
+
+        for place in places {
+            guard let contents = try? fileManager.contentsOfDirectory(
+                at: place.url,
+                includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .totalFileAllocatedSizeKey],
+                options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            for item in contents {
+                let name = item.lastPathComponent
+                let values = try? item.resourceValues(forKeys: [
+                    .isDirectoryKey, .fileSizeKey, .totalFileAllocatedSizeKey,
+                ])
+
+                // Only plain files. A folder — a `.app`, an unzipped download —
+                // is never compared, so nothing about them can be removed here.
+                guard values?.isDirectory != true else { continue }
+
+                let ext = item.pathExtension.lowercased()
+                if Organizer.incompleteExtensions.contains(ext) { continue }
+                if Organizer.matchesSkipList(name, patterns: configuration.skipNames) { continue }
+                if !Organizer.isSettled(item) { continue }
+
+                // Size comes from the logical length here, not the allocated
+                // one: two identical files can sit differently on disk.
+                let size = Int64(values?.fileSize ?? 0)
+                guard size > 0 else { continue }
+
+                let stem = stem(of: name)
+                let key = "\(stem.base.lowercased())|\(ext)|\(size)"
+
+                buckets[key, default: []].append(DuplicateCopy(
+                    url: item,
+                    name: name,
+                    folder: place.label,
+                    date: Organizer.date(of: item, basis: configuration.dateBasis) ?? .distantPast,
+                    byteSize: size,
+                    isSuffixed: stem.isSuffixed
+                ))
+            }
+        }
+
+        var groups: [DuplicateGroup] = []
+
+        // Hashing is the expensive part, so it only ever runs on files that
+        // already share a name and a size.
+        for (_, copies) in buckets where copies.count > 1 {
+            var byDigest: [String: [DuplicateCopy]] = [:]
+            for copy in copies {
+                guard let digest = digest(of: copy.url) else { continue }
+                byDigest[digest, default: []].append(copy)
+            }
+
+            for (digest, identical) in byDigest where identical.count > 1 {
+                let sorted = identical.sorted { $0.date > $1.date }
+                groups.append(DuplicateGroup(
+                    id: digest,
+                    baseName: plainName(for: sorted),
+                    copies: sorted,
+                    byteSize: sorted[0].byteSize
+                ))
+            }
+        }
+
+        // Biggest saving first — the reason to look at this list at all.
+        return groups.sorted {
+            $0.reclaimable == $1.reclaimable
+                ? $0.baseName.localizedStandardCompare($1.baseName) == .orderedAscending
+                : $0.reclaimable > $1.reclaimable
+        }
+    }
+
+    // MARK: - Collapsing
+
+    /// Sends the ticked copies to the Trash. Never `unlink`, and never the last
+    /// copy of anything: a group with every copy ticked keeps its newest.
+    static func collapse(
+        _ groups: [DuplicateGroup],
+        removing: Set<String>,
+        configuration: DedupeConfiguration
+    ) -> DedupeResult {
+        var result = DedupeResult()
+        let fileManager = FileManager.default
+
+        // Remembered so a dated folder emptied by this can be tidied away
+        // after, exactly as catching up does.
+        var touched: Set<String> = []
+        var everythingRemoved: Set<String> = []
+
+        for group in groups {
+            var doomed = group.copies.filter { removing.contains($0.id) }
+            var kept = group.copies.filter { !removing.contains($0.id) }
+
+            // The belt to the view's braces. Something always survives.
+            if kept.isEmpty {
+                guard let newest = doomed.first else { continue }
+                kept = [newest]
+                doomed.removeAll { $0.id == newest.id }
+            }
+            guard !doomed.isEmpty else { continue }
+
+            var removedPaths: Set<String> = []
+
+            for copy in doomed {
+                touched.insert(copy.url.deletingLastPathComponent().path)
+
+                if configuration.dryRun {
+                    removedPaths.insert(copy.url.path)
+                    everythingRemoved.insert(copy.url.path)
+                    result.removed.append(MoveRecord(
+                        date: Date(), name: copy.name, folder: "Trash",
+                        wasPreview: true, kind: .removed,
+                        detail: "duplicate of \(group.baseName) in \(copy.folder)"
+                    ))
+                    result.reclaimedBytes += copy.byteSize
+                    continue
+                }
+
+                do {
+                    try fileManager.trashItem(at: copy.url, resultingItemURL: nil)
+                    removedPaths.insert(copy.url.path)
+                    everythingRemoved.insert(copy.url.path)
+                    result.removed.append(MoveRecord(
+                        date: Date(), name: copy.name, folder: "Trash",
+                        wasPreview: false, kind: .removed,
+                        detail: "duplicate of \(group.baseName) in \(copy.folder)"
+                    ))
+                    result.reclaimedBytes += copy.byteSize
+                } catch {
+                    result.errors.append("\(copy.name): \(error.localizedDescription)")
+                }
+            }
+
+            guard configuration.restoreNames,
+                  kept.count == 1,
+                  let survivor = kept.first,
+                  survivor.isSuffixed
+            else { continue }
+
+            if let record = restoreName(
+                of: survivor,
+                to: group.baseName,
+                freedBy: removedPaths,
+                dryRun: configuration.dryRun
+            ) {
+                result.renamed.append(record)
+            }
+        }
+
+        result.emptied = removeEmptied(touched, moving: everythingRemoved, configuration: configuration)
+        return result
+    }
+
+    /// A dated folder whose last file was a duplicate is no longer telling you
+    /// anything. It goes to the Trash like any other cleared folder — and only
+    /// a dated one: a type folder stays whether or not it has anything in it.
+    private static func removeEmptied(
+        _ paths: Set<String>,
+        moving: Set<String>,
+        configuration: DedupeConfiguration
+    ) -> [MoveRecord] {
+        let fileManager = FileManager.default
+        var cleared: [MoveRecord] = []
+
+        for path in paths.sorted() {
+            let folder = URL(fileURLWithPath: path)
+            let name = folder.lastPathComponent
+            guard folder.path != configuration.root.path else { continue }
+            guard Organizer.isManagedFolderName(name) else { continue }
+
+            guard let contents = try? fileManager.contentsOfDirectory(
+                at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            if configuration.dryRun {
+                // Nothing actually moved, so it counts as empty when everything
+                // still inside is on its way out.
+                guard contents.allSatisfy({ moving.contains($0.path) }) else { continue }
+                cleared.append(MoveRecord(
+                    date: Date(), name: name, folder: "Trash", wasPreview: true, kind: .cleared
+                ))
+                continue
+            }
+
+            guard contents.isEmpty else { continue }
+            if (try? fileManager.trashItem(at: folder, resultingItemURL: nil)) != nil {
+                cleared.append(MoveRecord(
+                    date: Date(), name: name, folder: "Trash", wasPreview: false, kind: .cleared
+                ))
+            }
+        }
+
+        return cleared
+    }
+
+    /// The point of collapsing: with the other copies gone, `artifact-1.zip`
+    /// can have its real name back. Only ever when that name is free — nothing
+    /// is overwritten to make room for it.
+    private static func restoreName(
+        of copy: DuplicateCopy,
+        to plain: String,
+        freedBy removed: Set<String>,
+        dryRun: Bool
+    ) -> MoveRecord? {
+        let fileManager = FileManager.default
+        let target = copy.url.deletingLastPathComponent().appendingPathComponent(plain)
+        guard target.lastPathComponent != copy.name else { return nil }
+
+        if dryRun {
+            // Nothing actually moved, so a name is free if it is about to be.
+            let taken = fileManager.fileExists(atPath: target.path) && !removed.contains(target.path)
+            guard !taken else { return nil }
+            return MoveRecord(
+                date: Date(), name: plain, folder: copy.folder,
+                wasPreview: true, kind: .renamed, detail: "was \(copy.name)"
+            )
+        }
+
+        guard !fileManager.fileExists(atPath: target.path) else { return nil }
+        guard (try? fileManager.moveItem(at: copy.url, to: target)) != nil else { return nil }
+
+        return MoveRecord(
+            date: Date(), name: plain, folder: copy.folder,
+            wasPreview: false, kind: .renamed, detail: "was \(copy.name)"
+        )
+    }
+
+    // MARK: - Names
+
+    /// `artifact-1.zip`, `artifact (2).zip` and `artifact(3).zip` all reduce to
+    /// `artifact`. Four digits or more is a year or a version, not a copy, so
+    /// `invoice-2024.pdf` keeps its name whole.
+    static func stem(of name: String) -> (base: String, isSuffixed: Bool) {
+        let withoutExtension = (name as NSString).deletingPathExtension
+        guard !withoutExtension.isEmpty else { return (name, false) }
+
+        for pattern in suffixPatterns {
+            let range = NSRange(withoutExtension.startIndex..<withoutExtension.endIndex, in: withoutExtension)
+            guard let match = pattern.firstMatch(in: withoutExtension, range: range),
+                  match.numberOfRanges > 1,
+                  let base = Range(match.range(at: 1), in: withoutExtension)
+            else { continue }
+
+            let stripped = String(withoutExtension[base]).trimmingCharacters(in: .whitespaces)
+            if stripped.isEmpty { continue }
+            return (stripped, true)
+        }
+
+        return (withoutExtension, false)
+    }
+
+    /// `artifact-1` and `artifact (2)`, as browsers and this app write them.
+    private static let suffixPatterns: [NSRegularExpression] = [
+        try! NSRegularExpression(pattern: #"^(.+?)\s*\((\d{1,3})\)$"#),
+        try! NSRegularExpression(pattern: #"^(.+?)-(\d{1,3})$"#),
+    ]
+
+    /// The name to show a group by: the copy that never carried a suffix, if
+    /// one of them still exists, otherwise the shared stem plus the extension.
+    private static func plainName(for copies: [DuplicateCopy]) -> String {
+        if let plain = copies.first(where: { !$0.isSuffixed }) { return plain.name }
+        guard let first = copies.first else { return "" }
+        let ext = (first.name as NSString).pathExtension
+        let base = stem(of: first.name).base
+        return ext.isEmpty ? base : "\(base).\(ext)"
+    }
+
+    // MARK: - Contents
+
+    /// Read in chunks, so a 6 GB disk image is compared without being held in
+    /// memory. A file that cannot be read is simply never called a duplicate.
+    private static func digest(of url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+
+        var hasher = SHA256()
+        while let chunk = try? handle.read(upToCount: chunkSize), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+/// An immutable copy of what collapsing needs, mirroring `RunConfiguration`.
+struct DedupeConfiguration {
+    var root: URL
+    /// Every rule, switched on or not — their folders are looked in either way.
+    var typeRules: [TypeRule] = []
+    var skipNames: [String] = []
+    var dateBasis: DateBasis = .added
+    var dryRun: Bool = false
+    /// Give the last copy standing its plain name back, where that name is free.
+    var restoreNames: Bool = true
+}
+
+extension DedupeConfiguration {
+    @MainActor
+    init(_ settings: Settings) {
+        root = settings.downloadsURL
+        typeRules = settings.typeRules
+        skipNames = settings.skipNames
+        dateBasis = settings.dateBasis
+        dryRun = settings.dryRun
+        restoreNames = settings.duplicateRestoreNames
+    }
+}

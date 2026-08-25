@@ -1,9 +1,12 @@
 import Foundation
 
-/// What a history entry records: a file filed away, or a dated folder cleared out.
+/// What a history entry records: a file filed away, a dated folder cleared out,
+/// a duplicate copy trashed, or a kept copy given its plain name back.
 enum RecordKind: String, Codable {
     case filed
     case cleared
+    case removed
+    case renamed
 }
 
 struct MoveRecord: Codable, Identifiable, Equatable {
@@ -13,11 +16,14 @@ struct MoveRecord: Codable, Identifiable, Equatable {
     var folder: String
     var wasPreview: Bool
     var kind: RecordKind = .filed
+    /// Extra context a name and a folder cannot carry — the name a duplicate
+    /// was renamed from, for one. Only ever shown as a subtitle.
+    var detail: String?
 }
 
 extension MoveRecord {
     private enum CodingKeys: String, CodingKey {
-        case id, date, name, folder, wasPreview, kind
+        case id, date, name, folder, wasPreview, kind, detail
     }
 
     /// History written before clearing existed has no `kind`; it was all filing.
@@ -30,11 +36,36 @@ extension MoveRecord {
         folder = try container.decode(String.self, forKey: .folder)
         wasPreview = try container.decodeIfPresent(Bool.self, forKey: .wasPreview) ?? false
         kind = try container.decodeIfPresent(RecordKind.self, forKey: .kind) ?? .filed
+        detail = try container.decodeIfPresent(String.self, forKey: .detail)
     }
+}
+
+/// One item a sweep would move, and where to. A plan is what the preview
+/// sheet lists and what a real sweep then carries out.
+struct PlannedMove: Identifiable, Equatable {
+    var id: String { url.path }
+    var url: URL
+    var name: String
+    /// Where it would land — a dated folder, or a type folder.
+    var targetFolder: String
+    /// The date it was filed by, under the current "Sort by" setting.
+    var stamp: Date
+    var byteSize: Int64
+    var isFolder: Bool
+    /// True when a type rule claimed it rather than the date.
+    var isByType: Bool
+}
+
+struct SweepPlan {
+    var moves: [PlannedMove] = []
+    var inspected = 0
+    var leftAlone = 0
 }
 
 struct RunResult {
     var moves: [MoveRecord] = []
+    /// Only filled on a preview, where it is the whole point: what would move.
+    var plan: [PlannedMove] = []
     var cleared: [MoveRecord] = []
     var inspected = 0
     var leftAlone = 0
@@ -78,8 +109,12 @@ enum Organizer {
         return dayFolderPattern.firstMatch(in: name, range: range) != nil
     }
 
-    /// Runs one sweep. Blocking — call it off the main thread.
-    static func run(settings snapshot: RunConfiguration) throws -> RunResult {
+    /// Works out what a sweep would do, and touches nothing. `run` is this plus
+    /// the moves, so what a preview shows and what a sweep does cannot drift.
+    ///
+    /// Sizes are measured only when asked for: a real sweep has no use for them,
+    /// and measuring a downloaded folder means walking it.
+    static func plan(settings snapshot: RunConfiguration, measuring: Bool = false) throws -> SweepPlan {
         let fileManager = FileManager.default
         let root = snapshot.root
 
@@ -90,7 +125,7 @@ enum Organizer {
 
         let keys: [URLResourceKey] = [
             .isDirectoryKey, .addedToDirectoryDateKey, .creationDateKey, .contentModificationDateKey,
-            .fileSizeKey,
+            .fileSizeKey, .totalFileAllocatedSizeKey,
         ]
 
         let entries: [URL]
@@ -118,55 +153,99 @@ enum Organizer {
             to: calendar.startOfDay(for: Date())
         ) ?? calendar.startOfDay(for: Date())
 
-        var result = RunResult()
+        var plan = SweepPlan()
 
         for entry in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
-            result.inspected += 1
+            plan.inspected += 1
             let name = entry.lastPathComponent
 
             guard shouldConsider(entry, name: name, snapshot: snapshot, router: router) else {
-                result.leftAlone += 1
+                plan.leftAlone += 1
                 continue
             }
 
             guard let stamp = date(of: entry, basis: snapshot.dateBasis) else {
-                result.leftAlone += 1
+                plan.leftAlone += 1
                 continue
             }
 
             // Anything from today — or inside the grace window — stays loose.
             guard calendar.startOfDay(for: stamp) < cutoff else {
-                result.leftAlone += 1
+                plan.leftAlone += 1
                 continue
             }
 
-            let values = try? entry.resourceValues(forKeys: [.isDirectoryKey])
+            let values = try? entry.resourceValues(forKeys: [
+                .isDirectoryKey, .totalFileAllocatedSizeKey, .fileSizeKey,
+            ])
             let isFolder = values?.isDirectory ?? false
             if !isFolder, !isSettled(entry) {
-                result.leftAlone += 1
+                plan.leftAlone += 1
                 continue
             }
 
             // The rule decides where it goes; the window above already decided
             // that it goes at all.
-            let folderName = router.folderName(forExtension: entry.pathExtension)
-                ?? formatter.string(from: stamp)
-            let destination = root.appendingPathComponent(folderName, isDirectory: true)
-            let target = freeTarget(in: destination, for: name)
+            let claimed = router.folderName(forExtension: entry.pathExtension)
+            let folderName = claimed ?? formatter.string(from: stamp)
 
-            if snapshot.dryRun {
-                result.moves.append(MoveRecord(date: Date(), name: name, folder: folderName, wasPreview: true))
-                continue
+            // The file's own length, as Finder lists it, rather than what it
+            // takes up on disk — this is a list of files, not of space.
+            let size: Int64
+            if isFolder {
+                size = measuring ? FolderUsage.size(of: entry) : 0
+            } else {
+                size = Int64(values?.fileSize ?? 0)
             }
+
+            plan.moves.append(PlannedMove(
+                url: entry,
+                name: name,
+                targetFolder: folderName,
+                stamp: stamp,
+                byteSize: size,
+                isFolder: isFolder,
+                isByType: claimed != nil
+            ))
+        }
+
+        return plan
+    }
+
+    /// Runs one sweep. Blocking — call it off the main thread.
+    static func run(settings snapshot: RunConfiguration) throws -> RunResult {
+        let plan = try plan(settings: snapshot, measuring: snapshot.dryRun)
+        let fileManager = FileManager.default
+
+        var result = RunResult()
+        result.inspected = plan.inspected
+        result.leftAlone = plan.leftAlone
+
+        // Preview mode stops here: the plan is the answer, and nothing on disk
+        // has been opened for writing to produce it.
+        if snapshot.dryRun {
+            result.plan = plan.moves
+            result.moves = plan.moves.map {
+                MoveRecord(date: Date(), name: $0.name, folder: $0.targetFolder, wasPreview: true)
+            }
+            result.finishedAt = Date()
+            return result
+        }
+
+        for move in plan.moves {
+            let destination = snapshot.root.appendingPathComponent(move.targetFolder, isDirectory: true)
+            let target = freeTarget(in: destination, for: move.name)
 
             do {
                 if !fileManager.fileExists(atPath: destination.path) {
                     try fileManager.createDirectory(at: destination, withIntermediateDirectories: true)
                 }
-                try fileManager.moveItem(at: entry, to: target)
-                result.moves.append(MoveRecord(date: Date(), name: name, folder: folderName, wasPreview: false))
+                try fileManager.moveItem(at: move.url, to: target)
+                result.moves.append(MoveRecord(
+                    date: Date(), name: move.name, folder: move.targetFolder, wasPreview: false
+                ))
             } catch {
-                result.errors.append("\(name): \(error.localizedDescription)")
+                result.errors.append("\(move.name): \(error.localizedDescription)")
             }
         }
 
@@ -214,7 +293,7 @@ enum Organizer {
     /// this folder, whatever it had been through before. A photo AirDropped today carries
     /// the day it was shot as its creation date, so that is the wrong day to file it under.
     /// Volumes that don't keep the attribute return nil, hence the fallbacks.
-    private static func date(of url: URL, basis: DateBasis) -> Date? {
+    static func date(of url: URL, basis: DateBasis) -> Date? {
         let values = try? url.resourceValues(forKeys: [
             .addedToDirectoryDateKey, .creationDateKey, .contentModificationDateKey,
         ])
@@ -229,7 +308,7 @@ enum Organizer {
     }
 
     /// Nothing has written to it recently, and its size holds still.
-    private static func isSettled(_ url: URL) -> Bool {
+    static func isSettled(_ url: URL) -> Bool {
         let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
         guard let modified = values?.contentModificationDate else { return true }
 

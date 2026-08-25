@@ -30,6 +30,9 @@ final class Controller: ObservableObject {
     private let settings = Settings.shared
     private let log = ActivityLog.shared
     private let runQueue = DispatchQueue(label: "be.eliostruyf.Tideline.run")
+    /// Reading, never writing: measuring the folder and hashing files for
+    /// duplicates. Kept off `runQueue` so a long look never delays a sweep.
+    private let inspectQueue = DispatchQueue(label: "be.eliostruyf.Tideline.inspect", qos: .utility)
 
     private var watcher: FolderWatcher?
     private var dailyTimer: Timer?
@@ -44,6 +47,22 @@ final class Controller: ObservableObject {
     @Published private(set) var lastError: String?
     @Published private(set) var busy = false
     @Published var loginItemEnabled = false
+
+    /// What the watched folder is holding, as of the last measurement. Nil
+    /// until the first one lands, or while the folder cannot be read.
+    @Published private(set) var usage: FolderUsage?
+    private var measuring = false
+
+    /// What a preview found: everything a sweep would move, for the sheet that
+    /// shows it. Filled by a manual preview only — the daily one just logs.
+    @Published private(set) var plan: [PlannedMove] = []
+    @Published var reviewingPlan = false
+
+    /// Files that exist more than once, as of the last scan.
+    @Published private(set) var duplicates: [DuplicateGroup] = []
+    @Published var reviewingDuplicates = false
+    @Published private(set) var duplicateScanning = false
+    @Published private(set) var collapsing = false
 
     /// Dated folders old enough to clear, as of the last scan.
     @Published private(set) var clearable: [CleanupCandidate] = []
@@ -89,6 +108,7 @@ final class Controller: ObservableObject {
         refreshAccess { [weak self] in
             guard let self else { return }
             self.reconfigure()
+            self.refreshUsage(force: true)
             if self.settings.isEnabled, self.settings.runOnLaunch, self.access.isUsable {
                 self.run(trigger: .launch)
             } else {
@@ -170,7 +190,9 @@ final class Controller: ObservableObject {
 
     // MARK: - Running
 
-    func run(trigger: RunTrigger) {
+    /// `showingPlan` is for the manual preview: the sweep it runs touches
+    /// nothing, and what it would have done opens in a sheet afterwards.
+    func run(trigger: RunTrigger, showingPlan: Bool = false) {
         guard !isRunning else { return }
         guard settings.isEnabled || trigger == .manual else { return }
 
@@ -202,12 +224,14 @@ final class Controller: ObservableObject {
             }
 
             DispatchQueue.main.async {
-                self?.finish(outcome, trigger: trigger, notify: notify)
+                self?.finish(outcome, trigger: trigger, notify: notify, showingPlan: showingPlan)
             }
         }
     }
 
-    private func finish(_ outcome: Result<RunResult, Error>, trigger: RunTrigger, notify: Bool) {
+    private func finish(
+        _ outcome: Result<RunResult, Error>, trigger: RunTrigger, notify: Bool, showingPlan: Bool = false
+    ) {
         isRunning = false
         busy = false
 
@@ -240,6 +264,18 @@ final class Controller: ObservableObject {
             for failure in result.errors {
                 log.write("error: \(failure)")
             }
+
+            // Only ever after a sweep that moved nothing. Preview mode could
+            // have been switched off between the click and the answer, and the
+            // sheet has no business claiming a real sweep was a preview.
+            if showingPlan, configurationIsPreview(result) {
+                plan = result.plan
+                reviewingPlan = true
+            }
+
+            if result.movedCount > 0 || result.clearedCount > 0 {
+                refreshUsage(force: true)
+            }
         }
     }
 
@@ -266,6 +302,10 @@ final class Controller: ObservableObject {
                 log.write("\(record.wasPreview ? "would move" : "moved") \(record.name) -> \(record.folder)/")
             case .cleared:
                 log.write("\(record.wasPreview ? "would clear" : "cleared") \(record.name)/ -> Trash")
+            case .removed:
+                log.write("\(record.wasPreview ? "would trash" : "trashed") \(record.name) — \(record.detail ?? "duplicate")")
+            case .renamed:
+                log.write("\(record.wasPreview ? "would rename" : "renamed") \(record.detail ?? "") -> \(record.name) in \(record.folder)/")
             }
         }
     }
@@ -314,6 +354,8 @@ final class Controller: ObservableObject {
         if !outcome.cleared.isEmpty {
             let gone = Set(outcome.cleared.map(\.name))
             clearable.removeAll { gone.contains($0.name) }
+
+            refreshUsage(force: true)
 
             let noun = outcome.clearedCount == 1 ? "folder" : "folders"
             lastRunSummary = outcome.cleared.allSatisfy(\.wasPreview)
@@ -367,6 +409,7 @@ final class Controller: ObservableObject {
 
         let done = Set(outcome.moved.map(\.name))
         regroupable.removeAll { done.contains($0.name) }
+        refreshUsage(force: true)
 
         let noun = outcome.movedCount == 1 ? "item" : "items"
         var summary = outcome.moved.allSatisfy(\.wasPreview)
@@ -375,6 +418,99 @@ final class Controller: ObservableObject {
         if outcome.emptiedCount > 0 {
             let folders = outcome.emptiedCount == 1 ? "folder" : "folders"
             summary += " · \(outcome.emptiedCount) empty \(folders) to the Trash"
+        }
+        lastRunSummary = summary
+    }
+
+    // MARK: - What the folder holds
+
+    /// Measures the watched folder. Walking it is not free, so a figure this
+    /// fresh is left alone unless the caller insists — after a sweep, say.
+    func refreshUsage(force: Bool = false) {
+        guard access != .denied, access != .missing else {
+            usage = nil
+            return
+        }
+        guard !measuring else { return }
+        if !force, let usage, Date().timeIntervalSince(usage.measuredAt) < 30 { return }
+
+        measuring = true
+        let root = settings.downloadsURL
+        let rules = settings.typeRules
+
+        inspectQueue.async { [weak self] in
+            let measured = FolderUsage.measure(root: root, typeRules: rules)
+            DispatchQueue.main.async {
+                self?.usage = measured
+                self?.measuring = false
+            }
+        }
+    }
+
+    // MARK: - Duplicates
+
+    /// Looks for files that exist more than once. Hashing every candidate is
+    /// the slow part, so this runs off the main thread and the sheet waits.
+    func findDuplicates(completion: @escaping ([DuplicateGroup]) -> Void = { _ in }) {
+        duplicateScanning = true
+        let configuration = DedupeConfiguration(settings)
+
+        inspectQueue.async { [weak self] in
+            let found = Deduper.scan(configuration: configuration)
+            DispatchQueue.main.async {
+                self?.duplicates = found
+                self?.duplicateScanning = false
+                completion(found)
+            }
+        }
+    }
+
+    func collapse(
+        _ groups: [DuplicateGroup],
+        removing: Set<String>,
+        completion: @escaping (DedupeResult) -> Void
+    ) {
+        guard !collapsing, !removing.isEmpty else { return }
+        collapsing = true
+        let configuration = DedupeConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Deduper.collapse(groups, removing: removing, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.finishCollapsing(outcome)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishCollapsing(_ outcome: DedupeResult) {
+        collapsing = false
+        lastError = outcome.errors.first
+        remember(outcome.removed + outcome.renamed + outcome.emptied)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        guard !outcome.removed.isEmpty else { return }
+
+        // What is left is whatever the next scan says; the sheet asks for one
+        // every time it opens, so a stale list is never shown.
+        duplicates = []
+        refreshUsage(force: true)
+
+        let noun = outcome.removedCount == 1 ? "copy" : "copies"
+        let size = FolderUsage.bytes.string(fromByteCount: outcome.reclaimedBytes)
+        var summary = outcome.removed.allSatisfy(\.wasPreview)
+            ? "Previewed trashing \(outcome.removedCount) duplicate \(noun) · \(size)"
+            : "Trashed \(outcome.removedCount) duplicate \(noun) · \(size) back"
+        if !outcome.renamed.isEmpty {
+            let names = outcome.renamed.count == 1 ? "name" : "names"
+            summary += " · \(outcome.renamed.count) \(names) restored"
+        }
+        if !outcome.emptied.isEmpty {
+            let folders = outcome.emptied.count == 1 ? "folder" : "folders"
+            summary += " · \(outcome.emptied.count) empty \(folders) to the Trash"
         }
         lastRunSummary = summary
     }

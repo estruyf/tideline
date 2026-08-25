@@ -24,6 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             .sink { [weak self] _, _, _ in self?.updateStatusItemAppearance() }
             .store(in: &cancellables)
 
+        // The size only appears beside the icon when asked for, but when it is
+        // there it should follow the folder rather than the last time it was read.
+        controller.$usage
+            .combineLatest(settings.$showSizeInMenuBar)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _, _ in self?.updateStatusItemAppearance() }
+            .store(in: &cancellables)
+
         if settings.notifyOnMove {
             controller.requestNotificationPermission()
         }
@@ -115,10 +123,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         status.isEnabled = false
         menu.addItem(status)
 
+        // What the folder is holding, without opening the window for it.
+        let usage = NSMenuItem(title: "Measuring…", action: nil, keyEquivalent: "")
+        usage.tag = 4
+        usage.isEnabled = false
+        menu.addItem(usage)
+
         menu.addItem(.separator())
 
-        menu.addItem(withTitle: "File Downloads Now", action: #selector(runNow), keyEquivalent: "r")
-            .target = self
+        let fileNow = NSMenuItem(title: "File Downloads Now", action: #selector(runNow), keyEquivalent: "r")
+        fileNow.tag = 5
+        fileNow.target = self
+        menu.addItem(fileNow)
 
         let enabled = NSMenuItem(title: "Filing Enabled", action: #selector(toggleEnabled), keyEquivalent: "")
         enabled.tag = 2
@@ -127,6 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(.separator())
 
+        menu.addItem(withTitle: "Review Duplicates…", action: #selector(reviewDuplicates), keyEquivalent: "")
+            .target = self
         menu.addItem(withTitle: "Review Old Folders…", action: #selector(reviewCleanup), keyEquivalent: "")
             .target = self
 
@@ -156,10 +174,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Tideline")
         statusItem?.button?.image?.isTemplate = true
         statusItem?.button?.appearsDisabled = !settings.isEnabled
+
+        if settings.showSizeInMenuBar, let usage = Controller.shared.usage {
+            statusItem?.button?.title = " " + FolderUsage.bytes.string(fromByteCount: usage.totalBytes)
+            statusItem?.button?.imagePosition = .imageLeading
+        } else {
+            statusItem?.button?.title = ""
+            statusItem?.button?.imagePosition = .imageOnly
+        }
     }
 
+    /// In preview mode this files nothing; it opens the window on the sheet
+    /// that lists what a sweep would have done.
     @objc private func runNow() {
-        Controller.shared.run(trigger: .manual)
+        guard settings.dryRun else {
+            Controller.shared.run(trigger: .manual)
+            return
+        }
+        showWindow(nil)
+        DispatchQueue.main.async {
+            Controller.shared.run(trigger: .manual, showingPlan: true)
+        }
     }
 
     @objc private func toggleEnabled() {
@@ -173,6 +208,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // A turn later, so the window is on screen before the sheet is asked for.
         DispatchQueue.main.async {
             Controller.shared.reviewingCleanup = true
+        }
+    }
+
+    /// Same shape as reviewing old folders: the window comes up on the sheet,
+    /// because nothing is trashed anywhere the sheet is not.
+    @objc private func reviewDuplicates() {
+        showWindow(nil)
+        DispatchQueue.main.async {
+            Controller.shared.reviewingDuplicates = true
         }
     }
 
@@ -251,6 +295,7 @@ extension AppDelegate: NSMenuItemValidation {
 extension AppDelegate: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         let controller = Controller.shared
+        controller.refreshUsage()
 
         if let status = menu.item(withTag: 1) {
             switch controller.access {
@@ -263,8 +308,20 @@ extension AppDelegate: NSMenuDelegate {
             }
         }
 
+        if let usage = menu.item(withTag: 4) {
+            let folder = settings.downloadsURL.lastPathComponent
+            usage.title = controller.usage.map { "\(folder) holds \($0.totalDescription)" }
+                ?? "Measuring \(folder)…"
+        }
+
         if let enabled = menu.item(withTag: 2) {
             enabled.state = settings.isEnabled ? .on : .off
+        }
+
+        // Preview mode never files anything, so the item that would say it does
+        // says what it actually does instead.
+        if let fileNow = menu.item(withTag: 5) {
+            fileNow.title = settings.dryRun ? "Preview a Sweep…" : "File Downloads Now"
         }
 
         // Says what the last check found, rather than making you open the window
