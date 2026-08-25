@@ -20,7 +20,7 @@ the day rolls over, yesterday's files move into yesterday's folder on their own.
 macOS 13 or later. A native 1.7 MB app — no Electron, no runtime, no helper
 daemon. It schedules itself and sits in the menu bar.
 
-![The Tideline window: status, when it runs, and what gets filed](./assets/tideline-1.1.0.png)
+![The Tideline window: status, when it runs, and what gets filed](./assets/tideline-1.4.0.png)
 
 **[Download the latest release](https://github.com/estruyf/tideline/releases/latest)**
 
