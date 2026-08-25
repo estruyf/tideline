@@ -145,6 +145,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(withTitle: "Review Duplicates…", action: #selector(reviewDuplicates), keyEquivalent: "")
             .target = self
+        menu.addItem(withTitle: "Review Large Files…", action: #selector(reviewLargeFiles), keyEquivalent: "")
+            .target = self
         menu.addItem(withTitle: "Review Old Folders…", action: #selector(reviewCleanup), keyEquivalent: "")
             .target = self
 
@@ -217,6 +219,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showWindow(nil)
         DispatchQueue.main.async {
             Controller.shared.reviewingDuplicates = true
+        }
+    }
+
+    /// Same shape again: the window comes up on the sheet, because nothing is
+    /// trashed anywhere the sheet is not.
+    @objc private func reviewLargeFiles() {
+        showWindow(nil)
+        DispatchQueue.main.async {
+            Controller.shared.reviewingLargeFiles = true
         }
     }
 

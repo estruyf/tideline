@@ -58,26 +58,7 @@ enum Deduper {
 
     static func scan(configuration: DedupeConfiguration) -> [DuplicateGroup] {
         let fileManager = FileManager.default
-        let root = configuration.root
-        // Every rule's folder, on or off: a rule switched off still has files
-        // sitting in the folder it made while it was on.
-        let router = TypeRouter(rules: configuration.typeRules)
-
-        guard let entries = try? fileManager.contentsOfDirectory(
-            at: root,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
-        ) else { return [] }
-
-        // The root itself, plus the folders Tideline made. Folders you made
-        // yourself are never opened, exactly as filing never opens them.
-        var places: [(url: URL, label: String)] = [(root, root.lastPathComponent)]
-        for entry in entries.sorted(by: { $0.lastPathComponent > $1.lastPathComponent }) {
-            let name = entry.lastPathComponent
-            guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
-            guard Organizer.isManagedFolderName(name) || router.owns(name) else { continue }
-            places.append((entry, name))
-        }
+        let places = ReviewScope.places(root: configuration.root, typeRules: configuration.typeRules)
 
         var buckets: [String: [DuplicateCopy]] = [:]
 
@@ -229,50 +210,13 @@ enum Deduper {
             }
         }
 
-        result.emptied = removeEmptied(touched, moving: everythingRemoved, configuration: configuration)
+        result.emptied = Cleaner.clearEmptied(
+            touched,
+            root: configuration.root,
+            moving: everythingRemoved,
+            dryRun: configuration.dryRun
+        )
         return result
-    }
-
-    /// A dated folder whose last file was a duplicate is no longer telling you
-    /// anything. It goes to the Trash like any other cleared folder — and only
-    /// a dated one: a type folder stays whether or not it has anything in it.
-    private static func removeEmptied(
-        _ paths: Set<String>,
-        moving: Set<String>,
-        configuration: DedupeConfiguration
-    ) -> [MoveRecord] {
-        let fileManager = FileManager.default
-        var cleared: [MoveRecord] = []
-
-        for path in paths.sorted() {
-            let folder = URL(fileURLWithPath: path)
-            let name = folder.lastPathComponent
-            guard folder.path != configuration.root.path else { continue }
-            guard Organizer.isManagedFolderName(name) else { continue }
-
-            guard let contents = try? fileManager.contentsOfDirectory(
-                at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
-            ) else { continue }
-
-            if configuration.dryRun {
-                // Nothing actually moved, so it counts as empty when everything
-                // still inside is on its way out.
-                guard contents.allSatisfy({ moving.contains($0.path) }) else { continue }
-                cleared.append(MoveRecord(
-                    date: Date(), name: name, folder: "Trash", wasPreview: true, kind: .cleared
-                ))
-                continue
-            }
-
-            guard contents.isEmpty else { continue }
-            if (try? fileManager.trashItem(at: folder, resultingItemURL: nil)) != nil {
-                cleared.append(MoveRecord(
-                    date: Date(), name: name, folder: "Trash", wasPreview: false, kind: .cleared
-                ))
-            }
-        }
-
-        return cleared
     }
 
     /// The point of collapsing: with the other copies gone, `artifact-1.zip`

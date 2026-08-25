@@ -164,6 +164,8 @@ once a copy suffix is taken off, and reads through the ones that also match in
 size to check they really are the same file, byte for byte. Two files that
 merely look alike are never called copies.
 
+![The duplicate review: files grouped by what they really are, the newest of each kept and the rest ticked for the Trash](./assets/tideline-review-duplicates.png)
+
 Each group starts with the newest copy kept and the rest ticked for the Trash;
 untick anything you would rather hold on to. A group always keeps a copy — the
 last one standing cannot be ticked. Nothing is compared until you ask, nothing
@@ -200,8 +202,8 @@ last 30 seconds, and the dated folders it created itself.
 ### Clearing
 
 Old dated folders can go to the Trash once you have stopped
-needing them. This is the one part of the app that removes something, so it is
-deliberately narrow:
+needing them. Age is the narrower of the two ways to go about it, and the only
+one that can be left to run on its own:
 
 | Setting | Options |
 | --- | --- |
@@ -215,6 +217,8 @@ decides what shows up when you go looking.
 **Review Old Folders…** lists everything that qualifies with its item count and
 size, all of it ticked. Untick anything you want to keep, then **Move n Folders
 to Trash**. Nothing is removed until you press that button.
+
+![The old-folder review: every dated folder past the age you set, with its item count and size](./assets/review-old-folders.png)
 
 Switching on *Clear on the daily sweep* lets it happen unattended as part of the
 once-a-day run — never on a folder change, so a download landing can never
@@ -233,6 +237,30 @@ Three rules make this safe to leave on:
   is a drag back out of the Trash, not a restore from backup.
 
 Preview mode covers this too: it lists what would go and leaves it all in place.
+
+**Big files** — clearing goes by age; this goes by size. Filing tidies a folder,
+it never shrinks one, and a hundred neatly dated PDFs are not what is taking up
+the space. **Review Large Files…** lists the biggest files in the root and in
+the folders Tideline made, largest first, with the folder each one sits in and
+the day it arrived.
+
+![The big-file review: the largest downloads, largest first, with what ticking them would give back](./assets/tideline-review-big-files.png)
+
+Nothing starts ticked. A duplicate always leaves a copy behind; a big file is
+the only copy there is, so each one is a deliberate choice — and the magnifier
+at the end of a row opens it in Finder, because "can this go?" is usually
+answered by looking at the thing rather than at its name. The footer keeps a
+running total of what ticking them would give back.
+
+**Bigger than** sets the size — 50 MB up to 5 GB, 100 MB to begin with. It sits
+in the sheet as well as in settings, so you can turn it down until the list has
+something in it and back up when it has too much.
+
+The same rules as everywhere else: only plain files, only the root and the
+folders Tideline made — a folder you made yourself is never looked in, and
+neither is anything on the skip list or still downloading. What you tick goes to
+the **Trash**, and a dated folder the removals leave empty goes with it. Preview
+mode previews it. It is on the menu bar too, as **Review Large Files…**.
 
 ### General
 
@@ -275,9 +303,11 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
 run and what the folder is holding, **File Downloads Now**, a **Filing Enabled**
-switch, **Review Duplicates…**, **Review Old Folders…**, **Open Downloads
-Folder**, **Settings…**, **Send Feedback…**, **Check for Updates…** and
-**Quit**.
+switch, **Review Duplicates…**, **Review Large Files…**, **Review Old
+Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…**,
+**Check for Updates…** and **Quit**.
+
+![The menu bar menu: what the last run did, what the folder holds, and the three reviews](./assets/tideline-menubar.png)
 
 **File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
 opens the window on the sheet that lists what a sweep would have moved.
@@ -288,9 +318,9 @@ Other › Show the folder size in the menu bar**, off by default.
 **Check for Updates…** reads **Update to 1.3.0…** once a check has found one,
 so a new version is visible without opening the window.
 
-**Review Old Folders…** brings the window up on the review sheet rather than
-clearing anything where you cannot see it; it is greyed out while clearing is
-set to *Never*.
+All three **Review…** items bring the window up on their sheet rather than
+removing anything where you cannot see it. **Review Old Folders…** is greyed out
+while clearing is set to *Never*.
 
 Launched at login it starts with no window and no Dock icon at all. Clicking the
 app in Finder or Launchpad brings the window back.

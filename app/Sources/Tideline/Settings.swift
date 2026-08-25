@@ -89,6 +89,7 @@ final class Settings: ObservableObject {
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
         static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
         static let duplicateRestoreNames = "duplicateRestoreNames"
+        static let largeFileThresholdMB = "largeFileThresholdMB"
         static let showSizeInMenuBar = "showSizeInMenuBar"
         static let automaticUpdateChecks = "automaticUpdateChecks"
         static let lastUpdateCheckAt = "lastUpdateCheckAt"
@@ -114,6 +115,7 @@ final class Settings: ObservableObject {
             Key.cleanupOnSchedule: false,
             Key.cleanupKeepNewest: 3,
             Key.duplicateRestoreNames: true,
+            Key.largeFileThresholdMB: 100,
             Key.showSizeInMenuBar: false,
             Key.automaticUpdateChecks: true,
         ])
@@ -137,6 +139,7 @@ final class Settings: ObservableObject {
         cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
         cleanupKeepNewest = defaults.integer(forKey: Key.cleanupKeepNewest)
         duplicateRestoreNames = defaults.bool(forKey: Key.duplicateRestoreNames)
+        largeFileThresholdMB = defaults.integer(forKey: Key.largeFileThresholdMB)
         showSizeInMenuBar = defaults.bool(forKey: Key.showSizeInMenuBar)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
         automaticUpdateChecks = defaults.bool(forKey: Key.automaticUpdateChecks)
@@ -183,6 +186,17 @@ final class Settings: ObservableObject {
     @Published var duplicateRestoreNames: Bool {
         didSet { defaults.set(duplicateRestoreNames, forKey: Key.duplicateRestoreNames) }
     }
+
+    /// How big a file has to be before the big-file review lists it, in
+    /// megabytes. Only ever decides what is *shown* — nothing is trashed on
+    /// this setting, or on any schedule, without the sheet saying so. Kept out
+    /// of `store`: it changes nothing about filing.
+    @Published var largeFileThresholdMB: Int {
+        didSet { defaults.set(largeFileThresholdMB, forKey: Key.largeFileThresholdMB) }
+    }
+
+    /// The sizes the review offers, in megabytes.
+    static let largeFileThresholds = [50, 100, 250, 500, 1_000, 5_000]
 
     /// Puts the folder's size next to the menu bar icon, rather than only in
     /// the menu itself.
@@ -258,6 +272,7 @@ final class Settings: ObservableObject {
         cleanupOnSchedule = false
         cleanupKeepNewest = 3
         duplicateRestoreNames = true
+        largeFileThresholdMB = 100
         showSizeInMenuBar = false
         automaticUpdateChecks = true
     }

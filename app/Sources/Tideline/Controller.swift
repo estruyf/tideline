@@ -64,6 +64,12 @@ final class Controller: ObservableObject {
     @Published private(set) var duplicateScanning = false
     @Published private(set) var collapsing = false
 
+    /// Files big enough to be worth a look, as of the last scan.
+    @Published private(set) var largeFiles: [LargeFile] = []
+    @Published var reviewingLargeFiles = false
+    @Published private(set) var largeFileScanning = false
+    @Published private(set) var trimming = false
+
     /// Dated folders old enough to clear, as of the last scan.
     @Published private(set) var clearable: [CleanupCandidate] = []
     /// Drives the review sheet. Owned here rather than by the view, so the menu
@@ -515,6 +521,71 @@ final class Controller: ObservableObject {
         lastRunSummary = summary
     }
 
+    // MARK: - Big files
+
+    /// Looks for the biggest files in the folder. Only a directory listing —
+    /// nothing is read through — but it can pause on a file still being
+    /// written, so it keeps off the main thread like the other scans.
+    func findLargeFiles(completion: @escaping ([LargeFile]) -> Void = { _ in }) {
+        largeFileScanning = true
+        let configuration = LargeFileConfiguration(settings)
+
+        inspectQueue.async { [weak self] in
+            let found = Weigher.scan(configuration: configuration)
+            DispatchQueue.main.async {
+                self?.largeFiles = found
+                self?.largeFileScanning = false
+                completion(found)
+            }
+        }
+    }
+
+    func trim(
+        _ files: [LargeFile],
+        removing: Set<String>,
+        completion: @escaping (TrimResult) -> Void
+    ) {
+        guard !trimming, !removing.isEmpty else { return }
+        trimming = true
+        let configuration = LargeFileConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Weigher.trash(files, removing: removing, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.finishTrimming(outcome)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishTrimming(_ outcome: TrimResult) {
+        trimming = false
+        lastError = outcome.errors.first
+        remember(outcome.removed + outcome.emptied)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        guard !outcome.removed.isEmpty else { return }
+
+        // What is left is whatever the next scan says; the sheet asks for one
+        // every time it opens, so a stale list is never shown.
+        largeFiles = []
+        refreshUsage(force: true)
+
+        let noun = outcome.removedCount == 1 ? "file" : "files"
+        let size = FolderUsage.bytes.string(fromByteCount: outcome.reclaimedBytes)
+        var summary = outcome.removed.allSatisfy(\.wasPreview)
+            ? "Previewed trashing \(outcome.removedCount) big \(noun) · \(size)"
+            : "Trashed \(outcome.removedCount) big \(noun) · \(size) back"
+        if !outcome.emptied.isEmpty {
+            let folders = outcome.emptied.count == 1 ? "folder" : "folders"
+            summary += " · \(outcome.emptied.count) empty \(folders) to the Trash"
+        }
+        lastRunSummary = summary
+    }
+
     // MARK: - Access
 
     func refreshAccess(then completion: (() -> Void)? = nil) {
@@ -545,6 +616,12 @@ final class Controller: ObservableObject {
 
     func revealDownloadsFolder() {
         NSWorkspace.shared.open(settings.downloadsURL)
+    }
+
+    /// Opens Finder on one item, selected — for having a proper look at
+    /// something before agreeing it can go.
+    func reveal(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
     }
 
     func openLogFile() {

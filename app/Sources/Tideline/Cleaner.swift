@@ -190,3 +190,56 @@ extension CleanupConfiguration {
         dryRun = settings.dryRun
     }
 }
+
+// MARK: - Folders left empty
+
+extension Cleaner {
+
+    /// A dated folder whose last file has just gone is no longer telling you
+    /// anything. It goes to the Trash like any other cleared folder — never
+    /// unlinked — and only ever a dated one: a type folder stays whether or not
+    /// there is anything in it.
+    ///
+    /// In preview mode nothing has actually moved, so a folder counts as
+    /// emptied when everything still inside it is on its way out.
+    ///
+    /// Shared by everything that takes files out of a dated folder: collapsing
+    /// duplicates, catching up by type, and trimming the big ones.
+    static func clearEmptied(
+        _ paths: Set<String>,
+        root: URL,
+        moving: Set<String>,
+        dryRun: Bool
+    ) -> [MoveRecord] {
+        let fileManager = FileManager.default
+        var cleared: [MoveRecord] = []
+
+        for path in paths.sorted() {
+            let folder = URL(fileURLWithPath: path)
+            let name = folder.lastPathComponent
+            guard folder.path != root.path else { continue }
+            guard Organizer.isManagedFolderName(name) else { continue }
+
+            guard let contents = try? fileManager.contentsOfDirectory(
+                at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+            ) else { continue }
+
+            if dryRun {
+                guard contents.allSatisfy({ moving.contains($0.path) }) else { continue }
+                cleared.append(MoveRecord(
+                    date: Date(), name: name, folder: "Trash", wasPreview: true, kind: .cleared
+                ))
+                continue
+            }
+
+            guard contents.isEmpty else { continue }
+            if (try? fileManager.trashItem(at: folder, resultingItemURL: nil)) != nil {
+                cleared.append(MoveRecord(
+                    date: Date(), name: name, folder: "Trash", wasPreview: false, kind: .cleared
+                ))
+            }
+        }
+
+        return cleared
+    }
+}

@@ -5,6 +5,25 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Review Large Files…**, under **Clearing**. Clearing out goes by age; this
+  goes by size. It lists the biggest plain files in the root and in the folders
+  Tideline made — dated ones and type folders — largest first, with the folder
+  each one sits in and the day it arrived. Every row has a **Show in Finder**
+  button, because the question "can this go?" is usually answered by looking at
+  it rather than at its name. Nothing starts ticked: a duplicate always leaves a
+  copy behind, but a big file is the only copy there is, so each one is a
+  deliberate choice. What you tick goes to the Trash, and a dated folder left
+  empty by the removals goes with it, as it does after collapsing duplicates.
+  **Bigger than** sets the size — 50 MB up to 5 GB, 100 MB to begin with — and
+  sits in the sheet as well as in settings, so it can be turned down until the
+  list has something in it. Folders you made yourself are never looked in,
+  partial downloads and anything on the skip list are never listed, and preview
+  mode previews it. Also on the menu bar, as **Review Large Files…**.
+
 ## [1.4.0] - 2026-08-25
 
 ### Added

@@ -41,6 +41,9 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingDuplicates) {
             DuplicateView(isPresented: $controller.reviewingDuplicates)
         }
+        .sheet(isPresented: $controller.reviewingLargeFiles) {
+            LargeFileView(isPresented: $controller.reviewingLargeFiles)
+        }
         .sheet(isPresented: $controller.reviewingPlan) {
             PreviewView(isPresented: $controller.reviewingPlan)
         }
@@ -59,6 +62,9 @@ struct MainView: View {
         }
         .onChange(of: controller.reviewingDuplicates) { reviewing in
             if reviewing { tab = .filing }
+        }
+        .onChange(of: controller.reviewingLargeFiles) { reviewing in
+            if reviewing { tab = .clearing }
         }
         .onAppear {
             controller.refreshLoginItem()
@@ -210,6 +216,17 @@ private struct ClearingTab: View {
                 Text("Clearing out")
             } footer: {
                 Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Section {
+                LargeFileSection()
+            } header: {
+                Text("Big files")
+            } footer: {
+                Text("Clearing goes by age; this goes by size. Plain files in the root and in the folders Tideline made, biggest first, each one openable in Finder before you decide. Nothing is ticked for you, and nothing goes without being reviewed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

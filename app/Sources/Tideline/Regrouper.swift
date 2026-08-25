@@ -131,55 +131,18 @@ enum Regrouper {
         }
 
         if configuration.removeEmptied {
-            result.emptied = removeEmptied(
-                touchedFolders,
+            let paths = touchedFolders.map {
+                configuration.root.appendingPathComponent($0, isDirectory: true).path
+            }
+            result.emptied = Cleaner.clearEmptied(
+                Set(paths),
+                root: configuration.root,
                 moving: Set(candidates.map(\.url.path)),
-                configuration: configuration
+                dryRun: configuration.dryRun
             )
         }
 
         return result
-    }
-
-    /// A dated folder with nothing left inside is no longer telling you
-    /// anything. It goes to the Trash like any other cleared folder — never
-    /// unlinked — and only ever when it is genuinely empty.
-    ///
-    /// In preview mode nothing has actually moved, so a folder counts as
-    /// emptied when every item still in it is one of the items being moved.
-    private static func removeEmptied(
-        _ names: Set<String>,
-        moving: Set<String>,
-        configuration: RegroupConfiguration
-    ) -> [MoveRecord] {
-        let fileManager = FileManager.default
-        var cleared: [MoveRecord] = []
-
-        for name in names.sorted() {
-            let folder = configuration.root.appendingPathComponent(name, isDirectory: true)
-            guard let contents = try? fileManager.contentsOfDirectory(
-                at: folder, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
-            ) else { continue }
-
-            if configuration.dryRun {
-                guard contents.allSatisfy({ moving.contains($0.path) }) else { continue }
-                cleared.append(MoveRecord(
-                    date: Date(), name: name, folder: "Trash",
-                    wasPreview: true, kind: .cleared
-                ))
-                continue
-            }
-
-            guard contents.isEmpty else { continue }
-            if (try? fileManager.trashItem(at: folder, resultingItemURL: nil)) != nil {
-                cleared.append(MoveRecord(
-                    date: Date(), name: name, folder: "Trash",
-                    wasPreview: false, kind: .cleared
-                ))
-            }
-        }
-
-        return cleared
     }
 }
 

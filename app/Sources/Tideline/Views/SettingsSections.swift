@@ -458,6 +458,52 @@ struct DuplicateSection: View {
     }
 }
 
+// MARK: - Big files
+
+/// Where the space actually went. Nothing here removes anything on its own —
+/// the size only decides what the sheet shows.
+struct LargeFileSection: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("What is taking up the room")
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Review Large Files…") { controller.reviewingLargeFiles = true }
+                .disabled(controller.largeFileScanning)
+        }
+
+        Picker("Bigger than", selection: $settings.largeFileThresholdMB) {
+            ForEach(Settings.largeFileThresholds, id: \.self) { megabytes in
+                Text(LargeFileView.threshold(megabytes)).tag(megabytes)
+            }
+        }
+    }
+
+    /// Once a scan has run, say what it found rather than repeating the pitch.
+    private var subtitle: String {
+        if controller.largeFileScanning { return "Measuring files…" }
+
+        let files = controller.largeFiles
+        guard !files.isEmpty else {
+            return "The biggest files in the folder, listed largest first, with nothing ticked until you tick it."
+        }
+
+        let noun = files.count == 1 ? "file" : "files"
+        let bytes = files.reduce(Int64(0)) { $0 + $1.byteSize }
+        return "\(files.count) \(noun) over \(LargeFileView.threshold(settings.largeFileThresholdMB)) · \(FolderUsage.bytes.string(fromByteCount: bytes)) between them"
+    }
+}
+
 // MARK: - Skip list
 
 struct SkipListSection: View {
