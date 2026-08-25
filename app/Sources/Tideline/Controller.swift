@@ -53,6 +53,14 @@ final class Controller: ObservableObject {
     @Published private(set) var scanning = false
     @Published private(set) var clearing = false
 
+    /// Files already filed by date that the type rules now claim, as of the
+    /// last scan. Switching a type folder on never moves anything on its own —
+    /// catching up is always asked for, and always reviewed.
+    @Published private(set) var regroupable: [RegroupCandidate] = []
+    @Published var reviewingRegroup = false
+    @Published private(set) var regroupScanning = false
+    @Published private(set) var regrouping = false
+
     private init() {
         history = log.loadHistory()
         lastRunAt = UserDefaults.standard.object(forKey: "lastRunAt") as? Date
@@ -312,6 +320,63 @@ final class Controller: ObservableObject {
                 ? "Previewed clearing \(outcome.clearedCount) \(noun)"
                 : "Cleared \(outcome.clearedCount) \(noun) to the Trash"
         }
+    }
+
+    // MARK: - Catching up
+
+    /// Walks the dated folders for anything the type rules now claim. Reads
+    /// every dated folder, so it runs off the main thread like a sweep does.
+    func findRegroupable(completion: @escaping ([RegroupCandidate]) -> Void = { _ in }) {
+        regroupScanning = true
+        let configuration = RegroupConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let found = Regrouper.candidates(configuration: configuration)
+            DispatchQueue.main.async {
+                self?.regroupable = found
+                self?.regroupScanning = false
+                completion(found)
+            }
+        }
+    }
+
+    func regroup(_ selected: [RegroupCandidate], completion: @escaping (RegroupResult) -> Void) {
+        guard !regrouping, !selected.isEmpty else { return }
+        regrouping = true
+        let configuration = RegroupConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Regrouper.apply(selected, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.finishRegrouping(outcome)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishRegrouping(_ outcome: RegroupResult) {
+        regrouping = false
+        lastError = outcome.errors.first
+        remember(outcome.moved + outcome.emptied)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        guard !outcome.moved.isEmpty else { return }
+
+        let done = Set(outcome.moved.map(\.name))
+        regroupable.removeAll { done.contains($0.name) }
+
+        let noun = outcome.movedCount == 1 ? "item" : "items"
+        var summary = outcome.moved.allSatisfy(\.wasPreview)
+            ? "Previewed regrouping \(outcome.movedCount) \(noun)"
+            : "Regrouped \(outcome.movedCount) \(noun) by type"
+        if outcome.emptiedCount > 0 {
+            let folders = outcome.emptiedCount == 1 ? "folder" : "folders"
+            summary += " · \(outcome.emptiedCount) empty \(folders) to the Trash"
+        }
+        lastRunSummary = summary
     }
 
     // MARK: - Access

@@ -61,7 +61,7 @@ enum OrganizerError: LocalizedError {
 enum Organizer {
 
     /// Extensions that mean "still downloading".
-    private static let incompleteExtensions: Set<String> = [
+    static let incompleteExtensions: Set<String> = [
         "crdownload", "download", "part", "partial", "opdownload", "tmp", "temp", "aria2",
     ]
 
@@ -109,6 +109,8 @@ enum Organizer {
         formatter.timeZone = .current
         formatter.dateFormat = snapshot.folderFormat.dateFormat
 
+        let router = TypeRouter(rules: snapshot.typeRules)
+
         let calendar = Calendar.current
         let cutoff = calendar.date(
             byAdding: .day,
@@ -122,7 +124,7 @@ enum Organizer {
             result.inspected += 1
             let name = entry.lastPathComponent
 
-            guard shouldConsider(entry, name: name, snapshot: snapshot) else {
+            guard shouldConsider(entry, name: name, snapshot: snapshot, router: router) else {
                 result.leftAlone += 1
                 continue
             }
@@ -145,7 +147,10 @@ enum Organizer {
                 continue
             }
 
-            let folderName = formatter.string(from: stamp)
+            // The rule decides where it goes; the window above already decided
+            // that it goes at all.
+            let folderName = router.folderName(forExtension: entry.pathExtension)
+                ?? formatter.string(from: stamp)
             let destination = root.appendingPathComponent(folderName, isDirectory: true)
             let target = freeTarget(in: destination, for: name)
 
@@ -171,8 +176,12 @@ enum Organizer {
 
     // MARK: - Rules
 
-    private static func shouldConsider(_ url: URL, name: String, snapshot: RunConfiguration) -> Bool {
+    private static func shouldConsider(
+        _ url: URL, name: String, snapshot: RunConfiguration, router: TypeRouter
+    ) -> Bool {
         if isManagedFolderName(name) { return false }
+        // A folder a type rule owns is a destination, not something to file.
+        if router.owns(name) { return false }
         if matchesSkipList(name, patterns: snapshot.skipNames) { return false }
 
         let ext = url.pathExtension.lowercased()
@@ -240,7 +249,7 @@ enum Organizer {
     }
 
     /// `report.pdf` → `report-1.pdf` when the name is taken. Nothing is overwritten.
-    private static func freeTarget(in folder: URL, for name: String) -> URL {
+    static func freeTarget(in folder: URL, for name: String) -> URL {
         let fileManager = FileManager.default
         let candidate = folder.appendingPathComponent(name)
         guard fileManager.fileExists(atPath: candidate.path) else { return candidate }
@@ -268,6 +277,8 @@ struct RunConfiguration {
     var includeFolders: Bool = true
     var dryRun: Bool = false
     var skipNames: [String] = []
+    /// Only the rules that are switched on ever reach a sweep.
+    var typeRules: [TypeRule] = []
 }
 
 extension RunConfiguration {
@@ -280,5 +291,6 @@ extension RunConfiguration {
         includeFolders = settings.includeFolders
         dryRun = settings.dryRun
         skipNames = settings.skipNames
+        typeRules = settings.typeRules.filter(\.isEnabled)
     }
 }

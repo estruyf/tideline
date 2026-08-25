@@ -5,6 +5,31 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-08-25
+
+### Added
+
+- **Type folders**, under **Filing**. A folder at the root that takes everything
+  with one of its extensions instead of the dated folder — switch on
+  `Installers` and every `.dmg`, `.pkg`, `.iso` and `.app` lands in
+  `Downloads/Installers/`, whatever day it arrived on. Ships with `Installers`,
+  `Archives`, `Images`, `Documents`, `Spreadsheets`, `Presentations`, `Audio`,
+  `Video` and `Fonts`, **all switched off**, so nothing about filing changes
+  until you turn one on. Each can be renamed or re-scoped, and you can add your
+  own by naming a folder and listing its extensions. A type folder decides where
+  something goes, not when: a `.dmg` downloaded today still stays loose until it
+  is older than the **Leave loose in the root** window. Type folders are flat,
+  are never filed away themselves, and **Clearing out** leaves them alone —
+  only dated folders are ever cleared.
+- **Catch Up…**, next to the type folders. Switching a folder on only steers
+  what arrives next, so this is how the files already filed by date come into
+  line with it: it reads through the dated folders, lists everything the rules
+  now claim grouped by where it would go, and moves only what you leave ticked.
+  A dated folder left empty by the move goes to the Trash. It obeys the same
+  guards a normal sweep does — the skip list, partial downloads, and folders you
+  made yourself, which are never opened — and it never overwrites a name already
+  taken in the type folder. Preview mode previews it.
+
 ## [1.2.0] - 2026-08-24
 
 ### Added
@@ -111,6 +136,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.3.0]: https://github.com/estruyf/tideline/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/estruyf/tideline/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/estruyf/tideline/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/estruyf/tideline/releases/tag/v1.0.0

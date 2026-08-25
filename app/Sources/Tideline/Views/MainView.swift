@@ -35,6 +35,9 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingCleanup) {
             CleanupView(isPresented: $controller.reviewingCleanup)
         }
+        .sheet(isPresented: $controller.reviewingRegroup) {
+            RegroupView(isPresented: $controller.reviewingRegroup)
+        }
         .onChange(of: updater.reveal) { reveal in
             // "Check for Updates…" in the menu bar lands on the section that
             // shows what the check found.
@@ -143,6 +146,17 @@ private struct FilingTab: View {
                 RulesSection()
             } header: {
                 Text("What gets filed")
+            }
+
+            Section {
+                TypeFolderSection()
+            } header: {
+                Text("Type folders")
+            } footer: {
+                Text("A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window above — a type folder decides where something goes, not when. Everything here starts switched off.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Section {
@@ -295,14 +309,25 @@ private struct ExampleTree: View {
     private var sample: String {
         let format = settings.folderFormat
         let older = format == .daily ? "2026-08-19" : "2026-07"
-        return """
-        Downloads/
-        ├── \(older)/       filed away
-        │   ├── invoice.pdf
-        │   └── slides.key
-        ├── report.pdf      arrived today, stays put
-        └── archive.zip     arrived today, stays put
-        """
+
+        var lines = ["Downloads/"]
+
+        // Only drawn once a type folder is switched on, so the picture stays
+        // the plain one for anyone who never touches them.
+        if let typed = settings.typeRules.first(where: { $0.isEnabled && !$0.extensions.isEmpty }) {
+            lines.append("├── \(typed.name)/     by type, whatever the day")
+            lines.append("│   └── setup.\(typed.extensions[0])")
+        }
+
+        lines.append(contentsOf: [
+            "├── \(older)/       filed away",
+            "│   ├── invoice.pdf",
+            "│   └── slides.key",
+            "├── report.pdf      arrived today, stays put",
+            "└── archive.zip     arrived today, stays put",
+        ])
+
+        return lines.joined(separator: "\n")
     }
 
     var body: some View {

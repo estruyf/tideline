@@ -82,6 +82,7 @@ final class Settings: ObservableObject {
         static let includeFolders = "includeFolders"
         static let notifyOnMove = "notifyOnMove"
         static let skipNames = "skipNames"
+        static let typeRules = "typeRules"
         static let cleanupAfterDays = "cleanupAfterDays"
         static let cleanupOnSchedule = "cleanupOnSchedule"
         static let cleanupKeepNewest = "cleanupKeepNewest"
@@ -127,6 +128,7 @@ final class Settings: ObservableObject {
         includeFolders = defaults.bool(forKey: Key.includeFolders)
         notifyOnMove = defaults.bool(forKey: Key.notifyOnMove)
         skipNames = defaults.stringArray(forKey: Key.skipNames) ?? Settings.defaultSkipNames
+        typeRules = Settings.loadTypeRules(from: defaults)
         cleanupAfterDays = defaults.integer(forKey: Key.cleanupAfterDays)
         cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
         cleanupKeepNewest = defaults.integer(forKey: Key.cleanupKeepNewest)
@@ -155,6 +157,10 @@ final class Settings: ObservableObject {
     @Published var includeFolders: Bool { didSet { store(includeFolders, Key.includeFolders) } }
     @Published var notifyOnMove: Bool { didSet { store(notifyOnMove, Key.notifyOnMove) } }
     @Published var skipNames: [String] { didSet { store(skipNames, Key.skipNames) } }
+
+    /// Folders that claim files by extension — `Installers`, `Images` — instead
+    /// of letting the date decide. Every rule ships switched off.
+    @Published var typeRules: [TypeRule] { didSet { storeTypeRules() } }
 
     /// How old a dated folder has to be before it may be cleared. `0` means never.
     /// Nothing is ever removed on this setting alone — clearing runs by hand,
@@ -226,11 +232,30 @@ final class Settings: ObservableObject {
         dryRun = false
         includeFolders = true
         skipNames = Settings.defaultSkipNames
+        typeRules = TypeRule.builtIns
         downloadsPath = Settings.defaultDownloadsPath
         cleanupAfterDays = 90
         cleanupOnSchedule = false
         cleanupKeepNewest = 3
         automaticUpdateChecks = true
+    }
+
+    /// Stored as JSON rather than a plist array, so the shape can grow without
+    /// a migration. A list that fails to decode falls back to the shipped rules,
+    /// all of which are off — filing carries on by date, which is what it did
+    /// before and never the destructive answer.
+    private static func loadTypeRules(from defaults: UserDefaults) -> [TypeRule] {
+        guard
+            let data = defaults.data(forKey: Key.typeRules),
+            let stored = try? JSONDecoder().decode([TypeRule].self, from: data)
+        else { return TypeRule.builtIns }
+
+        return TypeRule.merged(with: stored)
+    }
+
+    private func storeTypeRules() {
+        guard let data = try? JSONEncoder().encode(typeRules) else { return }
+        store(data, Key.typeRules)
     }
 
     private func store(_ value: Any, _ key: String) {

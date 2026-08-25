@@ -115,7 +115,45 @@ A run that is missed while the Mac sleeps fires as soon as it wakes.
 | Folder name | One folder per day (`2026-08-19`) or per month (`2026-08`) |
 | Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
 | File folders too | Whether downloaded folders move like files |
+| Type folders | Send an extension to a folder of its own instead of a dated one |
 | Preview mode | Logs what *would* move and touches nothing |
+
+**Type folders** — a folder at the root that takes everything with one of its
+extensions, instead of the dated folder. Switch on `Installers` and every
+`.dmg`, `.pkg`, `.mpkg`, `.iso` and `.app` lands in `~/Downloads/Installers/`,
+whatever day it arrived on:
+
+```
+~/Downloads/
+├── Installers/
+│   ├── Figma.dmg
+│   └── node.pkg
+├── 2026-08-18/
+│   └── invoice.pdf
+└── report.pdf          ← downloaded today, stays put
+```
+
+The app ships with `Installers`, `Archives`, `Images`, `Documents`,
+`Spreadsheets`, `Presentations`, `Audio`, `Video` and `Fonts`, **all switched
+off** — nothing changes until you turn one on. Any of them can be renamed or
+re-scoped, and **Add a folder of your own** takes a name and a list of
+extensions (`torrent, magnet`) for anything the list does not cover.
+
+Switching a folder on only steers what arrives next — files already tucked into
+a dated folder stay there. **Catch Up…** brings them into line: it looks through
+the dated folders, shows you everything the rules now claim grouped by where it
+would go, and moves only what you leave checked. A dated folder left empty by
+that goes to the Trash. Folders you made yourself are never opened, and a name
+already taken in the type folder is never overwritten — `report.pdf` arrives as
+`report-1.pdf`.
+
+A type folder decides *where* something goes, not *when*. A `.dmg` downloaded
+today still sits loose in the root until it is older than the **Leave loose in
+the root** window — it just goes to `Installers/` rather than to a dated folder
+when its time comes. Type folders are flat, they are never filed away
+themselves, and **Clearing** never touches them: only dated folders are ever
+cleared. Where two folders claim the same extension, the one higher up the list
+takes it, and the window says so.
 
 **Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). It starts
 with `Inbox` and `Screenshots`; both can go. On top of your list, the app always

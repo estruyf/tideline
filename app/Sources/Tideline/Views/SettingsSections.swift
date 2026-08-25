@@ -168,6 +168,257 @@ struct CleanupSection: View {
     }
 }
 
+// MARK: - Type folders
+
+/// Folders that claim files by extension. Everything here is off out of the box,
+/// and switching a rule on only changes *where* a file goes — never when.
+struct TypeFolderSection: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    /// The rule whose editor is open, by id. Only one at a time.
+    @State private var editing: String?
+    @State private var nameDraft = ""
+    @State private var extensionsDraft = ""
+
+    @State private var newName = ""
+    @State private var newExtensions = ""
+    @State private var addingRule = false
+
+    var body: some View {
+        ForEach(settings.typeRules) { rule in
+            VStack(alignment: .leading, spacing: 0) {
+                row(for: rule)
+
+                if editing == rule.id {
+                    Divider()
+                        .padding(.vertical, 10)
+                    editor(for: rule)
+                }
+            }
+        }
+
+        if let clash = conflictNote {
+            Label(clash, systemImage: "exclamationmark.triangle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        addRow
+
+        // Switching a rule on only steers what arrives next. This is how you
+        // bring the files that are already filed by date into line with it.
+        Divider()
+
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Files already filed by date")
+                Text(anyRuleEnabled
+                     ? "Pull what these folders claim out of the dated folders."
+                     : "Switch a folder on above to have something to catch up on.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Catch Up…") { controller.reviewingRegroup = true }
+                .disabled(!anyRuleEnabled)
+        }
+    }
+
+    private var anyRuleEnabled: Bool {
+        settings.typeRules.contains { $0.isEnabled && !$0.extensions.isEmpty }
+    }
+
+    // MARK: Rows
+
+    private func row(for rule: TypeRule) -> some View {
+        HStack(spacing: 8) {
+            Toggle(isOn: binding(for: rule).isEnabled) {
+                Text(rule.name)
+                Text(rule.extensions.isEmpty
+                     ? "No extensions yet — nothing will match"
+                     : rule.displayExtensions)
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                toggleEditor(for: rule)
+            } label: {
+                Image(systemName: editing == rule.id ? "chevron.up" : "slider.horizontal.3")
+            }
+            .buttonStyle(.borderless)
+            .help(editing == rule.id ? "Close" : "Edit \(rule.name)")
+        }
+    }
+
+    @ViewBuilder
+    private func editor(for rule: TypeRule) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Folder name") {
+                TextField("Installers", text: $nameDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { commit(rule) }
+            }
+
+            LabeledContent("Extensions") {
+                TextField("dmg, pkg, iso", text: $extensionsDraft)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { commit(rule) }
+            }
+
+            if !TypeRule.isValidFolderName(nameDraft) {
+                Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            HStack {
+                if rule.isBuiltIn {
+                    Button("Reset") { reset(rule) }
+                        .disabled(TypeRule.builtIn(id: rule.id) == rule)
+                } else {
+                    Button("Remove", role: .destructive) { remove(rule) }
+                }
+
+                Spacer()
+
+                Button("Done") { commit(rule) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!TypeRule.isValidFolderName(nameDraft))
+            }
+            .controlSize(.small)
+        }
+        .padding(.bottom, 2)
+    }
+
+    @ViewBuilder
+    private var addRow: some View {
+        if addingRule {
+            VStack(alignment: .leading, spacing: 10) {
+                LabeledContent("Folder name") {
+                    TextField("Torrents", text: $newName)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(add)
+                }
+
+                LabeledContent("Extensions") {
+                    TextField("torrent, magnet", text: $newExtensions)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(add)
+                }
+
+                HStack {
+                    Button("Cancel") { cancelAdding() }
+                    Spacer()
+                    Button("Add Folder", action: add)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(!canAdd)
+                }
+                .controlSize(.small)
+            }
+        } else {
+            Button {
+                editing = nil
+                addingRule = true
+            } label: {
+                Label("Add a folder of your own", systemImage: "plus")
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    // MARK: Editing
+
+    /// Rules live in an array on `Settings`, so a row edits through its id
+    /// rather than an index that a removal could shift out from under it.
+    private func binding(for rule: TypeRule) -> Binding<TypeRule> {
+        Binding(
+            get: { settings.typeRules.first { $0.id == rule.id } ?? rule },
+            set: { updated in
+                guard let index = settings.typeRules.firstIndex(where: { $0.id == rule.id }) else { return }
+                settings.typeRules[index] = updated
+            }
+        )
+    }
+
+    private func toggleEditor(for rule: TypeRule) {
+        if editing == rule.id {
+            commit(rule)
+            return
+        }
+        addingRule = false
+        editing = rule.id
+        nameDraft = rule.name
+        extensionsDraft = rule.editableExtensions
+    }
+
+    private func commit(_ rule: TypeRule) {
+        let name = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard TypeRule.isValidFolderName(name) else { return }
+
+        var updated = rule
+        updated.name = name
+        updated.extensions = TypeRule.parseExtensions(extensionsDraft)
+        binding(for: rule).wrappedValue = updated
+
+        editing = nil
+    }
+
+    private func reset(_ rule: TypeRule) {
+        guard var shipped = TypeRule.builtIn(id: rule.id) else { return }
+        // Resetting is about the name and the extensions; it does not switch a
+        // folder off behind your back.
+        shipped.isEnabled = rule.isEnabled
+        binding(for: rule).wrappedValue = shipped
+        nameDraft = shipped.name
+        extensionsDraft = shipped.editableExtensions
+    }
+
+    private func remove(_ rule: TypeRule) {
+        settings.typeRules.removeAll { $0.id == rule.id }
+        editing = nil
+    }
+
+    // MARK: Adding
+
+    private var canAdd: Bool {
+        TypeRule.isValidFolderName(newName) && !TypeRule.parseExtensions(newExtensions).isEmpty
+    }
+
+    private func add() {
+        guard canAdd else { return }
+        let rule = TypeRule(
+            id: UUID().uuidString,
+            name: newName.trimmingCharacters(in: .whitespacesAndNewlines),
+            extensions: TypeRule.parseExtensions(newExtensions),
+            isEnabled: true
+        )
+        settings.typeRules.append(rule)
+        cancelAdding()
+    }
+
+    private func cancelAdding() {
+        addingRule = false
+        newName = ""
+        newExtensions = ""
+    }
+
+    // MARK: Conflicts
+
+    /// Two folders asking for the same extension is not an error — the one
+    /// higher up wins — but it is worth saying out loud.
+    private var conflictNote: String? {
+        let clashing = TypeRouter.conflicts(in: settings.typeRules)
+        guard !clashing.isEmpty else { return nil }
+        let list = clashing.prefix(4).map { ".\($0)" }.joined(separator: ", ")
+        let more = clashing.count > 4 ? " and \(clashing.count - 4) more" : ""
+        return "\(list)\(more) is claimed more than once. The folder higher up the list takes it."
+    }
+}
+
 // MARK: - Skip list
 
 struct SkipListSection: View {
