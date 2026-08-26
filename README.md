@@ -148,6 +148,13 @@ counted once, by the widest thing that would take it. Nothing here moves on its
 own: a look only reads, and everything you tick afterwards goes to the Trash
 rather than being deleted outright.
 
+Underneath it is what the folder holds, which is measured up to 60,000 items and
+then reported as a floor — walking a folder past that takes long enough to be
+worth asking about. A folder that big says so instead of quoting a total the
+scans above it can outgrow, and **Scan the folder in full** walks the rest: the
+same reading walk, only allowed to finish, and the exact figure stands for the
+rest of the session.
+
 **The same file, more than once.** Downloading the same file twice is what a
 Downloads folder does. The second one lands as `artifact-1.zip`, the third as `artifact-2.zip`,
 and the name stops telling you anything. **Review Duplicates…** finds them: it
@@ -351,6 +358,12 @@ The swap itself is the last step. The app quits, the new bundle replaces the old
 one, and Tideline reopens on the new version. If the copy fails halfway the old
 app is put straight back and reopened, so a bad download never leaves you
 without the app.
+
+When a check that ran on its own finds something newer, Tideline also says so
+in Notification Centre, once per version, so a new release does not wait for you
+to open the window. *Notify me when a new version is out* switches that off; it
+appears only where notifications were already allowed, since finding an update
+is never a reason to raise a permission prompt.
 
 Nothing downloads or installs on its own — a check only ever offers.
 **Skip This Version** silences one release without silencing the next, and

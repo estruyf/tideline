@@ -627,6 +627,14 @@ private struct ReclaimTab: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if needsFullScan {
+                    Button("Scan the folder in full") { controller.measureFolderInFull() }
+                        .linkButton()
+                        .font(.caption)
+                        .disabled(controller.measuring)
+                        .help("Walks every file in \(shortPath) to replace the floor with the real total")
+                }
             }
 
             Spacer(minLength: 12)
@@ -820,7 +828,27 @@ private struct ReclaimTab: View {
         guard let usage = controller.usage else {
             return "Nothing goes until you say so."
         }
+
+        // Measuring stops at a cap, so on a folder past it the total is a floor
+        // rather than a total — and the scans below are not bounded the same
+        // way, so they can find more than the floor admits is there. "11.55 GB
+        // of more than 10.66 GB" reads as a fault rather than as the two
+        // different measurements it is, so say what happened and offer the walk
+        // that settles it instead of quoting a figure that cannot be compared.
+        if usage.isPartial {
+            if controller.measuring {
+                return "Measuring \(shortPath) in full. It walks every file, so it takes a moment."
+            }
+            return "in \(shortPath) · more than \(usage.itemCapDescription) items here, so a full scan is needed to say what the folder comes to"
+        }
+
         return "of \(usage.totalDescription) in \(shortPath) · nothing goes until you say so"
+    }
+
+    /// The folder was too large to total under the usual cap, so the exact
+    /// figure is there to be asked for.
+    private var needsFullScan: Bool {
+        hasScanned && controller.usage?.isPartial == true
     }
 
     private var shortPath: String {

@@ -5,6 +5,35 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-08-26
+
+### Added
+
+- **A notification when a new version is out.** The daily check already said so
+  in the window and the menu bar, which is no use with the window shut. *Notify
+  me when a new version is out* sits under *Updates* in General, next to the
+  switch that decides whether the check happens at all, and it is on by default
+  — an update nobody hears about is the same as no update. It goes out once per
+  version: a release sits there for weeks, and the same news every morning is
+  not news. It is only ever a notice. Nothing is downloaded or installed by it,
+  and it never raises a permission prompt of its own — finding an update is not
+  a reason to ask — so it appears only where notifications were already allowed.
+
+### Fixed
+
+- **Reclaim space no longer says "11,55 GB of more than 10,66 GB".** Measuring
+  the folder stops after 60,000 items and reports what it reached as a floor,
+  while the three scans that add up to what could go are not bounded the same
+  way. On a folder big enough to hit that cap the amount that could be freed can
+  come out larger than the total it is quoted against, which reads as a fault
+  rather than as the two different measurements it is. Past the cap the line now
+  says how many items are in the way and offers **Scan the folder in full**,
+  which walks every file — the same walk, only allowed to finish — and puts the
+  real total in place of the floor. It is asked for rather than done every time
+  because on a folder holding hundreds of thousands of items it is slow; once
+  asked, it holds for the rest of the session, so the next sweep does not
+  quietly measure the floor back.
+
 ## [1.6.0] - 2026-08-26
 
 ### Changed
@@ -287,6 +316,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.7.0]: https://github.com/estruyf/tideline/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/estruyf/tideline/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/estruyf/tideline/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/estruyf/tideline/compare/v1.3.0...v1.4.0

@@ -92,8 +92,10 @@ final class Settings: ObservableObject {
         static let largeFileThresholdMB = "largeFileThresholdMB"
         static let showSizeInMenuBar = "showSizeInMenuBar"
         static let automaticUpdateChecks = "automaticUpdateChecks"
+        static let notifyOnUpdate = "notifyOnUpdate"
         static let lastUpdateCheckAt = "lastUpdateCheckAt"
         static let skippedUpdateVersion = "skippedUpdateVersion"
+        static let notifiedUpdateVersion = "notifiedUpdateVersion"
     }
 
     private init() {
@@ -118,6 +120,7 @@ final class Settings: ObservableObject {
             Key.largeFileThresholdMB: 100,
             Key.showSizeInMenuBar: false,
             Key.automaticUpdateChecks: true,
+            Key.notifyOnUpdate: true,
         ])
 
         isEnabled = defaults.bool(forKey: Key.isEnabled)
@@ -143,6 +146,7 @@ final class Settings: ObservableObject {
         showSizeInMenuBar = defaults.bool(forKey: Key.showSizeInMenuBar)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
         automaticUpdateChecks = defaults.bool(forKey: Key.automaticUpdateChecks)
+        notifyOnUpdate = defaults.bool(forKey: Key.notifyOnUpdate)
     }
 
     static var defaultDownloadsPath: String {
@@ -220,6 +224,16 @@ final class Settings: ObservableObject {
         didSet { defaults.set(automaticUpdateChecks, forKey: Key.automaticUpdateChecks) }
     }
 
+    /// Whether a background check that finds a new version says so in
+    /// Notification Centre. On by default: an update people never hear about is
+    /// the same as no update. It is still only ever a notice — nothing is
+    /// downloaded or installed by it — and it is never a reason to raise a
+    /// permission prompt. Kept out of `store` for the same reason the setting
+    /// above is: updates have nothing to do with the sweep schedule.
+    @Published var notifyOnUpdate: Bool {
+        didSet { defaults.set(notifyOnUpdate, forKey: Key.notifyOnUpdate) }
+    }
+
     /// When the last check for updates finished.
     var lastUpdateCheckAt: Date? {
         get { defaults.object(forKey: Key.lastUpdateCheckAt) as? Date }
@@ -230,6 +244,14 @@ final class Settings: ObservableObject {
     var skippedUpdateVersion: String? {
         get { defaults.string(forKey: Key.skippedUpdateVersion) }
         set { defaults.set(newValue, forKey: Key.skippedUpdateVersion) }
+    }
+
+    /// The last version a notification went out for. Checks run every day and a
+    /// release sits there for weeks, so without this the same news would arrive
+    /// every morning until it is installed.
+    var notifiedUpdateVersion: String? {
+        get { defaults.string(forKey: Key.notifiedUpdateVersion) }
+        set { defaults.set(newValue, forKey: Key.notifiedUpdateVersion) }
     }
 
     /// Set once the very first launch has shown the welcome screen.
@@ -278,6 +300,7 @@ final class Settings: ObservableObject {
         largeFileThresholdMB = 100
         showSizeInMenuBar = false
         automaticUpdateChecks = true
+        notifyOnUpdate = true
     }
 
     /// Stored as JSON rather than a plist array, so the shape can grow without

@@ -28,6 +28,18 @@ struct UpdateSection: View {
             Text("Once a day, over the GitHub releases page. Nothing is ever downloaded or installed without you saying so.")
         }
 
+        Toggle(isOn: $settings.notifyOnUpdate) {
+            Text("Notify me when a new version is out")
+            Text("A notice in Notification Centre, once per version, and only for a check that ran on its own — asking here always answers in the window instead. It appears where you have already allowed Tideline to notify you; finding an update is not a reason to ask.")
+        }
+        // A notice can only come from a check, so the switch means nothing
+        // without one. Turning it on is the moment to ask for permission;
+        // finding an update is not.
+        .disabled(!settings.automaticUpdateChecks)
+        .onChange(of: settings.notifyOnUpdate) { newValue in
+            if newValue { Controller.shared.requestNotificationPermission() }
+        }
+
         if !updater.canSelfUpdate {
             Label("This build is not running from an installed app, so it can't replace itself.",
                   systemImage: "info.circle")

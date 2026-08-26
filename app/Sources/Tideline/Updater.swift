@@ -305,12 +305,16 @@ final class Updater: ObservableObject {
     }
 
     /// Mentions a new version only where notifications were already allowed —
-    /// finding an update is never a reason to raise a permission prompt.
+    /// finding an update is never a reason to raise a permission prompt — and
+    /// only while the setting for it is on.
     private func notify(about release: Release) {
         guard Bundle.main.bundleIdentifier != nil else { return }
+        guard settings.notifyOnUpdate else { return }
+        guard settings.notifiedUpdateVersion != release.version.description else { return }
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { status in
             guard status.authorizationStatus == .authorized else { return }
+            self.settings.notifiedUpdateVersion = release.version.description
             let content = UNMutableNotificationContent()
             content.title = "Tideline \(release.version) is available"
             content.body = "You are running \(AppInfo.version). Open Tideline to install it."

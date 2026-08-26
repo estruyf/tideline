@@ -51,7 +51,15 @@ final class Controller: ObservableObject {
     /// What the watched folder is holding, as of the last measurement. Nil
     /// until the first one lands, or while the folder cannot be read.
     @Published private(set) var usage: FolderUsage?
-    private var measuring = false
+    /// Published, because the window offers a full measurement of a folder too
+    /// large to total under the usual cap and has to say when one is running.
+    @Published private(set) var measuring = false
+
+    /// Set once someone has asked for the exact figure. Every measurement for
+    /// the rest of the session then walks the whole folder, however long that
+    /// takes — quietly dropping back to the floor after the next sweep would
+    /// undo the asking.
+    private var measureInFull = false
 
     /// What is in the root right now, for the panel on Overview that draws it.
     /// Taken alongside the measurement — both only look, and the window wants
@@ -472,12 +480,13 @@ final class Controller: ObservableObject {
         if !force, let usage, Date().timeIntervalSince(usage.measuredAt) < 30 { return }
 
         measuring = true
+        let cap = measureInFull ? Int.max : FolderUsage.defaultCap
         let root = settings.downloadsURL
         let rules = settings.typeRules
         let configuration = RunConfiguration(settings)
 
         inspectQueue.async { [weak self] in
-            let measured = FolderUsage.measure(root: root, typeRules: rules)
+            let measured = FolderUsage.measure(root: root, cap: cap, typeRules: rules)
             // The listing is a shallow one and the plan behind it touches
             // nothing, so it rides along with the walk rather than costing a
             // second pass over the folder.
@@ -488,6 +497,16 @@ final class Controller: ObservableObject {
                 self?.measuring = false
             }
         }
+    }
+
+    /// Walks the folder without the cap, because someone asked what it
+    /// actually comes to. Nothing here reads a file through — it is the same
+    /// walk, only allowed to finish — but on a folder with hundreds of
+    /// thousands of items it is slow, which is why it is asked for rather than
+    /// done every time.
+    func measureFolderInFull() {
+        measureInFull = true
+        refreshUsage(force: true)
     }
 
     /// The two scans cheap enough to run without being asked: a directory

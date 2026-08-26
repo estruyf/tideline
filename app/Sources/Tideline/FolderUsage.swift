@@ -17,6 +17,9 @@ struct FolderUsage: Equatable {
     var otherFolders: Int = 0
     /// Set when the folder was too large to walk to the end.
     var isPartial: Bool = false
+    /// The cap the walk ran under, so a floor can say how far it got rather
+    /// than only that it stopped somewhere.
+    var itemCap: Int = FolderUsage.defaultCap
     var measuredAt: Date = .distantPast
 
     var filedBytes: Int64 { max(0, totalBytes - looseBytes) }
@@ -34,6 +37,22 @@ struct FolderUsage: Equatable {
         FolderUsage.bytes.string(fromByteCount: filedBytes)
     }
 
+    /// "60,000" — the cap, written the way a sentence about it needs it.
+    var itemCapDescription: String {
+        FolderUsage.counts.string(from: NSNumber(value: itemCap)) ?? "\(itemCap)"
+    }
+
+    /// How far a walk goes before it reports a floor instead of a total. High
+    /// enough that an ordinary Downloads folder is measured exactly, low enough
+    /// that a pathological one cannot hold the inspect queue for a minute.
+    static let defaultCap = 60_000
+
+    static let counts: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter
+    }()
+
     static let bytes: ByteCountFormatter = {
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
@@ -47,9 +66,9 @@ extension FolderUsage {
     /// Walks the folder once. `cap` bounds the work on a folder with tens of
     /// thousands of files: past it the figure is reported as a floor rather
     /// than a total, which is still worth saying and costs a known amount.
-    static func measure(root: URL, cap: Int = 60_000, typeRules: [TypeRule] = []) -> FolderUsage {
+    static func measure(root: URL, cap: Int = defaultCap, typeRules: [TypeRule] = []) -> FolderUsage {
         let fileManager = FileManager.default
-        var usage = FolderUsage(measuredAt: Date())
+        var usage = FolderUsage(itemCap: cap, measuredAt: Date())
 
         let router = TypeRouter(rules: typeRules)
 
