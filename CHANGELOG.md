@@ -287,6 +287,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.6.0]: https://github.com/estruyf/tideline/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/estruyf/tideline/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/estruyf/tideline/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/estruyf/tideline/compare/v1.2.0...v1.3.0
