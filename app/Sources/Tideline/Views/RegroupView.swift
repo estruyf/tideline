@@ -120,7 +120,7 @@ struct RegroupView: View {
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually move.")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.accentText)
                 } else if !chosen.isEmpty {
                     Text("A dated folder left empty by this goes to the Trash.")
                         .font(.caption)

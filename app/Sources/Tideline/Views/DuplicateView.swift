@@ -118,10 +118,10 @@ struct DuplicateView: View {
                 if !isGoing {
                     Text("keeping")
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Theme.success)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.green.opacity(0.12), in: Capsule())
+                        .background(Theme.success.opacity(0.14), in: Capsule())
                 }
 
                 Spacer(minLength: 12)
@@ -131,7 +131,7 @@ struct DuplicateView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 3)
-                    .background(Color.primary.opacity(0.06), in: Capsule())
+                    .background(Theme.hover, in: Capsule())
 
                 Text(Self.day.string(from: copy.date))
                     .font(.caption.monospacedDigit())
@@ -153,7 +153,7 @@ struct DuplicateView: View {
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually be trashed.")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.accentText)
                 } else {
                     Text("Copies go to the Trash, so nothing is lost until you empty it.")
                         .font(.caption)

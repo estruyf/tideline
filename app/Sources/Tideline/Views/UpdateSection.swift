@@ -119,7 +119,7 @@ private struct UpdateStatusView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("The update did not go through", systemImage: "exclamationmark.triangle.fill")
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.danger)
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -146,7 +146,7 @@ private struct AvailableCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "arrow.down.circle.fill")
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Theme.accentText)
                 Text("Tideline \(release.version.description) is available")
                     .font(.callout.weight(.semibold))
                 Spacer(minLength: 8)

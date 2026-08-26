@@ -105,7 +105,7 @@ struct PreviewView: View {
                     .foregroundStyle(.secondary)
                 Text("Preview mode — nothing was moved. Switch it off under Filing to let a sweep do this for real.")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.accentText)
                     .fixedSize(horizontal: false, vertical: true)
             }
 

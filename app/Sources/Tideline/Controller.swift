@@ -53,8 +53,17 @@ final class Controller: ObservableObject {
     @Published private(set) var usage: FolderUsage?
     private var measuring = false
 
+    /// What is in the root right now, for the panel on Overview that draws it.
+    /// Taken alongside the measurement — both only look, and the window wants
+    /// the figure and the picture at the same moment.
+    @Published private(set) var snapshot: FolderSnapshot?
+
     /// What a preview found: everything a sweep would move, for the sheet that
     /// shows it. Filled by a manual preview only — the daily one just logs.
+    /// A pane the window should jump to when it next comes up, set by the menu
+    /// bar. The window clears it once it has moved, the way the updater does.
+    @Published var reveal: MainTab?
+
     @Published private(set) var plan: [PlannedMove] = []
     @Published var reviewingPlan = false
 
@@ -63,6 +72,17 @@ final class Controller: ObservableObject {
     @Published var reviewingDuplicates = false
     @Published private(set) var duplicateScanning = false
     @Published private(set) var collapsing = false
+
+    /// When the two cheap scans last finished. Opening Reclaim space starts
+    /// them, and this is what stops it starting the same walk again every time
+    /// you come back to the pane. Cleared whenever the answer could have moved.
+    @Published private(set) var largeFilesScannedAt: Date?
+    @Published private(set) var clearableScannedAt: Date?
+
+    /// Whether each has run at all, so a card can tell "not looked yet" apart
+    /// from "looked, and there is nothing".
+    var hasScannedLargeFiles: Bool { largeFilesScannedAt != nil }
+    var hasScannedClearable: Bool { clearableScannedAt != nil }
 
     /// Files big enough to be worth a look, as of the last scan.
     @Published private(set) var largeFiles: [LargeFile] = []
@@ -96,7 +116,12 @@ final class Controller: ObservableObject {
 
         NotificationCenter.default.publisher(for: .settingsChanged)
             .debounce(for: .milliseconds(400), scheduler: RunLoop.main)
-            .sink { [weak self] _ in self?.reconfigure() }
+            .sink { [weak self] _ in
+                // The size threshold, the clearing age and the folder itself
+                // all decide what a scan finds.
+                self?.invalidateScans()
+                self?.reconfigure()
+            }
             .store(in: &cancellables)
 
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -115,6 +140,7 @@ final class Controller: ObservableObject {
             guard let self else { return }
             self.reconfigure()
             self.refreshUsage(force: true)
+            self.invalidateScans()
             if self.settings.isEnabled, self.settings.runOnLaunch, self.access.isUsable {
                 self.run(trigger: .launch)
             } else {
@@ -281,6 +307,7 @@ final class Controller: ObservableObject {
 
             if result.movedCount > 0 || result.clearedCount > 0 {
                 refreshUsage(force: true)
+                invalidateScans()
             }
         }
     }
@@ -328,6 +355,7 @@ final class Controller: ObservableObject {
             let found = Cleaner.candidates(configuration: configuration)
             DispatchQueue.main.async {
                 self?.clearable = found
+                self?.clearableScannedAt = Date()
                 self?.scanning = false
                 completion(found)
             }
@@ -362,6 +390,7 @@ final class Controller: ObservableObject {
             clearable.removeAll { gone.contains($0.name) }
 
             refreshUsage(force: true)
+            invalidateScans()
 
             let noun = outcome.clearedCount == 1 ? "folder" : "folders"
             lastRunSummary = outcome.cleared.allSatisfy(\.wasPreview)
@@ -416,6 +445,7 @@ final class Controller: ObservableObject {
         let done = Set(outcome.moved.map(\.name))
         regroupable.removeAll { done.contains($0.name) }
         refreshUsage(force: true)
+        invalidateScans()
 
         let noun = outcome.movedCount == 1 ? "item" : "items"
         var summary = outcome.moved.allSatisfy(\.wasPreview)
@@ -435,6 +465,7 @@ final class Controller: ObservableObject {
     func refreshUsage(force: Bool = false) {
         guard access != .denied, access != .missing else {
             usage = nil
+            snapshot = nil
             return
         }
         guard !measuring else { return }
@@ -443,14 +474,49 @@ final class Controller: ObservableObject {
         measuring = true
         let root = settings.downloadsURL
         let rules = settings.typeRules
+        let configuration = RunConfiguration(settings)
 
         inspectQueue.async { [weak self] in
             let measured = FolderUsage.measure(root: root, typeRules: rules)
+            // The listing is a shallow one and the plan behind it touches
+            // nothing, so it rides along with the walk rather than costing a
+            // second pass over the folder.
+            let listed = FolderSnapshot.take(configuration: configuration)
             DispatchQueue.main.async {
                 self?.usage = measured
+                self?.snapshot = listed
                 self?.measuring = false
             }
         }
+    }
+
+    /// The two scans cheap enough to run without being asked: a directory
+    /// listing for the big files, and a walk of the dated folders for the ones
+    /// old enough to clear. Neither reads a file through.
+    ///
+    /// Duplicates are deliberately not here. Finding them means hashing, which
+    /// means reading candidates end to end, and the app's promise is that
+    /// nothing is compared until you ask — so that one keeps its button.
+    func scanWhatIsCheap(force: Bool = false) {
+        guard access.isUsable else { return }
+
+        if force || largeFilesScannedAt == nil {
+            findLargeFiles()
+        }
+
+        // With clearing switched off nothing is ever old enough, so the walk
+        // would only ever come back empty.
+        if settings.cleanupAfterDays > 0, force || clearableScannedAt == nil {
+            findClearable()
+        }
+    }
+
+    /// Anything that could change what the scans would find puts them back to
+    /// unscanned, so the next visit to Reclaim space looks again rather than
+    /// showing a figure from before the folder moved underneath it.
+    private func invalidateScans() {
+        largeFilesScannedAt = nil
+        clearableScannedAt = nil
     }
 
     // MARK: - Duplicates
@@ -504,6 +570,7 @@ final class Controller: ObservableObject {
         // every time it opens, so a stale list is never shown.
         duplicates = []
         refreshUsage(force: true)
+        invalidateScans()
 
         let noun = outcome.removedCount == 1 ? "copy" : "copies"
         let size = FolderUsage.bytes.string(fromByteCount: outcome.reclaimedBytes)
@@ -534,6 +601,7 @@ final class Controller: ObservableObject {
             let found = Weigher.scan(configuration: configuration)
             DispatchQueue.main.async {
                 self?.largeFiles = found
+                self?.largeFilesScannedAt = Date()
                 self?.largeFileScanning = false
                 completion(found)
             }
@@ -573,6 +641,7 @@ final class Controller: ObservableObject {
         // every time it opens, so a stale list is never shown.
         largeFiles = []
         refreshUsage(force: true)
+        invalidateScans()
 
         let noun = outcome.removedCount == 1 ? "file" : "files"
         let size = FolderUsage.bytes.string(fromByteCount: outcome.reclaimedBytes)
@@ -584,6 +653,45 @@ final class Controller: ObservableObject {
             summary += " · \(outcome.emptied.count) empty \(folders) to the Trash"
         }
         lastRunSummary = summary
+    }
+
+    // MARK: - What could be freed
+
+    /// What the three scans found, with each byte counted once.
+    ///
+    /// They overlap: a big file can sit inside a folder old enough to clear,
+    /// and a duplicate copy can be either or both. Adding the three totals up
+    /// claims more space than the folder holds, so this counts every byte by
+    /// the widest thing that would take it. `overlaps` says whether any byte
+    /// was claimed twice, which is the only reason the window mentions it.
+    var reclaimable: (bytes: Int64, overlaps: Bool) {
+        // Clearing takes whole folders, so anything inside one is already gone.
+        let cleared = clearable.map { $0.url.path + "/" }
+        func isCleared(_ url: URL) -> Bool { cleared.contains { url.path.hasPrefix($0) } }
+
+        var total = clearable.reduce(Int64(0)) { $0 + $1.byteSize }
+        var double = false
+        var counted = Set<String>()
+
+        for file in largeFiles {
+            guard !isCleared(file.url) else { double = true; continue }
+            counted.insert(file.url.path)
+            total += file.byteSize
+        }
+
+        for group in duplicates {
+            // The newest copy is kept, so only the rest are ever reclaimed.
+            for copy in group.copies.dropFirst() {
+                if isCleared(copy.url) || counted.contains(copy.url.path) {
+                    double = true
+                    continue
+                }
+                counted.insert(copy.url.path)
+                total += copy.byteSize
+            }
+        }
+
+        return (total, double)
     }
 
     // MARK: - Access

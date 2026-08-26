@@ -5,6 +5,101 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-08-26
+
+### Changed
+
+- **The window has a palette of its own.** `#ffd43b` is the accent now, taken
+  from the Demo Time theme along with the surfaces around it — the chrome the
+  header band and sidebar sit on, the darker ground the panes use, the cards on
+  top of it, and the one border colour every hairline is drawn in. It is a
+  bright yellow, so nothing on it is ever white: filled controls carry
+  near-black labels, and where the accent has to be *text* on a light
+  background it drops to the theme's own darker gold rather than staying
+  unreadable. Every token has a light value and a dark one, so the window still
+  follows the system appearance — what it no longer follows is the system
+  accent colour.
+
+  Colour means something again, rather than everything urgent being orange. The
+  accent marks what the app put there and what it is about to touch: filled
+  buttons, the selected row, folders it made, files due to move, the figure on
+  Reclaim space. Red is kept for faults — no access, a failed sweep, a name that
+  cannot be used — so a preview-mode notice and a broken permission no longer
+  look alike. Blue is for a button that only navigates, green for running and
+  watching.
+
+- **The window has a sidebar instead of five tabs.** Overview and Reclaim space
+  at the top, the four rules that decide what happens — Schedule, Filing, Type
+  folders, Clearing — grouped under a heading, then the activity log and the
+  general settings. Five tabs had reached the point where Filing held four
+  unrelated things at once and Clearing held two; a pane each says what each
+  one is for. The header shrank to a band: the app's name, what it does in a
+  line, and the on/off switch. The foot of the sidebar says which folder all of
+  this is about and what it is holding, whichever pane is open, so that answer
+  is never a tab away. The window opens at 860×620 rather than 580×640, because
+  a sidebar and a pane want the room across rather than down.
+
+- **Overview shows the folder as it stands, not a sketch of one.** The header
+  used to draw a tidy Downloads folder — the right idea with the wrong contents,
+  since it was the same picture whatever was actually in there. It is now the
+  real listing: the type folders, the dated folders newest first, then whatever
+  is still loose, each saying what it is and whether the next sweep would move
+  it. What it marks as due comes from the same planner a sweep uses, so the
+  panel and a sweep cannot disagree about a file. Beside the size, **Waiting for
+  you** lists whatever the last scan turned up and links straight into the
+  review that deals with it.
+
+- **The menu bar can open the app.** There was only ever **Settings…** down
+  among *Open Downloads Folder* and *Send Feedback…*, which was both hard to
+  find and the wrong name for a window that is mostly Overview, Reclaim space
+  and the activity log. **Open Tideline** (⌘O) now sits at the top of the
+  actions and comes up on whichever pane you left. **Settings…** keeps ⌘, and
+  earns the name by landing on *Filing*.
+
+- **Open at login moved to where it matters.** It had ended up under *General ›
+  Other*, three panes from anything that shows whether the app is running.
+  Filing only happens while Tideline is up, so the switch that decides that now
+  sits in the status card on Overview, with the reason next to it.
+
+- **Overview dropped the folder-size card.** It said *more than 10,8 GB in
+  ~/Downloads* over a bar that, for a tidy folder, is one flat colour — the same
+  figure the corner of the sidebar already carries on every pane. **Waiting for
+  you** takes the full width instead and says what could actually be done: how
+  much could go, and the way through to doing it. The button that re-measures
+  moved to the *Downloads right now* header, which is the panel that re-reads the
+  folder anyway.
+
+  That figure is counted once across the three scans, the same way Reclaim space
+  counts it, so the two panes cannot quote different numbers for the same thing.
+
+- **The two cheap scans no longer wait to be asked.** Landing on Reclaim space
+  to find three buttons and no answers was a dead end. Big files and old dated
+  folders are found by reading names, sizes and dates — a directory listing and
+  a walk, neither of which opens a file — so they now run when the window opens.
+  The sidebar badge and Overview's **Waiting for you** are worth having as a
+  result: they say what is there before you go looking for it.
+
+  Duplicates keep their button. Matching copies means hashing them, which means
+  reading the candidates end to end, and that is not something to start behind
+  your back — **Rescan** covers all three when you do ask. A scan is thrown away
+  whenever the answer could have moved, so what a card shows is never a figure
+  from before the folder shifted underneath it, and a card that looked and found
+  nothing now says so instead of offering the button again.
+
+- **Duplicates, big files and old dated folders share one pane.** They were
+  spread over Filing and Clearing, which is where their *settings* belong but
+  not where the question belongs — all three answer "how much of this could go?"
+  **Reclaim space** puts them together, each scanning only when asked and then
+  showing what it found and the top few rows of it, with the same review sheets
+  as before doing the actual deciding. Nothing about what moves, or where, or
+  when has changed; the scans still only read, and everything ticked still goes
+  to the Trash.
+
+  **Could be freed**, at the top, adds the three up. They overlap — a big file
+  can sit inside a folder old enough to clear, and a duplicate copy can be both
+  — so each byte is counted once, by the widest thing that would take it. Adding
+  the three totals as they stand would claim more space than the folder has.
+
 ## [1.5.0] - 2026-08-25
 
 ### Added

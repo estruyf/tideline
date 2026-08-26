@@ -115,7 +115,7 @@ struct LargeFileView: View {
                 .truncationMode(.middle)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
-                .background(Color.primary.opacity(0.06), in: Capsule())
+                .background(Theme.hover, in: Capsule())
 
             Text(Self.day.string(from: file.date))
                 .font(.caption.monospacedDigit())
@@ -145,7 +145,7 @@ struct LargeFileView: View {
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually be trashed.")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.accentText)
                 } else {
                     Text("Files go to the Trash, so nothing is lost until you empty it.")
                         .font(.caption)

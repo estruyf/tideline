@@ -58,7 +58,7 @@ struct UninstallView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(confirming ? .red : .accentColor)
+                .tint(confirming ? Theme.danger : Theme.accent)
             }
         }
         .padding(24)
@@ -84,7 +84,7 @@ private struct Step: View {
             Text("\(number)")
                 .font(.caption.weight(.bold))
                 .frame(width: 18, height: 18)
-                .background(Color.accentColor.opacity(0.15), in: Circle())
+                .background(Theme.accent.opacity(0.18), in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.callout.weight(.medium))
                 Text(detail)

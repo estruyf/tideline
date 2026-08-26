@@ -7,28 +7,29 @@ struct MainView: View {
     @ObservedObject private var updater = Updater.shared
 
     @State private var showUninstall = false
-    @State private var tab: MainTab = .status
+    @State private var tab: MainTab = .overview
 
     var body: some View {
         VStack(spacing: 0) {
-            HeaderView()
+            HeaderBand()
 
-            // Losing access stops everything, so it is said once above the tabs
-            // rather than on a tab you might not be looking at.
+            // Losing access stops everything, so it is said once above the
+            // sidebar rather than on a pane you might not be looking at.
             if !controller.access.isUsable {
-                Divider()
+                Hairline()
                 AccessBanner()
             }
 
-            Divider()
-            TabStrip(selection: $tab)
-                .background(.background)
-            Divider()
+            Hairline()
 
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            HStack(spacing: 0) {
+                Sidebar(selection: $tab)
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
-        .frame(minWidth: 520, minHeight: 460)
+        .frame(minWidth: 720, minHeight: 520)
+        .tint(Theme.accent)
         .sheet(isPresented: $showUninstall) {
             UninstallView(isPresented: $showUninstall)
         }
@@ -48,7 +49,7 @@ struct MainView: View {
             PreviewView(isPresented: $controller.reviewingPlan)
         }
         .onChange(of: updater.reveal) { reveal in
-            // "Check for Updates…" in the menu bar lands on the section that
+            // "Check for Updates…" in the menu bar lands on the pane that
             // shows what the check found.
             if reveal {
                 tab = .general
@@ -57,83 +58,894 @@ struct MainView: View {
         }
         .onChange(of: controller.reviewingCleanup) { reviewing in
             // Asked for from the menu bar, so dismissing the sheet leaves you on
-            // the tab the sheet came from rather than wherever you last were.
-            if reviewing { tab = .clearing }
+            // the pane the sheet came from rather than wherever you last were.
+            if reviewing { tab = .reclaim }
         }
         .onChange(of: controller.reviewingDuplicates) { reviewing in
-            if reviewing { tab = .filing }
+            if reviewing { tab = .reclaim }
         }
         .onChange(of: controller.reviewingLargeFiles) { reviewing in
-            if reviewing { tab = .clearing }
+            if reviewing { tab = .reclaim }
+        }
+        .onChange(of: controller.reviewingRegroup) { reviewing in
+            if reviewing { tab = .typeFolders }
+        }
+        .onChange(of: controller.reveal) { wanted in
+            guard let wanted else { return }
+            tab = wanted
+            controller.reveal = nil
         }
         .onAppear {
             controller.refreshLoginItem()
             controller.refreshUsage()
+            // The sidebar badge and Overview's "Waiting for you" are only worth
+            // having if they are filled in before you go looking for them.
+            controller.scanWhatIsCheap()
         }
     }
 
     @ViewBuilder
     private var content: some View {
         switch tab {
-        case .status: StatusTab()
+        case .overview: OverviewTab(tab: $tab)
+        case .reclaim: ReclaimTab(tab: $tab)
         case .schedule: ScheduleTab()
         case .filing: FilingTab()
+        case .typeFolders: TypeFolderTab()
         case .clearing: ClearingTab()
+        case .activity: ActivityTab()
         case .general: GeneralTab(showUninstall: $showUninstall)
         }
     }
 }
 
-// MARK: - Status
+// MARK: - Header
 
-private struct StatusTab: View {
+/// One band across the top: what the app is, and the one switch that decides
+/// whether any of the rest of the window means anything.
+private struct HeaderBand: View {
     @ObservedObject private var settings = Settings.shared
-    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        HStack(spacing: 12) {
+            AppIconImage(size: 32)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Tideline")
+                    .font(.callout.weight(.semibold))
+                Text("Today's downloads stay put · everything older is filed by the day it arrived")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            Spacer(minLength: 12)
+
+            Text(settings.isEnabled ? "Filing on" : "Filing paused")
+                .font(.caption)
+                .foregroundStyle(Theme.muted)
+
+            Toggle("", isOn: $settings.isEnabled)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .controlSize(.small)
+                .help(settings.isEnabled ? "Filing is on" : "Filing is paused")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.chrome)
+    }
+}
+
+// MARK: - Overview
+
+private struct OverviewTab: View {
+    @Binding var tab: MainTab
+
     @ObservedObject private var updater = Updater.shared
 
     var body: some View {
-        Form {
-            if showLoginSuggestion {
-                Section { LoginSuggestionCard() }
-            }
-
+        VStack(alignment: .leading, spacing: 13) {
             // Only ever there when there is something to say about an update.
             if updater.hasNews {
-                Section { UpdateBanner() }
+                Panel { UpdateBanner() }
             }
 
-            Section {
-                StatusRow()
+            StatusPanel()
 
-                // How much the folder is actually holding. Filing tidies a
-                // folder; it does not shrink one, and this is where that shows.
-                UsageRow()
+            // The picture of the folder takes whatever room the fixed cards
+            // above and below it leave, and scrolls inside that.
+            FolderPanel()
+                .frame(maxHeight: .infinity)
 
-                // Nothing else on this tab matters if the app is not running,
-                // so the switch that decides that sits with the status.
+            WaitingPanel(tab: $tab)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .paneBackground()
+    }
+
+}
+
+/// Whether it is running, what it did last, and the button that runs it now.
+private struct StatusPanel: View {
+    @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var settings = Settings.shared
+
+    var body: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(dotColor)
+                        .frame(width: 8, height: 8)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(headline)
+                            .font(.callout.weight(.semibold))
+                        Text(detail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    Button {
+                        // In preview mode the sweep touches nothing and what it
+                        // would have done opens in a sheet, like the other reviews.
+                        controller.run(trigger: .manual, showingPlan: settings.dryRun)
+                    } label: {
+                        if controller.busy {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text(settings.dryRun ? "Preview Now" : "File Now")
+                                .foregroundStyle(Theme.onAccent)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(controller.busy)
+
+                    Button("Catch Up…") { controller.reviewingRegroup = true }
+                        .disabled(!anyTypeRuleEnabled)
+                        .help(anyTypeRuleEnabled
+                              ? "Pull what the type folders claim out of the dated folders"
+                              : "Switch a type folder on to have something to catch up on")
+                }
+
+                if let error = controller.lastError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(Theme.danger)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Hairline()
+
+                // Filing only happens while the app is running, so the switch
+                // that decides whether it is belongs with the state it governs
+                // — not three panes away under General.
                 Toggle(isOn: Binding(
                     get: { controller.loginItemEnabled },
                     set: { controller.setLoginItem($0) }
                 )) {
                     Text("Open at login")
-                    Text("Starts in the background with no window and no Dock icon.")
+                        .font(.callout)
+                    Text("Starts in the background with no window and no Dock icon. Left off, nothing is filed until you open Tideline yourself.")
+                        .font(.caption)
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-            } header: {
-                Text("Status")
-            }
-
-            Section {
-                ActivitySection()
-            } header: {
-                Text("Recent activity")
+                .toggleStyle(.switch)
+                .controlSize(.small)
             }
         }
-        .formStyle(.grouped)
     }
 
-    /// Nudge shown until the user either opts in or waves it away once.
-    private var showLoginSuggestion: Bool {
-        !settings.hasAnsweredLoginSuggestion && !controller.loginItemEnabled
+    private var anyTypeRuleEnabled: Bool {
+        settings.typeRules.contains { $0.isEnabled && !$0.extensions.isEmpty }
+    }
+
+    private var dotColor: Color {
+        if !settings.isEnabled { return Theme.muted }
+        if controller.access == .denied || controller.access == .missing { return Theme.danger }
+        return Theme.success
+    }
+
+    private var headline: String {
+        if !settings.isEnabled { return "Paused" }
+        if controller.access == .denied { return "Waiting for permission" }
+        if controller.access == .missing { return "Folder missing" }
+        return controller.busy ? "Filing…" : "Watching \(settings.downloadsURL.lastPathComponent)"
+    }
+
+    private var detail: String {
+        var parts: [String] = [controller.lastRunSummary]
+        if settings.isEnabled, let next = controller.nextRunAt {
+            parts.append("next sweep \(Self.time.string(from: next))")
+        }
+        if settings.dryRun {
+            parts.append("preview mode, nothing is moved")
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    private static let time: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        formatter.doesRelativeDateFormatting = true
+        return formatter
+    }()
+}
+
+/// What is actually in the folder, right now. The window used to draw a sketch
+/// of a tidy Downloads folder here; this is the real one, and what it marks as
+/// due to move is what the next sweep would move.
+private struct FolderPanel: View {
+    @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var settings = Settings.shared
+
+    private var snapshot: FolderSnapshot? { controller.snapshot }
+
+    var body: some View {
+        ListPanel {
+            header
+            Hairline()
+
+            if let snapshot, !snapshot.isEmpty {
+                ScrollView {
+                    rows(of: snapshot)
+                }
+            } else {
+                Text(emptyNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 14)
+            }
+
+            Hairline()
+            footer
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text("Downloads right now")
+                .panelHeader()
+
+            Spacer(minLength: 12)
+
+            Text(tally)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Button("Open in Finder") { controller.revealDownloadsFolder() }
+                .linkButton()
+                .font(.caption)
+
+            // Reading the folder again also re-measures it, since both happen
+            // in the same look.
+            Button {
+                controller.refreshUsage(force: true)
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption)
+            }
+            .buttonStyle(.borderless)
+            .help("Read the folder again")
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 9)
+    }
+
+    @ViewBuilder
+    private func rows(of snapshot: FolderSnapshot) -> some View {
+        let folders = snapshot.entries.filter(\.isFolder)
+        let files = snapshot.entries.filter { !$0.isFolder }
+
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(folders) { entry in
+                EntryRow(entry: entry)
+            }
+
+            // What is filed away, then what is still loose — the split the
+            // whole app is about, drawn where it happens.
+            if !folders.isEmpty && !files.isEmpty {
+                Hairline().padding(.horizontal, 13).padding(.vertical, 4)
+            }
+
+            ForEach(files) { entry in
+                EntryRow(entry: entry)
+            }
+
+            if snapshot.isTruncated {
+                Text("…and more — open the folder in Finder for the rest")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 13)
+                    .padding(.top, 3)
+            }
+        }
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var tally: String {
+        guard let snapshot else { return "" }
+        let loose = snapshot.looseItems == 1 ? "1 loose" : "\(snapshot.looseItems) loose"
+        let filed = "\(snapshot.filedFolders) filed"
+        guard snapshot.dueItems > 0 else { return "\(loose) · \(filed)" }
+        return "\(loose) · \(filed) · \(snapshot.dueItems) due"
+    }
+
+    private var emptyNote: String {
+        guard controller.access.isUsable else {
+            return "Nothing to show until macOS grants access to the folder."
+        }
+        return controller.snapshot == nil ? "Looking…" : "The folder is empty."
+    }
+
+    private var footer: some View {
+        Text("Anything older than \(window) moves into \(destination).")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 8)
+    }
+
+    private var window: String {
+        switch settings.keepRecentDays {
+        case 0: return "today"
+        case 1: return "yesterday"
+        case 2: return "the last three days"
+        default: return "the last \(settings.keepRecentDays + 1) days"
+        }
+    }
+
+    private var destination: String {
+        settings.folderFormat == .daily
+            ? "a folder named for the day it arrived"
+            : "a folder named for the month it arrived"
+    }
+}
+
+private struct EntryRow: View {
+    let entry: FolderSnapshot.Entry
+
+    var body: some View {
+        HStack(spacing: 9) {
+            Image(systemName: entry.isFolder ? "folder.fill" : "doc.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(entry.isFolder ? Theme.accentText : Theme.muted)
+                .frame(width: 14)
+
+            Text(entry.isFolder ? "\(entry.name)/" : entry.name)
+                .font(.system(size: 11.5, design: .monospaced))
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer(minLength: 12)
+
+            Text(note)
+                .font(.caption)
+                .foregroundStyle(entry.isDue ? Theme.accentText : Theme.muted)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 3)
+    }
+
+    private var note: String {
+        let items = entry.itemCount == 1 ? "1 item" : "\(entry.itemCount) items"
+
+        switch entry.kind {
+        case .typeFolder:
+            return "by type · \(items)"
+        case .datedFolder:
+            return "filed · \(items)"
+        case .ownFolder:
+            return entry.isDue ? "yours · moves next sweep" : "yours · \(items)"
+        case .file:
+            guard let stamp = entry.stamp else { return entry.isDue ? "moves next sweep" : "stays put" }
+            let arrived = "arrived \(Self.arrival.localizedString(for: stamp, relativeTo: Date()))"
+            return entry.isDue ? "\(arrived) · moves next sweep" : "\(arrived) · stays put"
+        }
+    }
+
+    private static let arrival: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        return formatter
+    }()
+}
+
+/// What the scans turned up, and the way through to doing something about it.
+/// The card that used to sit beside this one only ever repeated the folder size
+/// the sidebar already carries; this is the half that was worth the room.
+private struct WaitingPanel: View {
+    @Binding var tab: MainTab
+
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    Text("Waiting for you")
+                        .panelHeader()
+
+                    Spacer(minLength: 12)
+
+                    if reclaimable > 0 {
+                        Text("\(FolderUsage.bytes.string(fromByteCount: reclaimable)) could go")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(Theme.accentText)
+
+                        Button("Reclaim space") { tab = .reclaim }
+                            .linkButton()
+                            .font(.caption)
+                    }
+                }
+
+                if rows.isEmpty {
+                    Text(emptyNote)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button("Look for Space to Reclaim") { tab = .reclaim }
+                        .linkButton()
+                        .font(.caption)
+                } else {
+                    ForEach(rows, id: \.label) { row in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Theme.accentText)
+                                .frame(width: 6, height: 6)
+                            Text(row.label)
+                                .font(.caption)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            Button("Review") { row.review() }
+                                .linkButton()
+                                .font(.caption)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private struct Row {
+        var label: String
+        var review: () -> Void
+    }
+
+    private var reclaimable: Int64 { controller.reclaimable.bytes }
+
+    private var rows: [Row] {
+        var found: [Row] = []
+
+        if !controller.duplicates.isEmpty {
+            let sets = controller.duplicates.count == 1 ? "1 duplicate set" : "\(controller.duplicates.count) duplicate sets"
+            let bytes = controller.duplicates.reduce(Int64(0)) { $0 + $1.reclaimable }
+            found.append(Row(label: "\(sets) · \(FolderUsage.bytes.string(fromByteCount: bytes))") {
+                controller.reviewingDuplicates = true
+            })
+        }
+
+        if !controller.largeFiles.isEmpty {
+            let files = controller.largeFiles.count == 1 ? "1 big file" : "\(controller.largeFiles.count) big files"
+            let bytes = controller.largeFiles.reduce(Int64(0)) { $0 + $1.byteSize }
+            found.append(Row(label: "\(files) · \(FolderUsage.bytes.string(fromByteCount: bytes))") {
+                controller.reviewingLargeFiles = true
+            })
+        }
+
+        if !controller.clearable.isEmpty {
+            let folders = controller.clearable.count == 1 ? "1 old folder" : "\(controller.clearable.count) old folders"
+            let bytes = controller.clearable.reduce(Int64(0)) { $0 + $1.byteSize }
+            found.append(Row(label: "\(folders) · \(FolderUsage.bytes.string(fromByteCount: bytes))") {
+                controller.reviewingCleanup = true
+            })
+        }
+
+        return found
+    }
+
+    private var emptyNote: String {
+        if controller.duplicateScanning || controller.largeFileScanning || controller.scanning {
+            return "Looking…"
+        }
+        // Big files and old folders have already been looked for by the time
+        // this is read, so an empty panel means there was nothing — bar the one
+        // scan that still waits to be asked.
+        return controller.hasScannedLargeFiles
+            ? "Nothing big or old enough to bother with. Duplicates are only compared when you ask."
+            : "Nothing found yet."
+    }
+}
+
+// MARK: - Reclaim space
+
+/// Filing never removes anything, so everything that could give space back is
+/// in one place: what was found, what it is worth, and a review before it goes.
+private struct ReclaimTab: View {
+    @Binding var tab: MainTab
+
+    @ObservedObject private var controller = Controller.shared
+    @ObservedObject private var settings = Settings.shared
+
+    var body: some View {
+        VStack(spacing: 0) {
+            headline
+            Hairline()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 13) {
+                    duplicates
+                    largeFiles
+                    oldFolders
+                }
+                .padding(18)
+            }
+
+            Hairline()
+            footnote
+        }
+        .paneBackground()
+        .onAppear {
+            // Opening this pane is the asking. The two that only look at names
+            // and sizes go straight away; duplicates keep their button, because
+            // finding those means reading files through.
+            controller.scanWhatIsCheap()
+        }
+        .onChange(of: settings.largeFileThresholdMB) { _ in
+            // The threshold is set on this pane, so the list it governs should
+            // answer to it without a second trip.
+            controller.findLargeFiles()
+        }
+    }
+
+    private var headline: some View {
+        HStack(alignment: .bottom, spacing: 16) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Could be freed")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+
+                Text(reclaimable > 0 ? FolderUsage.bytes.string(fromByteCount: reclaimable) : "—")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(reclaimable > 0 ? Theme.accentText : Theme.muted)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Rescan") { scanEverything() }
+                .disabled(busy)
+                .help("Look again, duplicates included")
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+    }
+
+    private var footnote: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "info.circle")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            Text(footnoteText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 9)
+    }
+
+    /// The overlap note only appears when there is one, and it belongs down
+    /// here with the other caveats rather than crowding the figure.
+    private var footnoteText: String {
+        let base = "Big files and old folders are looked for when this pane opens; a look only reads. Duplicates wait to be asked, because matching them means reading the candidates through. Everything you tick goes to the Trash, never straight to delete, and a duplicate set always keeps one copy."
+        guard overlaps else { return base }
+        return base + " A big file inside a folder old enough to clear is counted once, not twice."
+    }
+
+    // MARK: Cards
+
+    private var duplicates: some View {
+        ScanCard(
+            title: "Duplicates",
+            summary: duplicateSummary,
+            bytes: controller.duplicates.reduce(Int64(0)) { $0 + $1.reclaimable },
+            isScanning: controller.duplicateScanning,
+            reviewTitle: "Review Duplicates…",
+            review: { controller.reviewingDuplicates = true },
+            scan: { controller.findDuplicates() },
+            rows: controller.duplicates.prefix(3).map { group in
+                ScanCard.Row(
+                    name: group.copies.dropFirst().first?.name ?? group.baseName,
+                    detail: "copy of \(group.baseName)",
+                    size: FolderUsage.bytes.string(fromByteCount: group.reclaimable)
+                )
+            }
+        )
+    }
+
+    private var largeFiles: some View {
+        ScanCard(
+            title: "Big files",
+            summary: largeFileSummary,
+            bytes: controller.largeFiles.reduce(Int64(0)) { $0 + $1.byteSize },
+            isScanning: controller.largeFileScanning,
+            hasScanned: controller.hasScannedLargeFiles,
+            reviewTitle: "Review Large Files…",
+            review: { controller.reviewingLargeFiles = true },
+            scan: { controller.findLargeFiles() },
+            rows: controller.largeFiles.prefix(3).map { file in
+                ScanCard.Row(
+                    name: file.name,
+                    detail: "\(file.folder)/",
+                    size: FolderUsage.bytes.string(fromByteCount: file.byteSize)
+                )
+            }
+        ) {
+            // Filing goes by age; this goes by size, and the size is the only
+            // thing here worth setting — so it sits with the results.
+            Picker("Bigger than", selection: $settings.largeFileThresholdMB) {
+                ForEach(Settings.largeFileThresholds, id: \.self) { megabytes in
+                    Text(LargeFileView.threshold(megabytes)).tag(megabytes)
+                }
+            }
+            .labelsHidden()
+            .controlSize(.small)
+            .fixedSize()
+        }
+    }
+
+    @ViewBuilder
+    private var oldFolders: some View {
+        if settings.cleanupAfterDays == 0 {
+            Panel {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Old dated folders")
+                            .font(.callout.weight(.semibold))
+                        Text("Clearing is switched off, so no folder is ever old enough to go.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 12)
+                    Button("Set an Age…") { tab = .clearing }
+                }
+            }
+        } else {
+            ScanCard(
+                title: "Old dated folders",
+                summary: cleanupSummary,
+                bytes: controller.clearable.reduce(Int64(0)) { $0 + $1.byteSize },
+                isScanning: controller.scanning,
+                hasScanned: controller.hasScannedClearable,
+                reviewTitle: "Review Old Folders…",
+                review: { controller.reviewingCleanup = true },
+                scan: { controller.findClearable() },
+                rows: controller.clearable.prefix(3).map { candidate in
+                    ScanCard.Row(
+                        name: "\(candidate.name)/",
+                        detail: candidate.itemCount == 1 ? "1 item" : "\(candidate.itemCount) items",
+                        size: (candidate.sizeIsPartial ? "more than " : "")
+                            + FolderUsage.bytes.string(fromByteCount: candidate.byteSize)
+                    )
+                }
+            )
+        }
+    }
+
+    // MARK: Summaries
+
+    private var duplicateSummary: String {
+        if controller.duplicateScanning { return "Comparing files…" }
+        guard !controller.duplicates.isEmpty else {
+            return "Files that are here more than once. Nothing is compared until you ask — matching them means reading the candidates through."
+        }
+        let sets = controller.duplicates.count == 1 ? "set" : "sets"
+        return "\(controller.duplicates.count) \(sets) · the newest copy is kept"
+    }
+
+    private var largeFileSummary: String {
+        if controller.largeFileScanning { return "Measuring files…" }
+        let threshold = LargeFileView.threshold(settings.largeFileThresholdMB)
+        guard !controller.largeFiles.isEmpty else {
+            return "The biggest files in the folder, largest first, with nothing ticked until you tick it."
+        }
+        let noun = controller.largeFiles.count == 1 ? "file" : "files"
+        return "\(controller.largeFiles.count) \(noun) over \(threshold)"
+    }
+
+    private var cleanupSummary: String {
+        if controller.scanning { return "Looking through the dated folders…" }
+        guard !controller.clearable.isEmpty else {
+            return "Only the dated folders Tideline made itself, once they are past the age set under Clearing."
+        }
+        let noun = controller.clearable.count == 1 ? "folder" : "folders"
+        let kept = settings.cleanupKeepNewest == 1 ? "the newest is" : "the newest \(settings.cleanupKeepNewest) are"
+        return "\(controller.clearable.count) \(noun) old enough · \(kept) always kept"
+    }
+
+    // MARK: Scanning
+
+    private var busy: Bool {
+        controller.duplicateScanning || controller.largeFileScanning || controller.scanning
+    }
+
+    private var hasScanned: Bool {
+        !controller.duplicates.isEmpty || !controller.largeFiles.isEmpty || !controller.clearable.isEmpty
+    }
+
+    /// Three separate looks at the folder, none of which moves anything. They
+    /// all queue behind each other on the inspect queue, so a sweep is never
+    /// held up by them.
+    private func scanEverything() {
+        controller.findDuplicates()
+        controller.scanWhatIsCheap(force: true)
+    }
+
+    /// Only what a scan actually found — a figure that guessed at the folders
+    /// nobody has looked at yet would be worth nothing. The counting itself
+    /// lives on `Controller`, so this pane and Overview cannot disagree.
+    private var reclaimable: Int64 { controller.reclaimable.bytes }
+
+    /// True when at least one byte was claimed by more than one scan.
+    private var overlaps: Bool { controller.reclaimable.overlaps }
+
+    private var subtitle: String {
+        guard hasScanned else {
+            return busy
+                ? "Looking. A scan only reads — it moves nothing."
+                : "Nothing found so far. A scan only reads — it moves nothing."
+        }
+
+        guard let usage = controller.usage else {
+            return "Nothing goes until you say so."
+        }
+        return "of \(usage.totalDescription) in \(shortPath) · nothing goes until you say so"
+    }
+
+    private var shortPath: String {
+        settings.downloadsPath.replacingOccurrences(of: NSHomeDirectory(), with: "~")
+    }
+}
+
+/// One of the three looks at the folder: what it found, the top of the list,
+/// and the sheet that does the actual deciding.
+private struct ScanCard<Accessory: View>: View {
+    struct Row: Identifiable {
+        var id: String { name + detail }
+        var name: String
+        var detail: String
+        var size: String
+    }
+
+    let title: String
+    let summary: String
+    let bytes: Int64
+    let isScanning: Bool
+    /// Set once this scan has run. Without it a scan that found nothing looks
+    /// exactly like one that never happened, and offers a pointless button.
+    var hasScanned: Bool = false
+    let reviewTitle: String
+    let review: () -> Void
+    let scan: () -> Void
+    let rows: [Row]
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        ListPanel {
+            HStack(spacing: 9) {
+                Circle()
+                    .fill(rows.isEmpty ? Theme.muted.opacity(0.5) : Theme.accentText)
+                    .frame(width: 7, height: 7)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .font(.callout.weight(.semibold))
+                        if bytes > 0 {
+                            Text(FolderUsage.bytes.string(fromByteCount: bytes))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(Theme.accentText)
+                        }
+                    }
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 12)
+
+                accessory
+
+                if isScanning {
+                    ProgressView().controlSize(.small)
+                } else if !rows.isEmpty {
+                    Button(reviewTitle, action: review)
+                } else if hasScanned {
+                    Text("Nothing to reclaim")
+                        .font(.caption)
+                        .foregroundStyle(Theme.muted)
+                } else {
+                    Button("Scan", action: scan)
+                }
+            }
+            .padding(13)
+
+            if !rows.isEmpty {
+                Hairline()
+
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(rows) { row in
+                        HStack(spacing: 9) {
+                            Text(row.name)
+                                .font(.system(size: 11.5, design: .monospaced))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Text(row.detail)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer(minLength: 12)
+                            Text(row.size)
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 3)
+                    }
+                }
+                .padding(.vertical, 6)
+            }
+        }
+    }
+}
+
+extension ScanCard where Accessory == EmptyView {
+    init(
+        title: String,
+        summary: String,
+        bytes: Int64,
+        isScanning: Bool,
+        hasScanned: Bool = false,
+        reviewTitle: String,
+        review: @escaping () -> Void,
+        scan: @escaping () -> Void,
+        rows: [Row]
+    ) {
+        self.init(
+            title: title,
+            summary: summary,
+            bytes: bytes,
+            isScanning: isScanning,
+            hasScanned: hasScanned,
+            reviewTitle: reviewTitle,
+            review: review,
+            scan: scan,
+            rows: rows,
+            accessory: { EmptyView() }
+        )
     }
 }
 
@@ -153,7 +965,7 @@ private struct ScheduleTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .formStyle(.grouped)
+        .settingsPane()
     }
 }
 
@@ -169,28 +981,6 @@ private struct FilingTab: View {
             }
 
             Section {
-                TypeFolderSection()
-            } header: {
-                Text("Type folders")
-            } footer: {
-                Text("A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window above — a type folder decides where something goes, not when. Everything here starts switched off.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Section {
-                DuplicateSection()
-            } header: {
-                Text("Duplicates")
-            } footer: {
-                Text("Copies are found by name and contents, in the root and in the folders Tideline made. Nothing is compared until you ask, nothing goes without being reviewed, and a set always keeps one copy.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Section {
                 SkipListSection()
             } header: {
                 Text("Never touch these")
@@ -201,7 +991,27 @@ private struct FilingTab: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .formStyle(.grouped)
+        .settingsPane()
+    }
+}
+
+// MARK: - Type folders
+
+private struct TypeFolderTab: View {
+    var body: some View {
+        Form {
+            Section {
+                TypeFolderSection()
+            } header: {
+                Text("Type folders")
+            } footer: {
+                Text("A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window set under Filing — a type folder decides where something goes, not when. Everything here starts switched off.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .settingsPane()
     }
 }
 
@@ -215,24 +1025,33 @@ private struct ClearingTab: View {
             } header: {
                 Text("Clearing out")
             } footer: {
-                Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            Section {
-                LargeFileSection()
-            } header: {
-                Text("Big files")
-            } footer: {
-                Text("Clearing goes by age; this goes by size. Plain files in the root and in the folders Tideline made, biggest first, each one openable in Finder before you decide. Nothing is ticked for you, and nothing goes without being reviewed.")
+                Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched. What a clear-out would take back is listed under Reclaim space.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .formStyle(.grouped)
+        .settingsPane()
+    }
+}
+
+// MARK: - Activity log
+
+private struct ActivityTab: View {
+    var body: some View {
+        Form {
+            Section {
+                ActivitySection()
+            } header: {
+                Text("Recent activity")
+            } footer: {
+                Text("The last few hundred things Tideline moved, cleared or renamed. The full record, sweep by sweep, is in the log file under General.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .settingsPane()
     }
 }
 
@@ -279,121 +1098,13 @@ private struct GeneralTab: View {
                 Text("About")
             }
         }
-        .formStyle(.grouped)
-    }
-}
-
-// MARK: - Open at login
-
-private struct LoginSuggestionCard: View {
-    @ObservedObject private var settings = Settings.shared
-    @ObservedObject private var controller = Controller.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Have Tideline open at login", systemImage: "power")
-                .font(.headline)
-
-            Text("Filing only happens while Tideline is running. Started at login it comes up in the background — no window, no Dock icon — and keeps the folder tidy on its own.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            HStack {
-                Button("Open at Login") {
-                    withAnimation(.easeInOut(duration: 0.2)) { controller.setLoginItem(true) }
-                }
-                .buttonStyle(.borderedProminent)
-
-                Button("Not Now") {
-                    withAnimation(.easeInOut(duration: 0.2)) { settings.hasAnsweredLoginSuggestion = true }
-                }
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Header
-
-private struct HeaderView: View {
-    @ObservedObject private var settings = Settings.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 14) {
-                AppIconImage(size: 48)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tideline")
-                        .font(.title2.weight(.semibold))
-                    Text("Today's downloads stay where you left them. Everything older is filed into a folder named for the day it arrived.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 0)
-
-                Toggle("", isOn: $settings.isEnabled)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .help(settings.isEnabled ? "Filing is on" : "Filing is paused")
-            }
-
-            // Above the tabs, so it still reads as the picture of what the app
-            // does — and it keeps tracking the folder-name setting over on Filing.
-            ExampleTree()
-        }
-        .padding(20)
-        .background(.background)
-    }
-}
-
-private struct ExampleTree: View {
-    @ObservedObject private var settings = Settings.shared
-
-    private var sample: String {
-        let format = settings.folderFormat
-        let older = format == .daily ? "2026-08-19" : "2026-07"
-
-        var lines = ["Downloads/"]
-
-        // Only drawn once a type folder is switched on, so the picture stays
-        // the plain one for anyone who never touches them.
-        if let typed = settings.typeRules.first(where: { $0.isEnabled && !$0.extensions.isEmpty }) {
-            lines.append("├── \(typed.name)/     by type, whatever the day")
-            lines.append("│   └── setup.\(typed.extensions[0])")
-        }
-
-        lines.append(contentsOf: [
-            "├── \(older)/       filed away",
-            "│   ├── invoice.pdf",
-            "│   └── slides.key",
-            "├── report.pdf      arrived today, stays put",
-            "└── archive.zip     arrived today, stays put",
-        ])
-
-        return lines.joined(separator: "\n")
-    }
-
-    var body: some View {
-        Text(sample)
-            .font(.system(size: 11, design: .monospaced))
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.primary.opacity(0.08))
-            )
+        .settingsPane()
     }
 }
 
 // MARK: - Access
 
-/// The same warning the form used to carry, restyled to sit above the tabs.
+/// The same warning the form used to carry, restyled to sit above the sidebar.
 private struct AccessBanner: View {
     @ObservedObject private var controller = Controller.shared
     @ObservedObject private var settings = Settings.shared
@@ -402,7 +1113,7 @@ private struct AccessBanner: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundStyle(controller.access == .unknown ? Color.secondary : Color.orange)
+                .foregroundStyle(controller.access == .unknown ? Theme.muted : Theme.danger)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
@@ -427,7 +1138,13 @@ private struct AccessBanner: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
-        .background(Color.orange.opacity(0.08))
+        .background(banner)
+    }
+
+    /// Waiting on macOS to answer is not a fault yet, so the strip only turns
+    /// red once the answer is no.
+    private var banner: Color {
+        controller.access == .unknown ? Theme.hover : Theme.danger.opacity(0.12)
     }
 
     private var title: String {
@@ -452,149 +1169,4 @@ private struct AccessBanner: View {
     private var icon: String {
         controller.access == .unknown ? "hourglass" : "exclamationmark.triangle.fill"
     }
-}
-
-// MARK: - Status
-
-/// What the watched folder is holding right now, and where it sits: loose in
-/// the root, or filed away. Measured off the main thread and cached — the
-/// button asks for a fresh look.
-private struct UsageRow: View {
-    @ObservedObject private var controller = Controller.shared
-    @ObservedObject private var settings = Settings.shared
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "internaldrive")
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(width: 16)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(headline)
-                    .font(.body.weight(.medium))
-                Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 12)
-
-            Button {
-                controller.refreshUsage(force: true)
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .buttonStyle(.borderless)
-            .help("Measure the folder again")
-        }
-        .padding(.vertical, 2)
-    }
-
-    private var folderName: String { settings.downloadsURL.lastPathComponent }
-
-    private var headline: String {
-        if let usage = controller.usage { return "\(folderName) holds \(usage.totalDescription)" }
-        return controller.access.isUsable
-            ? "Measuring \(folderName)…"
-            : "\(folderName) has not been measured"
-    }
-
-    private var detail: String {
-        guard let usage = controller.usage else {
-            return controller.access.isUsable
-                ? "Adding up what is in there."
-                : "Nothing to measure until macOS grants access."
-        }
-
-        let items = usage.looseItems == 1 ? "item" : "items"
-        var parts = ["\(usage.looseDescription) loose in \(usage.looseItems) \(items)"]
-
-        if usage.managedFolders > 0 {
-            let folders = usage.managedFolders == 1 ? "folder" : "folders"
-            parts.append("\(usage.filedDescription) in \(usage.managedFolders) filed \(folders)")
-        }
-        if usage.otherFolders > 0 {
-            let folders = usage.otherFolders == 1 ? "folder" : "folders"
-            parts.append("\(usage.otherFolders) \(folders) of your own")
-        }
-
-        return parts.joined(separator: " · ")
-    }
-}
-
-private struct StatusRow: View {
-    @ObservedObject private var controller = Controller.shared
-    @ObservedObject private var settings = Settings.shared
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(dotColor)
-                    .frame(width: 8, height: 8)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(headline)
-                        .font(.body.weight(.medium))
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                Button {
-                    // In preview mode the sweep touches nothing and what it
-                    // would have done opens in a sheet, like the other reviews.
-                    controller.run(trigger: .manual, showingPlan: settings.dryRun)
-                } label: {
-                    if controller.busy {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Text(settings.dryRun ? "Preview Now" : "File Now")
-                    }
-                }
-                .disabled(controller.busy)
-            }
-
-            if let error = controller.lastError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    private var dotColor: Color {
-        if !settings.isEnabled { return .secondary }
-        if controller.access == .denied || controller.access == .missing { return .orange }
-        return .green
-    }
-
-    private var headline: String {
-        if !settings.isEnabled { return "Paused" }
-        if controller.access == .denied { return "Waiting for permission" }
-        if controller.access == .missing { return "Folder missing" }
-        return controller.busy ? "Filing…" : "Watching \(settings.downloadsURL.lastPathComponent)"
-    }
-
-    private var detail: String {
-        var parts: [String] = [controller.lastRunSummary]
-        if settings.isEnabled, let next = controller.nextRunAt {
-            parts.append("next sweep \(Self.time.string(from: next))")
-        }
-        if settings.dryRun {
-            parts.append("preview mode, nothing is moved")
-        }
-        return parts.joined(separator: " · ")
-    }
-
-    private static let time: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
-        formatter.doesRelativeDateFormatting = true
-        return formatter
-    }()
 }

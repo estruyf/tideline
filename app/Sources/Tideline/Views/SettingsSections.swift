@@ -272,7 +272,7 @@ struct TypeFolderSection: View {
             if !TypeRule.isValidFolderName(nameDraft) {
                 Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
                     .font(.caption)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.danger)
             }
 
             HStack {
@@ -419,91 +419,6 @@ struct TypeFolderSection: View {
     }
 }
 
-// MARK: - Duplicates
-
-/// Downloading the same file twice is what a Downloads folder does. This is
-/// the way back out of it: compare, review, keep one.
-struct DuplicateSection: View {
-    @ObservedObject private var controller = Controller.shared
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("The same file, more than once")
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 12)
-
-            Button("Review Duplicates…") { controller.reviewingDuplicates = true }
-                .disabled(controller.duplicateScanning)
-        }
-    }
-
-    /// Once a scan has run, say what it found rather than repeating the pitch.
-    private var subtitle: String {
-        if controller.duplicateScanning { return "Comparing files…" }
-
-        let groups = controller.duplicates
-        guard !groups.isEmpty else {
-            return "artifact.zip and artifact-1.zip, byte for byte the same. The newest is kept, the rest go to the Trash."
-        }
-
-        let noun = groups.count == 1 ? "file is" : "files are"
-        let bytes = groups.reduce(Int64(0)) { $0 + $1.reclaimable }
-        return "\(groups.count) \(noun) here more than once · \(FolderUsage.bytes.string(fromByteCount: bytes)) to reclaim"
-    }
-}
-
-// MARK: - Big files
-
-/// Where the space actually went. Nothing here removes anything on its own —
-/// the size only decides what the sheet shows.
-struct LargeFileSection: View {
-    @ObservedObject private var settings = Settings.shared
-    @ObservedObject private var controller = Controller.shared
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("What is taking up the room")
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 12)
-
-            Button("Review Large Files…") { controller.reviewingLargeFiles = true }
-                .disabled(controller.largeFileScanning)
-        }
-
-        Picker("Bigger than", selection: $settings.largeFileThresholdMB) {
-            ForEach(Settings.largeFileThresholds, id: \.self) { megabytes in
-                Text(LargeFileView.threshold(megabytes)).tag(megabytes)
-            }
-        }
-    }
-
-    /// Once a scan has run, say what it found rather than repeating the pitch.
-    private var subtitle: String {
-        if controller.largeFileScanning { return "Measuring files…" }
-
-        let files = controller.largeFiles
-        guard !files.isEmpty else {
-            return "The biggest files in the folder, listed largest first, with nothing ticked until you tick it."
-        }
-
-        let noun = files.count == 1 ? "file" : "files"
-        let bytes = files.reduce(Int64(0)) { $0 + $1.byteSize }
-        return "\(files.count) \(noun) over \(LargeFileView.threshold(settings.largeFileThresholdMB)) · \(FolderUsage.bytes.string(fromByteCount: bytes)) between them"
-    }
-}
-
 // MARK: - Skip list
 
 struct SkipListSection: View {
@@ -581,7 +496,7 @@ struct ActivitySection: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
-                        .background(Color.primary.opacity(0.06), in: Capsule())
+                        .background(Theme.hover, in: Capsule())
                 }
                 .padding(.vertical, 1)
             }
@@ -608,10 +523,10 @@ struct ActivitySection: View {
     }
 
     private func tint(for record: MoveRecord) -> Color {
-        if record.wasPreview { return .secondary }
+        if record.wasPreview { return Theme.muted }
         switch record.kind {
-        case .filed, .renamed: return .accentColor
-        case .cleared, .removed: return .orange
+        case .filed, .renamed: return Theme.link
+        case .cleared, .removed: return Theme.accentText
         }
     }
 
@@ -648,7 +563,7 @@ struct AboutSection: View {
             Spacer(minLength: 12)
 
             Link("Send Feedback", destination: AppInfo.newIssue)
-                .buttonStyle(.link)
+                .linkButton()
         }
         .padding(.vertical, 2)
 

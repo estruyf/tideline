@@ -63,6 +63,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     // MARK: - Window
 
+    /// `⌘,` is a reflex on macOS and it should land somewhere that deserves the
+    /// name — the rules, rather than wherever the window was last left.
+    @objc func showSettings() {
+        Controller.shared.reveal = .filing
+        showWindow(nil)
+    }
+
     @objc func showWindow(_ sender: Any?) {
         NSApp.setActivationPolicy(.regular)
 
@@ -72,10 +79,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             window.title = "Tideline"
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             window.titlebarAppearsTransparent = true
+            // The band under the titlebar already says the app's name, so the
+            // titlebar itself does not say it a second time.
+            window.titleVisibility = .hidden
+            // The titlebar is transparent, so what shows through it is the
+            // window's own background. Painting it the theme's chrome makes the
+            // strip behind the traffic lights continue the header band rather
+            // than sitting on a slab of system grey.
+            window.backgroundColor = Theme.chromeNSColor
             window.isReleasedWhenClosed = false
             window.delegate = self
-            window.setContentSize(NSSize(width: 580, height: 640))
-            window.contentMinSize = NSSize(width: 520, height: 460)
+            window.setContentSize(NSSize(width: 860, height: 620))
+            window.contentMinSize = NSSize(width: 720, height: 520)
             window.center()
             self.window = window
         }
@@ -131,6 +146,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(.separator())
 
+        // The window is Overview, Reclaim space and the activity log as much as
+        // it is settings, so opening it says so and comes before the actions.
+        menu.addItem(withTitle: "Open Tideline", action: #selector(showWindow(_:)), keyEquivalent: "o")
+            .target = self
+
+        menu.addItem(.separator())
+
         let fileNow = NSMenuItem(title: "File Downloads Now", action: #selector(runNow), keyEquivalent: "r")
         fileNow.tag = 5
         fileNow.target = self
@@ -154,7 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         menu.addItem(withTitle: "Open Downloads Folder", action: #selector(openDownloads), keyEquivalent: "")
             .target = self
-        menu.addItem(withTitle: "Settings…", action: #selector(showWindow(_:)), keyEquivalent: ",")
+        menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
             .target = self
         menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
             .target = self
@@ -260,7 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                         action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "").target = self
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Settings…", action: #selector(showWindow(_:)), keyEquivalent: ",").target = self
+        appMenu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",").target = self
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Hide Tideline", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())

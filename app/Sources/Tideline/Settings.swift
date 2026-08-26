@@ -206,6 +206,9 @@ final class Settings: ObservableObject {
 
     /// Set once the user has either accepted or waved away the open-at-login suggestion.
     /// Kept out of `store` so answering it never triggers a reconfigure.
+    /// Set the first time the login switch is touched. Nothing reads it now
+    /// that the switch is on Overview rather than behind a first-run card, but
+    /// it is kept so an upgrade never re-runs an onboarding that was answered.
     @Published var hasAnsweredLoginSuggestion: Bool {
         didSet { defaults.set(hasAnsweredLoginSuggestion, forKey: Key.hasAnsweredLoginSuggestion) }
     }

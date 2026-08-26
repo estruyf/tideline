@@ -118,6 +118,13 @@ Cross-*building* the installer from macOS does not work; CI builds it on
 - Anything persisted to disk (`history.json`) decodes leniently, with
   `decodeIfPresent` and a fallback, so an upgrade never blanks someone's
   activity list.
+- **Colour comes from `Views/Theme.swift`, never from a literal or a system
+  semantic.** `#ffd43b` is the accent and it is a filled-surface colour — its
+  labels are `Theme.onAccent`, and accent-as-text is `Theme.accentText` so the
+  light appearance can darken it. Keep the meanings apart: accent for what the
+  app put there or is about to touch, `danger` for faults, `link` for a button
+  that only navigates, `success` for running. Every token carries a light value
+  and a dark one, so a new one is added in pairs.
 - Comments explain **why**, in prose, in full sentences. The codebase reads like
   its own documentation — match that rather than annotating what the next line
   already says.

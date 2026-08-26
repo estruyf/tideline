@@ -101,7 +101,7 @@ struct CleanupView: View {
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually move.")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.accentText)
                 }
             }
 

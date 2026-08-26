@@ -20,7 +20,7 @@ the day rolls over, yesterday's files move into yesterday's folder on their own.
 macOS 13 or later. A native 1.7 MB app — no Electron, no runtime, no helper
 daemon. It schedules itself and sits in the menu bar.
 
-![The Tideline window: status, when it runs, and what gets filed](./assets/tideline-1.4.0.png)
+![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.6.0/overview.png)
 
 **[Download the latest release](https://github.com/estruyf/tideline/releases/latest)**
 
@@ -83,88 +83,73 @@ Privacy Settings** button. Switch on *Downloads Folder* for Tideline under
 
 The window also offers to start Tideline at login, since filing only happens
 while the app is running. **Open at Login** switches it on; **Not Now** hides
-the suggestion for good. Either way the same switch stays on the **Status**
-tab, under the run summary.
+the suggestion for good. Either way the same switch stays on the **General**
+pane.
 
 ## The window
 
-A header that stays put — the app's name, the master on/off switch, a sketch of
-how the folder will end up looking, and an orange banner if macOS is blocking
-access — above five tabs. The sketch follows the folder-name setting, so
-switching between daily and monthly shows its result straight away.
+A band across the top that stays put — the app's name, what it does in one
+line, and the master on/off switch — with a sidebar down the left and one pane
+at a time beside it. If macOS is blocking access, an orange banner sits under
+the band, above everything. The sidebar's foot always says which folder this is
+all about and what it is holding, whichever pane is open.
 
-### Status
+The palette is the app's own rather than the system accent — `#ffd43b` on the
+surfaces that come with it, from the [Demo Time
+theme](https://github.com/estruyf/vscode-demotime-theme). It still follows Light
+and Dark mode: every colour has both. Yellow marks what Tideline put there and
+what it is about to touch — a filled button, the selected pane, the folders it
+made, a file due to move. Red is kept for faults, blue for a button that only
+navigates, green for running and watching.
+
+### Overview
 
 Whether filing is on, when it last ran, what it did, and when the next sweep is
-due. **File Now** runs one immediately, and **Open at login** decides whether
-Tideline is around to run at all — it starts in the background with no window
-and no Dock icon.
+due. **File Now** runs one immediately; **Catch Up…** is beside it once a type
+folder is switched on. **Open at login** sits in the same card, because filing
+only happens while the app is running and that switch decides whether it is.
 
-Under that, what the folder is actually holding: *Downloads holds 14.2 GB*, and
-where it sits — how much is still loose in the root, how much is filed away, and
-how many folders that is. Filing tidies a folder; it does not shrink one, and
-this is the line that says so. It is measured in the background after every
-sweep, and the button beside it asks for a fresh look.
+Under that, the folder as it stands right now — the type folders, the dated
+folders newest first, then whatever is still loose, each one saying what it is
+and whether the next sweep would move it. The window used to draw a sketch of a
+tidy Downloads folder here, which was the same picture whatever was actually in
+there; this is the real one. What it marks as due comes from the same planner a
+sweep uses, so the panel and a sweep cannot disagree about a file.
 
-Below that, the last dozen moves, with a link to the full log
-at `~/Library/Logs/Tideline.log`.
+Across the bottom, **Waiting for you**: what the scans turned up, how much of it
+could go, and a link straight into the review that deals with each. Filing tidies
+a folder; it does not shrink one, and this is the line that says so. The folder's
+own size is in the corner of the sidebar, where it is true on every pane.
 
-### Schedule
+### Reclaim space
 
-Any combination of:
+Filing never removes anything, so everything that could give space back is in
+one place: duplicates, big files, and dated folders old enough to clear. Each
+shows what it found and the top few rows of it, with the review that decides
+what actually goes.
 
-| Setting | What it does |
-| --- | --- |
-| As soon as the folder changes | Watches `~/Downloads` and sweeps once things go quiet for 8 seconds |
-| Once a day, at a time you pick | Default 00:05, so yesterday's files get filed on a quiet morning |
-| When the app starts | Covers a scheduled run missed because the Mac was off |
+![Reclaim space: what could be freed in one figure, then duplicates, big files and old dated folders, each with the top few rows of what it found](./assets/1.6.0/reclaim-space.png)
 
-A run that is missed while the Mac sleeps fires as soon as it wakes.
+Two of the three look on their own. Big files and old dated folders are found by
+reading names, sizes and dates — a directory listing and a walk, neither of which
+opens a file — so they run when the window opens and the answer is already there
+when you arrive. **Duplicates keep their button.** Matching copies means hashing
+them, which means reading the candidates end to end, and that is not something to
+start behind your back.
 
-### Filing
+**Rescan** at the top looks again, duplicates included. A scan is also thrown
+away whenever the answer could have moved — after a sweep, after anything goes to
+the Trash, after a setting that governs it changes — so the next look is a fresh
+one rather than a figure from before the folder shifted underneath it.
 
-| Setting | Options |
-| --- | --- |
-| Folder | `~/Downloads` by default; pick any folder |
-| Leave loose in the root | Today only, today and yesterday, the last 3 days, the last week |
-| Folder name | One folder per day (`2026-08-19`) or per month (`2026-08`) |
-| Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
-| File folders too | Whether downloaded folders move like files |
-| Type folders | Send an extension to a folder of its own instead of a dated one |
-| Duplicates | Find files that are here more than once and keep one copy |
-| Preview mode | Shows what *would* move and touches nothing |
+**Could be freed** adds the three up. They overlap — a big file can sit inside a
+folder old enough to clear, and a duplicate copy can be both — so each byte is
+counted once, by the widest thing that would take it. Nothing here moves on its
+own: a look only reads, and everything you tick afterwards goes to the Trash
+rather than being deleted outright.
 
-**Type folders** — a folder at the root that takes everything with one of its
-extensions, instead of the dated folder. Switch on `Installers` and every
-`.dmg`, `.pkg`, `.mpkg`, `.iso` and `.app` lands in `~/Downloads/Installers/`,
-whatever day it arrived on:
-
-```
-~/Downloads/
-├── Installers/
-│   ├── Figma.dmg
-│   └── node.pkg
-├── 2026-08-18/
-│   └── invoice.pdf
-└── report.pdf          ← downloaded today, stays put
-```
-
-The app ships with `Installers`, `Archives`, `Images`, `Documents`,
-`Spreadsheets`, `Presentations`, `Audio`, `Video` and `Fonts`, **all switched
-off** — nothing changes until you turn one on. Any of them can be renamed or
-re-scoped, and **Add a folder of your own** takes a name and a list of
-extensions (`torrent, magnet`) for anything the list does not cover.
-
-Switching a folder on only steers what arrives next — files already tucked into
-a dated folder stay there. **Catch Up…** brings them into line: it looks through
-the dated folders, shows you everything the rules now claim grouped by where it
-would go, and moves only what you leave checked. A dated folder left empty by
-that goes to the Trash. Folders you made yourself are never opened, and a name
-already taken in the type folder is never overwritten — `report.pdf` arrives as
-`report-1.pdf`.
-
-**Duplicates** — downloading the same file twice is what a Downloads folder
-does. The second one lands as `artifact-1.zip`, the third as `artifact-2.zip`,
+**The same file, more than once.** Downloading the same file twice is what a
+Downloads folder does. The second one lands as `artifact-1.zip`, the third as `artifact-2.zip`,
 and the name stops telling you anything. **Review Duplicates…** finds them: it
 compares the root and the folders Tideline made, groups files whose names match
 once a copy suffix is taken off, and reads through the ones that also match in
@@ -185,17 +170,60 @@ Switch that off in the sheet if you would rather it kept the name it has. A
 dated folder left empty by the removals goes to the Trash, as it does after
 catching up; a type folder is left alone either way. Preview mode previews it.
 
-A type folder decides *where* something goes, not *when*. A `.dmg` downloaded
-today still sits loose in the root until it is older than the **Leave loose in
-the root** window — it just goes to `Installers/` rather than to a dated folder
-when its time comes. Type folders are flat, they are never filed away
-themselves, and **Clearing** never touches them: only dated folders are ever
-cleared. Where two folders claim the same extension, the one higher up the list
-takes it, and the window says so.
+**What is taking up the room.** Clearing goes by age; this goes by size. Filing
+tidies a folder, it never shrinks one, and a hundred neatly dated PDFs are not what is taking up
+the space. **Review Large Files…** lists the biggest files in the root and in
+the folders Tideline made, largest first, with the folder each one sits in and
+the day it arrived.
+
+![The big-file review: the largest downloads, largest first, with what ticking them would give back](./assets/tideline-review-big-files.png)
+
+Nothing starts ticked. A duplicate always leaves a copy behind; a big file is
+the only copy there is, so each one is a deliberate choice — and the magnifier
+at the end of a row opens it in Finder, because "can this go?" is usually
+answered by looking at the thing rather than at its name. The footer keeps a
+running total of what ticking them would give back.
+
+**Bigger than** sets the size — 50 MB up to 5 GB, 100 MB to begin with. It sits
+in the sheet as well as in settings, so you can turn it down until the list has
+something in it and back up when it has too much.
+
+The same rules as everywhere else: only plain files, only the root and the
+folders Tideline made — a folder you made yourself is never looked in, and
+neither is anything on the skip list or still downloading. What you tick goes to
+the **Trash**, and a dated folder the removals leave empty goes with it. Preview
+mode previews it. It is on the menu bar too, as **Review Large Files…**.
+
+### Schedule
+
+Any combination of:
+
+| Setting | What it does |
+| --- | --- |
+| As soon as the folder changes | Watches `~/Downloads` and sweeps once things go quiet for 8 seconds |
+| Once a day, at a time you pick | Default 00:05, so yesterday's files get filed on a quiet morning |
+| When the app starts | Covers a scheduled run missed because the Mac was off |
+
+A run that is missed while the Mac sleeps fires as soon as it wakes.
+
+![The Schedule pane: watch the folder, run once a day at a time you pick, and catch up when the app starts](./assets/1.6.0/schedule.png)
+
+### Filing
+
+| Setting | Options |
+| --- | --- |
+| Folder | `~/Downloads` by default; pick any folder |
+| Leave loose in the root | Today only, today and yesterday, the last 3 days, the last week |
+| Folder name | One folder per day (`2026-08-19`) or per month (`2026-08`) |
+| Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
+| File folders too | Whether downloaded folders move like files |
+| Preview mode | Shows what *would* move and touches nothing |
+
+![The Filing pane: which folder, how long things stay loose, how the dated folders are named, and the list of names never to touch](./assets/1.6.0/filing.png)
 
 **Preview mode** — a sweep that touches nothing. **Preview Now**, on the
-*Status* tab or in the menu bar, walks the folder exactly as a real sweep would
-and then shows what it would have done: every item, grouped by the folder it
+*Overview* pane or in the menu bar, walks the folder exactly as a real sweep
+would and then shows what it would have done: every item, grouped by the folder it
 would have landed in, with what that adds up to. It is still written to the log
 as before.
 
@@ -205,6 +233,46 @@ leaves alone: today's downloads, hidden files, partial downloads
 (`.crdownload`, `.download`, `.part`, `.partial`, `.opdownload`, `.tmp`,
 `.temp`, `.aria2`, Safari's `.download` bundles), anything written to in the
 last 30 seconds, and the dated folders it created itself.
+
+### Type folders
+
+A folder at the root that takes everything with one of its extensions, instead
+of the dated folder. Switch on `Installers` and every
+`.dmg`, `.pkg`, `.mpkg`, `.iso` and `.app` lands in `~/Downloads/Installers/`,
+whatever day it arrived on:
+
+```
+~/Downloads/
+├── Installers/
+│   ├── Figma.dmg
+│   └── node.pkg
+├── 2026-08-18/
+│   └── invoice.pdf
+└── report.pdf          ← downloaded today, stays put
+```
+
+![The Type folders pane: each folder with its extensions and a switch, all of them off until you turn one on](./assets/1.6.0/type-folders.png)
+
+The app ships with `Installers`, `Archives`, `Images`, `Documents`,
+`Spreadsheets`, `Presentations`, `Audio`, `Video` and `Fonts`, **all switched
+off** — nothing changes until you turn one on. Any of them can be renamed or
+re-scoped, and **Add a folder of your own** takes a name and a list of
+extensions (`torrent, magnet`) for anything the list does not cover.
+
+Switching a folder on only steers what arrives next — files already tucked into
+a dated folder stay there. **Catch Up…** brings them into line: it looks through
+the dated folders, shows you everything the rules now claim grouped by where it
+would go, and moves only what you leave checked. A dated folder left empty by
+that goes to the Trash. Folders you made yourself are never opened, and a name
+already taken in the type folder is never overwritten — `report.pdf` arrives as
+`report-1.pdf`.
+A type folder decides *where* something goes, not *when*. A `.dmg` downloaded
+today still sits loose in the root until it is older than the **Leave loose in
+the root** window — it just goes to `Installers/` rather than to a dated folder
+when its time comes. Type folders are flat, they are never filed away
+themselves, and **Clearing** never touches them: only dated folders are ever
+cleared. Where two folders claim the same extension, the one higher up the list
+takes it, and the window says so.
 
 ### Clearing
 
@@ -217,6 +285,8 @@ one that can be left to run on its own:
 | Clear dated folders | Never, or older than a month, three months (default), six months, a year |
 | Always keep | The newest 1, 3 (default), 5 or 10 folders, whatever their age |
 | Clear on the daily sweep | Off by default — see below |
+
+![The Clearing pane: how old a dated folder has to be, how many are always kept, and whether the daily sweep clears them](./assets/1.6.0/clearing.png)
 
 Left as it comes, nothing is ever removed on its own: the age setting only
 decides what shows up when you go looking.
@@ -245,29 +315,14 @@ Three rules make this safe to leave on:
 
 Preview mode covers this too: it lists what would go and leaves it all in place.
 
-**Big files** — clearing goes by age; this goes by size. Filing tidies a folder,
-it never shrinks one, and a hundred neatly dated PDFs are not what is taking up
-the space. **Review Large Files…** lists the biggest files in the root and in
-the folders Tideline made, largest first, with the folder each one sits in and
-the day it arrived.
+What the age you set is actually worth — how many folders qualify and what they
+add up to — is on *Reclaim space*, alongside the other two scans.
 
-![The big-file review: the largest downloads, largest first, with what ticking them would give back](./assets/tideline-review-big-files.png)
+### Activity log
 
-Nothing starts ticked. A duplicate always leaves a copy behind; a big file is
-the only copy there is, so each one is a deliberate choice — and the magnifier
-at the end of a row opens it in Finder, because "can this go?" is usually
-answered by looking at the thing rather than at its name. The footer keeps a
-running total of what ticking them would give back.
-
-**Bigger than** sets the size — 50 MB up to 5 GB, 100 MB to begin with. It sits
-in the sheet as well as in settings, so you can turn it down until the list has
-something in it and back up when it has too much.
-
-The same rules as everywhere else: only plain files, only the root and the
-folders Tideline made — a folder you made yourself is never looked in, and
-neither is anything on the skip list or still downloading. What you tick goes to
-the **Trash**, and a dated folder the removals leave empty goes with it. Preview
-mode previews it. It is on the menu bar too, as **Review Large Files…**.
+The last few hundred things Tideline moved, cleared or renamed, newest first,
+each with the folder it landed in. The full record, sweep by sweep, is the log
+file at `~/Library/Logs/Tideline.log` — **Open Log File** under *General*.
 
 ### General
 
@@ -277,13 +332,15 @@ and build number (quote them in a bug report), plus links to the
 [source](https://github.com/estruyf/tideline),
 [issues](https://github.com/estruyf/tideline/issues) and the author.
 
+![The General pane: notifications, the menu bar size, the log and Downloads buttons, Uninstall, the update check and the version](./assets/1.6.0/general.png)
+
 #### Updates
 
 Tideline checks the [GitHub releases](https://github.com/estruyf/tideline/releases)
 page for a newer version once a day, and **Check Now** asks straight away. The
 check reads one public endpoint and sends nothing about you or your files.
 
-When there is something newer, the **Status** tab and the menu bar say so, and
+When there is something newer, the **Overview** pane and the menu bar say so, and
 **Update & Restart** does the rest: it downloads the release build, unpacks it,
 and only installs it once the copy passes three tests — it is Tideline, it is
 the version the release advertised, and it carries the same Developer ID
@@ -309,12 +366,16 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
-run and what the folder is holding, **File Downloads Now**, a **Filing Enabled**
-switch, **Review Duplicates…**, **Review Large Files…**, **Review Old
-Folders…**, **Open Downloads Folder**, **Settings…**, **Send Feedback…**,
-**Check for Updates…** and **Quit**.
+run and what the folder is holding, **Open Tideline**, **File Downloads Now**, a
+**Filing Enabled** switch, **Review Duplicates…**, **Review Large Files…**,
+**Review Old Folders…**, **Open Downloads Folder**, **Settings…**, **Send
+Feedback…**, **Check for Updates…** and **Quit**.
 
-![The menu bar menu: what the last run did, what the folder holds, and the three reviews](./assets/tideline-menubar.png)
+**Open Tideline** (⌘O) brings the window up on whichever pane you left it on.
+**Settings…** (⌘,) opens the same window on *Filing*, since the rules are what
+you press ⌘, looking for.
+
+![The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews](./assets/1.6.0/menubar.png)
 
 **File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
 opens the window on the sheet that lists what a sweep would have moved.
@@ -360,7 +421,7 @@ never moves a file back.
 
 ## Troubleshooting
 
-**Nothing moves.** Check the Status row in the app. An orange dot means macOS is
+**Nothing moves.** Check the status row on *Overview*. An orange dot means macOS is
 blocking access — see [First launch](#first-launch). A grey dot means filing is
 paused.
 
