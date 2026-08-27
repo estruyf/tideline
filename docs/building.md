@@ -6,7 +6,7 @@ is for building it on your own machine.
 
 ## Requirements
 
-- macOS 13 or later
+- macOS 14 or later
 - Xcode, or the Command Line Tools (`xcode-select --install`)
 - Swift 5.9 or later, which both of those bring along
 
@@ -67,7 +67,7 @@ VERSION=1.2.0-beta.1 npm run build
 
 | Path | |
 | --- | --- |
-| [`app/Package.swift`](../app/Package.swift) | SwiftPM manifest — one executable target, macOS 13+ |
+| [`app/Package.swift`](../app/Package.swift) | SwiftPM manifest — one executable target, macOS 14+ |
 | [`app/build.sh`](../app/build.sh) | Build, bundle, icon, sign, notarize, staple, zip |
 | [`app/Resources/Info.plist`](../app/Resources/Info.plist) | Bundle template; `__VERSION__` and `__BUILD__` are substituted at build time |
 | [`app/Tools/make-icon.swift`](../app/Tools/make-icon.swift) | Draws the icon set the build turns into `AppIcon.icns` |

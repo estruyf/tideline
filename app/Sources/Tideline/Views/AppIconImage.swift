@@ -15,8 +15,9 @@ struct AppIconImage: View {
     }
 
     /// `applicationIconImage` is what the Dock shows. Unbundled — a plain
-    /// `swift run` — it falls back to the icns, then to the old symbol.
-    private static var icon: NSImage {
+    /// `swift run` — it falls back to the icns, then to the old symbol. The menu
+    /// bar's title card reads it too, so all three show the one icon.
+    static var icon: NSImage {
         if let running = NSApp?.applicationIconImage { return running }
         if let bundled = NSImage(named: "AppIcon") { return bundled }
         return NSImage(systemSymbolName: "tray.full.fill", accessibilityDescription: nil) ?? NSImage()

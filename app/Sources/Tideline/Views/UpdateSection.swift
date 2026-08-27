@@ -36,7 +36,7 @@ struct UpdateSection: View {
         // without one. Turning it on is the moment to ask for permission;
         // finding an update is not.
         .disabled(!settings.automaticUpdateChecks)
-        .onChange(of: settings.notifyOnUpdate) { newValue in
+        .onChange(of: settings.notifyOnUpdate) { _, newValue in
             if newValue { Controller.shared.requestNotificationPermission() }
         }
 

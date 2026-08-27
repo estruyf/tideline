@@ -48,7 +48,7 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingPlan) {
             PreviewView(isPresented: $controller.reviewingPlan)
         }
-        .onChange(of: updater.reveal) { reveal in
+        .onChange(of: updater.reveal) { _, reveal in
             // "Check for Updates…" in the menu bar lands on the pane that
             // shows what the check found.
             if reveal {
@@ -56,21 +56,21 @@ struct MainView: View {
                 updater.reveal = false
             }
         }
-        .onChange(of: controller.reviewingCleanup) { reviewing in
+        .onChange(of: controller.reviewingCleanup) { _, reviewing in
             // Asked for from the menu bar, so dismissing the sheet leaves you on
             // the pane the sheet came from rather than wherever you last were.
             if reviewing { tab = .reclaim }
         }
-        .onChange(of: controller.reviewingDuplicates) { reviewing in
+        .onChange(of: controller.reviewingDuplicates) { _, reviewing in
             if reviewing { tab = .reclaim }
         }
-        .onChange(of: controller.reviewingLargeFiles) { reviewing in
+        .onChange(of: controller.reviewingLargeFiles) { _, reviewing in
             if reviewing { tab = .reclaim }
         }
-        .onChange(of: controller.reviewingRegroup) { reviewing in
+        .onChange(of: controller.reviewingRegroup) { _, reviewing in
             if reviewing { tab = .typeFolders }
         }
-        .onChange(of: controller.reveal) { wanted in
+        .onChange(of: controller.reveal) { _, wanted in
             guard let wanted else { return }
             tab = wanted
             controller.reveal = nil
@@ -604,7 +604,7 @@ private struct ReclaimTab: View {
             // finding those means reading files through.
             controller.scanWhatIsCheap()
         }
-        .onChange(of: settings.largeFileThresholdMB) { _ in
+        .onChange(of: settings.largeFileThresholdMB) { _, _ in
             // The threshold is set on this pane, so the list it governs should
             // answer to it without a second trip.
             controller.findLargeFiles()
@@ -1095,7 +1095,7 @@ private struct GeneralTab: View {
         Form {
             Section {
                 Toggle("Notify me when files are filed", isOn: $settings.notifyOnMove)
-                    .onChange(of: settings.notifyOnMove) { newValue in
+                    .onChange(of: settings.notifyOnMove) { _, newValue in
                         if newValue { controller.requestNotificationPermission() }
                     }
 

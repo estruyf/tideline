@@ -162,7 +162,7 @@ struct LargeFileView: View {
                 .pickerStyle(.menu)
                 .font(.caption)
                 .fixedSize()
-                .onChange(of: settings.largeFileThresholdMB) { _ in load() }
+                .onChange(of: settings.largeFileThresholdMB) { _, _ in load() }
             }
 
             Spacer(minLength: 0)

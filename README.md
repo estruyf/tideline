@@ -17,7 +17,7 @@ the day rolls over, yesterday's files move into yesterday's folder on their own.
 └── archive.zip         ← downloaded today, stays put
 ```
 
-macOS 13 or later. A native 1.7 MB app — no Electron, no runtime, no helper
+macOS 14 or later. A native 1.7 MB app — no Electron, no runtime, no helper
 daemon. It schedules itself and sits in the menu bar.
 
 ![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.6.0/overview.png)
@@ -199,7 +199,7 @@ The same rules as everywhere else: only plain files, only the root and the
 folders Tideline made — a folder you made yourself is never looked in, and
 neither is anything on the skip list or still downloading. What you tick goes to
 the **Trash**, and a dated folder the removals leave empty goes with it. Preview
-mode previews it. It is on the menu bar too, as **Review Large Files…**.
+mode previews it. It is on the menu bar too, under **Reclaim space**.
 
 ### Schedule
 
@@ -379,16 +379,23 @@ becomes `report-1.pdf`, `report-2.pdf`, and so on.
 
 Closing the window drops the Dock icon; the app keeps running and keeps filing.
 The menu bar icon stays. Its menu opens with the name and version, then the last
-run and what the folder is holding, **Open Tideline**, **File Downloads Now**, a
-**Filing Enabled** switch, **Review Duplicates…**, **Review Large Files…**,
-**Review Old Folders…**, **Open Downloads Folder**, **Settings…**, **Send
-Feedback…**, **Check for Updates…** and **Quit**.
+run and what the folder is holding, **File Downloads Now**, **Open Tideline**, a
+**Filing Enabled** switch, **Reclaim space**, **Open Downloads Folder**,
+**Settings…**, **Help & Updates** and **Quit**.
+
+**Reclaim space** holds the three reviews — **Duplicates**, **Large files** and
+**Old dated folders** — with **Review All in Tideline…** at the foot, which
+opens the pane and starts the scans. The menu itself never scans and quotes no
+figures: what it could show would be as old as the last time the window was
+open. **Help & Updates** holds
+**Check for Updates…**, **Send Feedback…** and **Tideline on GitHub**, and wears
+a badge when there is a new version.
 
 **Open Tideline** (⌘O) brings the window up on whichever pane you left it on.
 **Settings…** (⌘,) opens the same window on *Filing*, since the rules are what
-you press ⌘, looking for.
+you press ⌘, looking for. **Open Downloads Folder** is ⌘D.
 
-![The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews](./assets/1.6.0/menubar.png)
+![The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews](./assets/1.8.0/menubar.png)
 
 **File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
 opens the window on the sheet that lists what a sweep would have moved.

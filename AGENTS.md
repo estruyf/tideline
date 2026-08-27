@@ -20,7 +20,7 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | --- | --- |
 | `app/Sources/Tideline/` | The app. `Organizer` files, `Cleaner` clears, `Deduper` collapses copies, `Weigher` finds big files, `Regrouper` catches up, `Controller` schedules |
 | `app/Sources/Tideline/Views/` | SwiftUI window, one file per tab or sheet |
-| `app/Package.swift` | One executable target, macOS 13+, zero dependencies |
+| `app/Package.swift` | One executable target, macOS 14+, zero dependencies |
 | `app/build.sh` | Build, bundle, icon, sign, notarize, staple, zip |
 | `app/Resources/Info.plist` | Bundle template; `__VERSION__` / `__BUILD__` substituted at build time |
 | `windows/src-tauri/crates/tideline-core/` | The Rust filing engine. `organizer` holds the rules and is pure; `sweep` does the I/O |

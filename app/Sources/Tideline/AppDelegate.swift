@@ -8,6 +8,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem?
     private var cancellables = Set<AnyCancellable>()
 
+    /// The rows whose text changes while the app runs. Held rather than looked
+    /// up by tag: the reviews and the update check now sit inside submenus, and
+    /// `item(withTag:)` only ever searches one level.
+    private var statusLine: NSMenuItem?
+    private var usageLine: NSMenuItem?
+    private var fileNowItem: NSMenuItem?
+    private var enabledItem: NSMenuItem?
+    private var helpMenuItem: NSMenuItem?
+    private var updatesItem: NSMenuItem?
+
     private let settings = Settings.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -122,75 +132,122 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         updateStatusItemAppearance()
     }
 
+    /// Three rows of state, the two things worth doing without the window, and
+    /// then the reviews and the housekeeping folded into submenus. `badge` is
+    /// what makes that possible — a count or a size sits on the trailing edge
+    /// of a row, so a submenu can say what is inside it before it is opened.
     private func buildStatusMenu() -> NSMenu {
         let menu = NSMenu()
         menu.delegate = self
 
-        // Title card: which app this is, and which version, without opening the window.
-        let about = NSMenuItem(title: AppInfo.nameAndVersion, action: nil, keyEquivalent: "")
+        // Title card: which app this is, and which version, without opening the
+        // window. The icon is the bundle's own, as the window's header is.
+        let about = NSMenuItem(title: AppInfo.name, action: nil, keyEquivalent: "")
+        about.image = Self.menuIcon
+        about.badge = NSMenuItemBadge(string: AppInfo.version)
         about.isEnabled = false
         menu.addItem(about)
 
-        menu.addItem(.separator())
-
+        // The state dot the window draws beside its headline, at menu size.
         let status = NSMenuItem(title: "Not run yet", action: nil, keyEquivalent: "")
-        status.tag = 1
         status.isEnabled = false
         menu.addItem(status)
+        statusLine = status
 
         // What the folder is holding, without opening the window for it.
         let usage = NSMenuItem(title: "Measuring…", action: nil, keyEquivalent: "")
-        usage.tag = 4
         usage.isEnabled = false
         menu.addItem(usage)
-
-        menu.addItem(.separator())
-
-        // The window is Overview, Reclaim space and the activity log as much as
-        // it is settings, so opening it says so and comes before the actions.
-        menu.addItem(withTitle: "Open Tideline", action: #selector(showWindow(_:)), keyEquivalent: "o")
-            .target = self
+        usageLine = usage
 
         menu.addItem(.separator())
 
         let fileNow = NSMenuItem(title: "File Downloads Now", action: #selector(runNow), keyEquivalent: "r")
-        fileNow.tag = 5
         fileNow.target = self
         menu.addItem(fileNow)
+        fileNowItem = fileNow
+
+        // The window is Overview, Reclaim space and the activity log as much as
+        // it is settings, so opening it says so and sits beside the sweep.
+        menu.addItem(withTitle: "Open Tideline", action: #selector(showWindow(_:)), keyEquivalent: "o")
+            .target = self
 
         let enabled = NSMenuItem(title: "Filing Enabled", action: #selector(toggleEnabled), keyEquivalent: "")
-        enabled.tag = 2
         enabled.target = self
         menu.addItem(enabled)
+        enabledItem = enabled
 
         menu.addItem(.separator())
 
-        menu.addItem(withTitle: "Review Duplicates…", action: #selector(reviewDuplicates), keyEquivalent: "")
+        // The three reviews under the one question they answer. No figures:
+        // the menu never scans, so anything it quoted would be as old as the
+        // last time the window was open, and a stale number is worse than none.
+        let reclaim = NSMenuItem(title: "Reclaim space", action: nil, keyEquivalent: "")
+        let reclaimMenu = NSMenu()
+
+        reclaimMenu.addItem(withTitle: "Duplicates", action: #selector(reviewDuplicates), keyEquivalent: "")
             .target = self
-        menu.addItem(withTitle: "Review Large Files…", action: #selector(reviewLargeFiles), keyEquivalent: "")
+        reclaimMenu.addItem(withTitle: "Large files", action: #selector(reviewLargeFiles), keyEquivalent: "")
             .target = self
-        menu.addItem(withTitle: "Review Old Folders…", action: #selector(reviewCleanup), keyEquivalent: "")
+        reclaimMenu.addItem(withTitle: "Old dated folders", action: #selector(reviewCleanup), keyEquivalent: "")
             .target = self
+        reclaimMenu.addItem(.separator())
+        reclaimMenu.addItem(withTitle: "Review All in Tideline…", action: #selector(reviewAll), keyEquivalent: "")
+            .target = self
+
+        reclaim.submenu = reclaimMenu
+        menu.addItem(reclaim)
 
         menu.addItem(.separator())
 
-        menu.addItem(withTitle: "Open Downloads Folder", action: #selector(openDownloads), keyEquivalent: "")
+        menu.addItem(withTitle: "Open Downloads Folder", action: #selector(openDownloads), keyEquivalent: "d")
             .target = self
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
             .target = self
-        menu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
-            .target = self
+
+        // Everything that is about the app rather than the folder. It carries an
+        // updates badge when there is one, which is the only reason to look.
+        let help = NSMenuItem(title: "Help & Updates", action: nil, keyEquivalent: "")
+        let helpMenu = NSMenu()
 
         let updates = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "")
-        updates.tag = 3
         updates.target = self
-        menu.addItem(updates)
+        helpMenu.addItem(updates)
+        updatesItem = updates
+
+        helpMenu.addItem(withTitle: "Send Feedback…", action: #selector(sendFeedback), keyEquivalent: "")
+            .target = self
+        helpMenu.addItem(withTitle: "Tideline on GitHub", action: #selector(openRepository), keyEquivalent: "")
+            .target = self
+
+        help.submenu = helpMenu
+        menu.addItem(help)
+        helpMenuItem = help
 
         menu.addItem(.separator())
 
         menu.addItem(withTitle: "Quit Tideline", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
         return menu
+    }
+
+    /// The bundle's own icon at menu size. AppKit will not shrink a 512pt icon
+    /// for us, so it is copied and resized rather than handed over whole.
+    private static var menuIcon: NSImage? {
+        guard let icon = AppIconImage.icon.copy() as? NSImage else { return nil }
+        icon.size = NSSize(width: 16, height: 16)
+        return icon
+    }
+
+    /// The same dot, in the same colours, as the window's headline — a menu row
+    /// has no room for a sentence explaining that filing is paused.
+    private static func dot(_ color: Color) -> NSImage? {
+        let configuration = NSImage.SymbolConfiguration(pointSize: 9, weight: .bold)
+            .applying(NSImage.SymbolConfiguration(paletteColors: [NSColor(color)]))
+        let image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration)
+        image?.isTemplate = false
+        return image
     }
 
     private func updateStatusItemAppearance() {
@@ -257,8 +314,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         Controller.shared.revealDownloadsFolder()
     }
 
+    /// Opens Reclaim space itself rather than one of its sheets. This is the
+    /// only one of the four that starts the scans, which is why the submenu's
+    /// figures can be older than the folder.
+    @objc private func reviewAll() {
+        Controller.shared.reveal = .reclaim
+        showWindow(nil)
+    }
+
     @objc private func sendFeedback() {
         NSWorkspace.shared.open(AppInfo.newIssue)
+    }
+
+    @objc private func openRepository() {
+        NSWorkspace.shared.open(AppInfo.repository)
     }
 
     /// Opens the window on the update section and looks straight away, so the
@@ -330,38 +399,50 @@ extension AppDelegate: NSMenuDelegate {
         let controller = Controller.shared
         controller.refreshUsage()
 
-        if let status = menu.item(withTag: 1) {
-            switch controller.access {
-            case .denied:
-                status.title = "No access to the Downloads folder"
-            case .missing:
-                status.title = "Watched folder is missing"
-            default:
-                status.title = controller.busy ? "Filing…" : controller.lastRunSummary
-            }
+        statusLine?.title = headline(for: controller)
+        statusLine?.image = Self.dot(dotColour(for: controller))
+
+        // The folder's name carries its size on the trailing edge, so the row
+        // reads as a label and a figure rather than as a sentence.
+        let folder = settings.downloadsURL.lastPathComponent
+        if let usage = controller.usage {
+            usageLine?.title = folder
+            usageLine?.badge = NSMenuItemBadge(string: usage.totalDescription)
+        } else {
+            usageLine?.title = "Measuring \(folder)…"
+            usageLine?.badge = nil
         }
 
-        if let usage = menu.item(withTag: 4) {
-            let folder = settings.downloadsURL.lastPathComponent
-            usage.title = controller.usage.map { "\(folder) holds \($0.totalDescription)" }
-                ?? "Measuring \(folder)…"
-        }
-
-        if let enabled = menu.item(withTag: 2) {
-            enabled.state = settings.isEnabled ? .on : .off
-        }
+        enabledItem?.state = settings.isEnabled ? .on : .off
 
         // Preview mode never files anything, so the item that would say it does
         // says what it actually does instead.
-        if let fileNow = menu.item(withTag: 5) {
-            fileNow.title = settings.dryRun ? "Preview a Sweep…" : "File Downloads Now"
-        }
+        fileNowItem?.title = settings.dryRun ? "Preview a Sweep…" : "File Downloads Now"
 
         // Says what the last check found, rather than making you open the window
         // to learn there is nothing to do.
-        if let updates = menu.item(withTag: 3) {
-            let updater = Updater.shared
-            updates.title = updater.pending.map { "Update to \($0.version)…" } ?? "Check for Updates…"
-        }
+        let updater = Updater.shared
+        updatesItem?.title = updater.pending.map { "Update to \($0.version)…" } ?? "Check for Updates…"
+        helpMenuItem?.badge = updater.pending == nil ? nil : NSMenuItemBadge.updates(count: 1)
     }
+
+    /// What the window's headline says, in a row's worth of words.
+    private func headline(for controller: Controller) -> String {
+        switch controller.access {
+        case .denied: return "No access to the Downloads folder"
+        case .missing: return "Watched folder is missing"
+        default: break
+        }
+        if controller.busy { return "Filing…" }
+        return settings.isEnabled ? controller.lastRunSummary : "Filing paused"
+    }
+
+    /// The same three meanings the window's dot carries: a fault, something
+    /// running, and everything as it should be.
+    private func dotColour(for controller: Controller) -> Color {
+        if controller.access == .denied || controller.access == .missing { return Theme.danger }
+        if !settings.isEnabled { return Theme.muted }
+        return controller.busy ? Theme.accent : Theme.success
+    }
+
 }

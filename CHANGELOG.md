@@ -5,6 +5,29 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-08-27
+
+### Changed
+
+- **The menu bar menu now folds the three reviews into one submenu.** *Review
+  Duplicates…*, *Review Large Files…* and *Review Old Folders…* sat in the menu
+  as three flat rows asking to be read one at a time. They are now **Duplicates**,
+  **Large files** and **Old dated folders** under **Reclaim space**, which is
+  what the window has called them all along, with **Review All in Tideline…**
+  at the foot, which is still the thing that goes and looks. The submenu quotes
+  no figures — opening a menu never starts a scan, so anything it counted would
+  be as old as the last time the window was open. *Send Feedback…* and *Check
+  for Updates…* moved the same way, into **Help & Updates**, which wears a badge
+  when a new version is out. It also carries **Tideline on GitHub**, which was
+  nowhere in the menu bar before. The state row gained
+  the window's own dot — green watching, yellow filing, red for no access — and
+  **Open Downloads Folder** gained ⌘D.
+
+- **Tideline now needs macOS 14.** The version, the folder size and the update
+  count sit on the trailing edge of their rows as `NSMenuItem.badge`, which
+  arrived in macOS 14; on 13 the same layout would have meant hand-drawn menu
+  rows, which cost more than the one version is worth.
+
 ## [1.7.0] - 2026-08-26
 
 ### Added
@@ -316,6 +339,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.8.0]: https://github.com/estruyf/tideline/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/estruyf/tideline/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/estruyf/tideline/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/estruyf/tideline/compare/v1.4.0...v1.5.0
