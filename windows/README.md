@@ -128,17 +128,26 @@ watching and the reviews instead.
 
 In rough order of how much each is worth doing next:
 
-1. **Folder watching** — `watch_folder` is stored and honoured by nothing.
+1. **Asking before the first sweep** — the Windows build starts filing as soon
+   as it is running, which is the behaviour the macOS app just stopped having.
+   `docs/behaviour.md` describes what it should do instead: no sweep until
+   someone has said yes once, an existing install treated as having answered.
+   Cheap, and the first thing a stranger meets.
+2. **Putting it back** — `Restorer.swift`. The mirror of a sweep, and the
+   answer to "what if I try this and hate it". Pure enough to write against
+   the same contract; the Recycle Bin call it needs afterwards is already
+   wired up as `sweep::recycle`.
+3. **Folder watching** — `watch_folder` is stored and honoured by nothing.
    Wants `ReadDirectoryChangesW` (the `notify` crate) plus the macOS app's
    8-second quiet period.
-2. **Clearing** — `Cleaner.swift`. The rules are already written down in
+4. **Clearing** — `Cleaner.swift`. The rules are already written down in
    `docs/behaviour.md`; the Recycle Bin call is wired up as `sweep::recycle`.
-3. **Duplicates** — `Deduper.swift`. Needs a SHA-256 (`sha2`) in place of
+5. **Duplicates** — `Deduper.swift`. Needs a SHA-256 (`sha2`) in place of
    CryptoKit.
-4. **Large files** and **Catch Up** — `Weigher.swift`, `Regrouper.swift`.
-5. **Notifications** on a completed sweep — the plugin is registered,
+6. **Large files** and **Catch Up** — `Weigher.swift`, `Regrouper.swift`.
+7. **Notifications** on a completed sweep — the plugin is registered,
    `notify_on_move` is stored, nothing sends one yet.
-6. **The updater** — the biggest one, and the one with a cost attached. See
+8. **The updater** — the biggest one, and the one with a cost attached. See
    below.
 
 ## Signing, and why the updater is last
