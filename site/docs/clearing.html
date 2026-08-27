@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearing — Tideline</title>
+<meta name="description" content="Sending old dated folders to the Trash once you have stopped needing them, and the three rules that make it safe to leave on.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/clearing.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Clearing — Tideline">
+<meta property="og:description" content="Sending old dated folders to the Trash once you have stopped needing them, and the three rules that make it safe to leave on.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/clearing.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html" aria-current="page">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Clearing</h1>
+<p class="lead">Old dated folders can go to the Trash once you have stopped needing them. Age is the narrower of the two ways to give space back, and the only one that can be left to run on its own.</p>
+
+<div class="table-scroll">
+<table>
+<thead><tr><th>Setting</th><th>Options</th></tr></thead>
+<tbody>
+<tr><td>Clear dated folders</td><td>Never, or older than a month, three months (default), six months, a year</td></tr>
+<tr><td>Always keep</td><td>The newest 1, 3 (default), 5 or 10 folders, whatever their age</td></tr>
+<tr><td>Clear on the daily sweep</td><td>Off by default — see below</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure>
+  <img src="../assets/shots/clearing.png"
+       alt="The Clearing pane: how old a dated folder has to be, how many are always kept, and whether the daily sweep clears them">
+</figure>
+
+<div class="note">
+  <strong>Left as it comes, nothing is ever removed on its own.</strong> The age
+  setting only decides what shows up when you go looking.
+</div>
+
+<h2>Review Old Folders</h2>
+<p>
+  <strong>Review Old Folders…</strong> lists everything that qualifies with its
+  item count and size, all of it ticked. Untick anything you want to keep, then
+  <strong>Move n Folders to Trash</strong>. Nothing is removed until you press
+  that button.
+</p>
+
+<figure>
+  <img src="../assets/shots/review-old-folders.png"
+       alt="The old-folder review: every dated folder past the age you set, with its item count and size">
+</figure>
+
+<h2>Letting it run unattended</h2>
+<p>
+  Switching on <em>Clear on the daily sweep</em> lets it happen as part of the
+  once-a-day run — never on a folder change, so a download landing can never
+  trigger a removal.
+</p>
+
+<h3>Three rules make this safe to leave on</h3>
+<ul>
+  <li>
+    Only folders matching <code>YYYY-MM-DD</code> or <code>YYYY-MM</code> — the
+    ones Tideline made itself — are ever considered. Loose files, and folders
+    you named yourself, are invisible to it.
+    <a href="type-folders.html">Type folders</a> are never cleared either.
+  </li>
+  <li>
+    Age comes from the folder's <em>name</em>, measured from the end of the day
+    or month it covers, so a folder is never cleared sooner than its name
+    suggests. The folder's own timestamp is ignored; filing bumps that every
+    time it drops something new inside.
+  </li>
+  <li>
+    Folders go to the <strong>Trash</strong>, never straight to
+    <code>unlink</code>. A setting you regret is a drag back out of the Trash,
+    not a restore from backup.
+  </li>
+</ul>
+
+<p>
+  <a href="filing.html#preview">Preview mode</a> covers this too: it lists what
+  would go and leaves it all in place.
+</p>
+
+<p>
+  What the age you set is actually worth — how many folders qualify and what
+  they add up to — is on <a href="reclaim-space.html">Reclaim space</a>,
+  alongside the other two scans.
+</p>
+<div class="pager">
+<a href="schedule.html"><span>Previous</span>Schedule</a>
+<a class="next" href="reclaim-space.html"><span>Next</span>Reclaim space</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fclearing.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fclearing.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

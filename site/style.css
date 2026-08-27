@@ -1,0 +1,560 @@
+/*
+ * Tideline's website.
+ *
+ * The palette is the app's own, lifted token for token from
+ * app/Sources/Tideline/Views/Theme.swift so the site and the window are the
+ * same colour. Every token carries a light value and a dark one and the page
+ * follows prefers-color-scheme, exactly as the app follows the system
+ * appearance. Yellow means what Tideline put there or is about to touch; red
+ * is for faults, blue for something that only navigates, green for running.
+ *
+ * No framework, no build step, and no webfont: the app has no dependencies and
+ * neither does the page describing it.
+ */
+
+:root {
+  --accent: #ffd43b;
+  --on-accent: #15181f;
+  --accent-text: #a08000;
+  --selection: rgba(255, 212, 59, 0.18);
+
+  --chrome: #f4f6fa;
+  --pane: #f8f9fb;
+  --card: #ffffff;
+  --hover: #e1e4e8;
+  --border: #bcc4d1;
+
+  --text: #202736;
+  --muted: #505869;
+  --faint: #6b7280;
+
+  --danger: #d73a49;
+  --success: #00b8a2;
+  --link: #005cc5;
+
+  --shadow: 0 1px 2px rgba(32, 39, 54, 0.06), 0 8px 24px rgba(32, 39, 54, 0.06);
+  --radius: 10px;
+  --measure: 34rem;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent: #ffd43b;
+    --on-accent: #15181f;
+    --accent-text: #ffd43b;
+
+    --chrome: #202736;
+    --pane: #15181f;
+    --card: #202736;
+    --hover: #2d3142;
+    --border: #374151;
+
+    --text: #d9dbe1;
+    --muted: #9ba4b7;
+    --faint: #6b7280;
+
+    --danger: #ff6b6b;
+    --success: #51cf66;
+    --link: #74c0fc;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* The column keeps the footer on the bottom edge of the viewport when a page is
+   shorter than the screen — the uninstall page is, and the footer used to float
+   halfway up it. `flex: 1 0 auto` on the middle puts the slack there instead. */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--pane);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+body > main,
+body > .docs { flex: 1 0 auto; }
+body > footer { margin-top: auto; }
+
+::selection { background: var(--selection); }
+
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { text-decoration-thickness: 2px; }
+
+img { max-width: 100%; height: auto; }
+
+h1, h2, h3, h4 { line-height: 1.25; font-weight: 650; letter-spacing: -0.015em; }
+h1 { font-size: 2.1rem; margin: 0 0 0.6rem; }
+h2 { font-size: 1.5rem; margin: 2.8rem 0 0.8rem; }
+h3 { font-size: 1.15rem; margin: 2rem 0 0.6rem; }
+h4 { font-size: 1rem; margin: 1.6rem 0 0.4rem; }
+
+p { margin: 0 0 1.1rem; }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+/* ---------- Skip link ---------- */
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 0.6rem 1rem;
+  z-index: 100;
+  border-radius: 0 0 var(--radius) 0;
+}
+.skip:focus { left: 0; }
+
+:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ---------- The band across the top ---------- */
+/* The app keeps a band above everything with its name, what it does, and the
+   switch. The site keeps the first two and swaps the switch for the download. */
+
+.band {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--border);
+}
+
+.band-inner {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 650;
+  font-size: 1.05rem;
+  color: var(--text);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+}
+.wordmark img { width: 26px; height: 26px; border-radius: 6px; }
+
+.band nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  font-size: 0.94rem;
+}
+/* :not(.btn) matters: `.band nav a` outweighs `.btn-primary`, so without it the
+   Download button paints accent text on an accent fill and cannot be read. */
+.band nav a:not(.btn) { color: var(--muted); text-decoration: none; }
+.band nav a:not(.btn):hover { color: var(--text); }
+.band nav a:not(.btn)[aria-current="page"] { color: var(--text); font-weight: 600; }
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.62rem 1.15rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Accent is a filled surface, so its label is near-black and never white. */
+.btn-primary { background: var(--accent); color: var(--on-accent); }
+.btn-primary:hover { background: #f5c518; }
+
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-secondary:hover { background: var(--hover); }
+
+/* ---------- Layout ---------- */
+
+.wrap {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding-inline: 1.5rem;
+}
+
+/* Keeps the section's left edge on the same gutter as every other section and
+   limits only the measure, rather than centring the whole block. */
+.narrow > * { max-width: 46rem; }
+
+/* ---------- Hero ---------- */
+
+.hero { padding-block: 4.5rem 3.5rem; }
+
+.hero h1 {
+  font-size: clamp(2.1rem, 5.2vw, 3.1rem);
+  max-width: 18ch;
+  margin-bottom: 1rem;
+}
+
+.hero .lead {
+  font-size: 1.2rem;
+  color: var(--muted);
+  max-width: 46ch;
+  margin-bottom: 1.8rem;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 24rem);
+  gap: 3rem;
+  align-items: center;
+}
+
+.cta { display: flex; flex-wrap: wrap; gap: 0.7rem; align-items: center; margin-top: 2rem; }
+
+/* It closes the hero column, so its own bottom margin would sit on top of the
+   section padding and make this one gap deeper than every other zone's. */
+.cta-note {
+  margin-top: 1rem;
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  color: var(--faint);
+}
+
+/* ---------- The folder sketch ---------- */
+/* Not a screenshot: a Downloads folder written out, the way the README shows
+   it. The arrows are what stays loose, so they take the accent. */
+
+pre.tree, pre.shell {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  line-height: 1.75;
+  margin: 0 0 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+pre .stays { color: var(--accent-text); font-weight: 600; }
+pre .dir { color: var(--text); font-weight: 600; }
+pre .comment { color: var(--faint); }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.88em;
+  background: var(--hover);
+  padding: 0.1em 0.38em;
+  border-radius: 4px;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ---------- Sections ---------- */
+
+section { padding-block: 3.5rem; }
+
+/* The section's padding is the gap. A child margin on the edge doubles it, and
+   the doubled amount differs per element, so the zones drift out of step. */
+section > :first-child,
+section > .wrap > :first-child { margin-top: 0; }
+section > :last-child,
+section > .wrap > :last-child { margin-bottom: 0; }
+
+.section-band { background: var(--chrome); border-block: 1px solid var(--border); }
+
+.section-head { max-width: 42rem; margin-bottom: 2rem; }
+.section-head h2 { margin-top: 0; }
+.section-head p { color: var(--muted); margin-bottom: 0; }
+
+/* ---------- Feature cards ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.35rem 1.4rem;
+}
+
+.card h3 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+.card p { margin: 0; font-size: 0.94rem; color: var(--muted); }
+
+/* A card that links somewhere — the docs index is a grid of these. */
+a.card { text-decoration: none; display: block; color: var(--text); }
+a.card:hover { border-color: var(--accent-text); background: var(--card); }
+a.card h3 { color: var(--text); }
+
+/* ---------- Figures ---------- */
+
+figure {
+  margin: 2rem 0;
+}
+
+/* <picture> is inline by default, which leaves a text-baseline gap under the
+   image inside the figure's border. */
+figure picture { display: block; }
+
+figure img,
+figure video {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* height is set as an attribute for the aspect ratio; let it scale with width. */
+figure video { height: auto; background: var(--pane); }
+
+figcaption {
+  margin-top: 0.7rem;
+  font-size: 0.88rem;
+  color: var(--faint);
+  max-width: var(--measure);
+}
+
+/* ---------- Callouts ---------- */
+/* Meanings are kept apart, as they are in the window: accent for what the app
+   put there, danger for a fault, link for something that only points you on. */
+
+.note {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--card);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 1rem 1.2rem;
+  margin: 1.75rem 0;
+  font-size: 0.95rem;
+}
+.note :last-child { margin-bottom: 0; }
+.note strong:first-child { color: var(--accent-text); }
+
+.note-info { border-left-color: var(--link); }
+.note-info strong:first-child { color: var(--link); }
+
+.note-warn { border-left-color: var(--danger); }
+.note-warn strong:first-child { color: var(--danger); }
+
+/* ---------- Beta pill ---------- */
+/* Accent means "the app put this here or is about to touch it", which is not
+   what a status label is, so this borrows the link colour instead — it marks
+   something to go and read rather than something about to happen. */
+.beta {
+  display: inline-block;
+  vertical-align: 0.12em;
+  margin-left: 0.5rem;
+  padding: 0.06em 0.5em;
+  border: 1px solid var(--link);
+  border-radius: 999px;
+  color: var(--link);
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sidebar .beta { margin-left: 0.35rem; font-size: 0.6rem; }
+
+/* ---------- Tables ---------- */
+
+.table-scroll { overflow-x: auto; margin: 1.75rem 0; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.7rem 0.95rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+th { background: var(--chrome); font-weight: 650; font-size: 0.88rem; }
+tr:last-child td { border-bottom: 0; }
+
+/* ---------- Docs shell ---------- */
+
+.docs {
+  display: grid;
+  grid-template-columns: 15rem minmax(0, 1fr);
+  gap: 3.5rem;
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: 4.5rem;
+  font-size: 0.93rem;
+}
+
+.sidebar h2 {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--faint);
+  margin: 1.6rem 0 0.5rem;
+  font-weight: 650;
+}
+.sidebar-grid > div:first-child h2 { margin-top: 0; }
+
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin: 0; }
+
+.sidebar a {
+  display: block;
+  padding: 0.28rem 0.6rem;
+  margin-left: -0.6rem;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.sidebar a:hover { background: var(--hover); color: var(--text); }
+
+/* The selected pane in the window is accent-backed; so is the page you are on. */
+.sidebar a[aria-current="page"] {
+  background: var(--selection);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.doc { min-width: 0; }
+.doc > h1 { margin-bottom: 0.5rem; }
+
+.doc .lead {
+  font-size: 1.12rem;
+  color: var(--muted);
+  margin-bottom: 2.5rem;
+}
+
+/* A page opening on a table, a figure or an h2 should start at the same place. */
+.doc .lead + * { margin-top: 0; }
+
+.doc p, .doc li { max-width: var(--measure); }
+.doc ul, .doc ol { padding-left: 1.3rem; }
+.doc li { margin-bottom: 0.4rem; }
+
+/* Next/previous, at the foot of every page. */
+.pager {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.94rem;
+}
+.pager a { text-decoration: none; font-weight: 600; }
+.pager span { display: block; font-size: 0.8rem; color: var(--faint); font-weight: 400; }
+.pager .next { text-align: right; margin-left: auto; }
+
+/* ---------- Footer ---------- */
+
+footer {
+  background: var(--chrome);
+  border-top: 1px solid var(--border);
+  padding-block: 2.5rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+footer .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+footer nav { display: flex; flex-wrap: wrap; gap: 1.3rem; }
+
+footer .footer-count {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Height is fixed and width is not: the badge grows a pixel or two as the count
+   gains a digit, and pinning both would squash it. */
+footer .footer-count img { height: 20px; width: auto; opacity: 0.8; }
+footer .footer-count a:hover img { opacity: 1; }
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--text); text-decoration: underline; }
+
+/* ---------- Narrow screens ---------- */
+
+@media (max-width: 56rem) {
+  .hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .docs { grid-template-columns: 1fr; gap: 2rem; padding-top: 1.5rem; }
+
+  /* The sidebar stops being a sidebar and becomes a contents list on top. */
+  .sidebar {
+    position: static;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+  }
+  /* min() rather than a bare 11rem: below about 25rem two tracks of 11rem plus
+     the gap are wider than the screen, and a grid track never shrinks under its
+     minimum — so the whole page would scroll sideways to fit the contents. */
+  .sidebar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
+    gap: 0 1.5rem;
+  }
+}
+
+@media (max-width: 34rem) {
+  body { font-size: 16px; }
+  .band-inner { padding: 0.6rem 1rem; gap: 1rem; }
+  .band nav { gap: 0.9rem; font-size: 0.88rem; }
+  .wrap, .docs { padding-inline: 1rem; }
+  .hero { padding-block: 2.5rem 2rem; }
+
+  /* The GitHub link is the one the download button already covers. */
+  .band nav .drop-first { display: none; }
+}

@@ -1,6 +1,9 @@
 # Tideline
 
-![A Downloads folder before and after: a heap of loose files and repeated artifact.zip copies on the left, and on the right the same folder with today's downloads at the top and everything older in folders named for the day it arrived](./assets/pitch.jpg)
+<picture>
+  <source media="(prefers-color-scheme: light)" srcset="./assets/pitch-light.jpg">
+  <img src="./assets/pitch.jpg" alt="The same Downloads folder before and after Tideline: on the left nineteen loose files in one heap, including four artifact zips you cannot tell apart; on the right today's three still loose under their real names, and everything older filed into folders named for the day it arrived">
+</picture>
 
 **A tidy Downloads folder, every morning, without hiding what you just
 downloaded.** Today's files stay loose in the root where you expect them.
@@ -28,19 +31,27 @@ folder, made for you every day.
 or `brew install --cask estruyf/tap/tideline` — macOS 14 or later. Free, open
 source, no account, no telemetry.
 
+**📖 [Documentation](https://estruyf.github.io/tideline/docs/)** — installing,
+the first launch, and every setting in the window.
+**🎬 [A ninety-second tour](https://estruyf.github.io/tideline/#tour)** — every
+screen, from the first run to the menu bar.
+
 Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
 because it ships for both Apple silicon and Intel. No Electron, no bundled
 runtime, no helper process quietly installed beside it — one menu bar app that
 schedules itself, and quitting it really is the end of it.
 
-![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.6.0/overview.png)
+![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.9.0/overview.png)
 
-> **Windows.** A Windows build is in progress under [`windows/`](./windows) —
-> the same filing rules, rewritten in Rust with a [Tauri](https://tauri.app)
-> window and tray icon. The filing engine is done and tested; clearing,
-> duplicates and the big-file review are not yet. The macOS app is unaffected by
-> it. See [the Windows README](./windows/README.md) for what works and what is
-> still to come.
+> **Windows — beta.** There is a Windows build under [`windows/`](./windows):
+> the same filing rules, rewritten in Rust behind a [Tauri](https://tauri.app)
+> window and tray icon. Filing, type folders, the schedule and preview mode all
+> work; clearing, duplicates, the big-file review and putting everything back do
+> not yet, and it starts filing without asking first. It ships as a pre-release
+> on its own schedule — see
+> [what the Windows beta does](https://estruyf.github.io/tideline/docs/windows.html),
+> or [the Windows README](./windows/README.md) for the engineering side. The
+> macOS app is unaffected by any of it.
 
 ## Why
 
@@ -67,6 +78,29 @@ An app bundle has its own identity, so macOS asks a single, specific question:
 One click, scoped to one folder, revocable in System Settings. Nothing else on
 the disk becomes reachable.
 
+## What it does
+
+Filing is the whole of it. Everything else is there because a folder that files
+itself still grows, and because nothing here should ever be a surprise.
+
+| | |
+| --- | --- |
+| [Filing](https://estruyf.github.io/tideline/docs/filing.html) | One folder per day or per month, how long things stay loose, and the list of names never to touch |
+| [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html) | Send every `.dmg` to `Installers/` whatever day it arrived on |
+| [Schedule](https://estruyf.github.io/tideline/docs/schedule.html) | On a folder change, once a day, when the app starts, or any combination |
+| [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) | Old dated folders to the Trash, once you have stopped needing them |
+| [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) | Duplicates, big files and old folders — everything that could give space back |
+| [Preview mode](https://estruyf.github.io/tideline/docs/filing.html#preview) | A sweep that touches nothing and then says what it would have done |
+| [Putting it back](https://estruyf.github.io/tideline/docs/filing.html#putting-it-back) | One sheet that moves everything Tideline ever filed back into the root |
+
+Two rules hold everywhere:
+
+- **Nothing is ever deleted.** Removals go to the Trash, never straight to
+  `unlink`. A setting you regret is a drag back out of the Trash, not a restore
+  from backup.
+- **Nothing is ever overwritten.** A name that is already taken counts up:
+  `report.pdf`, `report-1.pdf`, `report-2.pdf`.
+
 ## Install
 
 With [Homebrew](https://brew.sh):
@@ -79,442 +113,28 @@ Or grab the zip from the [latest release](https://github.com/estruyf/tideline/re
 unzip it, and drag **Tideline.app** into `/Applications`.
 
 Either way it ends up in `/Applications`, which is where it keeps itself
-current: Tideline looks for a newer release once a day and offers it — see
-[Updates](#updates). That is also why `brew upgrade` leaves it alone; the cask
-is marked as updating itself, so the two never race. `brew upgrade --greedy`
-installs a new version through Homebrew instead, if you would rather it came
-from there.
-
-To remove it, `brew uninstall --cask tideline`, or `--zap` as well to take its
-settings and log with it. Neither touches anything Tideline filed — your
-Downloads folder is left exactly as it stands.
-
-Prefer to build it yourself? See [Building](./docs/building.md).
-
-## First launch
-
-The window opens on **Tideline is not filing yet**, and that is the whole state
-of the app: it has not read your Downloads folder, because reading it is what
-raises the macOS permission prompt and a system alert that arrives before the
-app has introduced itself is a question with no context.
-
-**Allow Access…** is what asks. The prompt is scoped to that one folder, and
-nothing else on the disk becomes readable by allowing it.
-
-![macOS asking whether Tideline may access files in your Downloads folder](./assets/1.9.0/permission.png)
-
-Allowing is not the same as starting. What it buys is a look: the sheet then
-says what a first sweep would actually do to your folder as it stands — *143
-items would move into 12 folders, 4 stay loose* — alongside the rule it would
-follow. **Start Filing** files them and takes over from there; **Not Yet**
-leaves everything exactly where it is, and the same question waits on the
-Overview pane and in the menu bar. Nothing is filed until you press it — not on
-launch, not when the folder changes, not on the daily timer.
-
-If the prompt was answered with *Don't Allow*, or dismissed by accident, the
-window shows an orange banner. **Choose Downloads Folder…** is the way back:
-macOS asks about a folder once and never again, but picking it yourself grants
-the same permission on the spot. Failing that, switch on *Downloads Folder* for
-Tideline under **Privacy & Security › Files and Folders**.
-
-The window also offers to start Tideline at login, since filing only happens
-while the app is running. **Open at Login** switches it on; **Not Now** hides
-the suggestion for good. Either way the same switch stays on the **General**
-pane.
-
-## The window
-
-A band across the top that stays put — the app's name, what it does in one
-line, and the master on/off switch — with a sidebar down the left and one pane
-at a time beside it. If macOS is blocking access, an orange banner sits under
-the band, above everything. The sidebar's foot always says which folder this is
-all about and what it is holding, whichever pane is open.
-
-The palette is the app's own rather than the system accent — `#ffd43b` on the
-surfaces that come with it, from the [Demo Time
-theme](https://github.com/estruyf/vscode-demotime-theme). It still follows Light
-and Dark mode: every colour has both. Yellow marks what Tideline put there and
-what it is about to touch — a filled button, the selected pane, the folders it
-made, a file due to move. Red is kept for faults, blue for a button that only
-navigates, green for running and watching.
-
-### Overview
-
-Whether filing is on, when it last ran, what it did, and when the next sweep is
-due — or **Not filing yet** and a **Start Filing…** button, until the question
-above has been answered. **File Now** runs a sweep immediately; **Catch Up…**
-is beside it once a type folder is switched on. **Open at login** sits in the same card, because filing
-only happens while the app is running and that switch decides whether it is.
-
-Under that, the folder as it stands right now — the type folders, the dated
-folders newest first, then whatever is still loose, each one saying what it is
-and whether the next sweep would move it. The window used to draw a sketch of a
-tidy Downloads folder here, which was the same picture whatever was actually in
-there; this is the real one. What it marks as due comes from the same planner a
-sweep uses, so the panel and a sweep cannot disagree about a file.
-
-Across the bottom, **Waiting for you**: what the scans turned up, how much of it
-could go, and a link straight into the review that deals with each. Filing tidies
-a folder; it does not shrink one, and this is the line that says so. The folder's
-own size is in the corner of the sidebar, where it is true on every pane.
-
-### Reclaim space
-
-Filing never removes anything, so everything that could give space back is in
-one place: duplicates, big files, and dated folders old enough to clear. Each
-shows what it found and the top few rows of it, with the review that decides
-what actually goes.
-
-![Reclaim space: what could be freed in one figure, then duplicates, big files and old dated folders, each with the top few rows of what it found](./assets/1.6.0/reclaim-space.png)
-
-Two of the three look on their own. Big files and old dated folders are found by
-reading names, sizes and dates — a directory listing and a walk, neither of which
-opens a file — so they run when the window opens and the answer is already there
-when you arrive. **Duplicates keep their button.** Matching copies means hashing
-them, which means reading the candidates end to end, and that is not something to
-start behind your back.
-
-**Rescan** at the top looks again, duplicates included. A scan is also thrown
-away whenever the answer could have moved — after a sweep, after anything goes to
-the Trash, after a setting that governs it changes — so the next look is a fresh
-one rather than a figure from before the folder shifted underneath it.
-
-**Could be freed** adds the three up. They overlap — a big file can sit inside a
-folder old enough to clear, and a duplicate copy can be both — so each byte is
-counted once, by the widest thing that would take it. Nothing here moves on its
-own: a look only reads, and everything you tick afterwards goes to the Trash
-rather than being deleted outright.
-
-Underneath it is what the folder holds, which is measured up to 60,000 items and
-then reported as a floor — walking a folder past that takes long enough to be
-worth asking about. A folder that big says so instead of quoting a total the
-scans above it can outgrow, and **Scan the folder in full** walks the rest: the
-same reading walk, only allowed to finish, and the exact figure stands for the
-rest of the session.
-
-**The same file, more than once.** Downloading the same file twice is what a
-Downloads folder does. The second one lands as `artifact-1.zip`, the third as `artifact-2.zip`,
-and the name stops telling you anything. **Review Duplicates…** finds them: it
-compares the root and the folders Tideline made, groups files whose names match
-once a copy suffix is taken off, and reads through the ones that also match in
-size to check they really are the same file, byte for byte. Two files that
-merely look alike are never called copies.
-
-![The duplicate review: files grouped by what they really are, the newest of each kept and the rest ticked for the Trash](./assets/tideline-review-duplicates.png)
-
-Each group starts with the newest copy kept and the rest ticked for the Trash;
-untick anything you would rather hold on to. A group always keeps a copy — the
-last one standing cannot be ticked. Nothing is compared until you ask, nothing
-goes until the sheet says so, and everything goes to the Trash rather than being
-deleted outright.
-
-With the other copies gone, the one that stays can have its plain name back:
-`artifact-1.zip` becomes `artifact.zip`, but only where that name is free.
-Switch that off in the sheet if you would rather it kept the name it has. A
-dated folder left empty by the removals goes to the Trash, as it does after
-catching up; a type folder is left alone either way. Preview mode previews it.
-
-**What is taking up the room.** Clearing goes by age; this goes by size. Filing
-tidies a folder, it never shrinks one, and a hundred neatly dated PDFs are not what is taking up
-the space. **Review Large Files…** lists the biggest files in the root and in
-the folders Tideline made, largest first, with the folder each one sits in and
-the day it arrived.
-
-![The big-file review: the largest downloads, largest first, with what ticking them would give back](./assets/tideline-review-big-files.png)
-
-Nothing starts ticked. A duplicate always leaves a copy behind; a big file is
-the only copy there is, so each one is a deliberate choice — and the magnifier
-at the end of a row opens it in Finder, because "can this go?" is usually
-answered by looking at the thing rather than at its name. The footer keeps a
-running total of what ticking them would give back.
-
-**Bigger than** sets the size — 50 MB up to 5 GB, 100 MB to begin with. It sits
-in the sheet as well as in settings, so you can turn it down until the list has
-something in it and back up when it has too much.
-
-The same rules as everywhere else: only plain files, only the root and the
-folders Tideline made — a folder you made yourself is never looked in, and
-neither is anything on the skip list or still downloading. What you tick goes to
-the **Trash**, and a dated folder the removals leave empty goes with it. Preview
-mode previews it. It is on the menu bar too, under **Reclaim space**.
-
-### Schedule
-
-Any combination of:
-
-| Setting | What it does |
-| --- | --- |
-| As soon as the folder changes | Watches `~/Downloads` and sweeps once things go quiet for 8 seconds |
-| Once a day, at a time you pick | Default 00:05, so yesterday's files get filed on a quiet morning |
-| When the app starts | Covers a scheduled run missed because the Mac was off |
-
-A run that is missed while the Mac sleeps fires as soon as it wakes.
-
-![The Schedule pane: watch the folder, run once a day at a time you pick, and catch up when the app starts](./assets/1.6.0/schedule.png)
-
-### Filing
-
-| Setting | Options |
-| --- | --- |
-| Folder | `~/Downloads` by default; pick any folder |
-| Leave loose in the root | Today only, today and yesterday, the last 3 days, the last week |
-| Folder name | One folder per day (`2026-08-19`) or per month (`2026-08`) |
-| Sort by | Date added to the folder (Finder's "Date Added"), date created, or date last modified |
-| File folders too | Whether downloaded folders move like files |
-| Preview mode | Shows what *would* move and touches nothing |
-
-![The Filing pane: which folder, how long things stay loose, how the dated folders are named, and the list of names never to touch](./assets/1.6.0/filing.png)
-
-**Preview mode** — a sweep that touches nothing. **Preview Now**, on the
-*Overview* pane or in the menu bar, walks the folder exactly as a real sweep
-would and then shows what it would have done: every item, grouped by the folder it
-would have landed in, with what that adds up to. It is still written to the log
-as before.
-
-**Putting it back** — the way out. Filing is the one thing here you cannot undo
-with a single gesture in Finder: a year of downloads sits across a hundred
-folders, and dragging them out again by hand is not an answer. **Put Everything
-Back…** lists everything Tideline ever filed, grouped by the folder it would
-come out of, all of it ticked. Untick anything you would rather leave where it
-is, and the rest moves back into the root. The folders that leaves empty go to
-the Trash — type folders included, since an empty `Installers/` is not something
-your Downloads folder had before Tideline.
-
-The same rules as everywhere else: a name already taken counts up to
-`report-1.pdf`, folders you made yourself are never opened, nothing is deleted,
-and preview mode previews it. Filing switches off once a real restore finishes —
-the next sweep would put back exactly what was just taken out — and the switch
-in the header starts it again.
-
-**Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). It starts
-with `Inbox` and `Screenshots`; both can go. On top of your list, the app always
-leaves alone: today's downloads, hidden files, partial downloads
-(`.crdownload`, `.download`, `.part`, `.partial`, `.opdownload`, `.tmp`,
-`.temp`, `.aria2`, Safari's `.download` bundles), anything written to in the
-last 30 seconds, and the dated folders it created itself.
-
-### Type folders
-
-A folder at the root that takes everything with one of its extensions, instead
-of the dated folder. Switch on `Installers` and every
-`.dmg`, `.pkg`, `.mpkg`, `.iso` and `.app` lands in `~/Downloads/Installers/`,
-whatever day it arrived on:
-
-```
-~/Downloads/
-├── Installers/
-│   ├── Figma.dmg
-│   └── node.pkg
-├── 2026-08-18/
-│   └── invoice.pdf
-└── report.pdf          ← downloaded today, stays put
-```
-
-![The Type folders pane: each folder with its extensions and a switch, all of them off until you turn one on](./assets/1.6.0/type-folders.png)
-
-The app ships with `Installers`, `Archives`, `Images`, `Documents`,
-`Spreadsheets`, `Presentations`, `Audio`, `Video` and `Fonts`, **all switched
-off** — nothing changes until you turn one on. Any of them can be renamed or
-re-scoped, and **Add a folder of your own** takes a name and a list of
-extensions (`torrent, magnet`) for anything the list does not cover.
-
-Switching a folder on only steers what arrives next — files already tucked into
-a dated folder stay there. **Catch Up…** brings them into line: it looks through
-the dated folders, shows you everything the rules now claim grouped by where it
-would go, and moves only what you leave checked. A dated folder left empty by
-that goes to the Trash. Folders you made yourself are never opened, and a name
-already taken in the type folder is never overwritten — `report.pdf` arrives as
-`report-1.pdf`.
-A type folder decides *where* something goes, not *when*. A `.dmg` downloaded
-today still sits loose in the root until it is older than the **Leave loose in
-the root** window — it just goes to `Installers/` rather than to a dated folder
-when its time comes. Type folders are flat, they are never filed away
-themselves, and **Clearing** never touches them: only dated folders are ever
-cleared. Where two folders claim the same extension, the one higher up the list
-takes it, and the window says so.
-
-### Clearing
-
-Old dated folders can go to the Trash once you have stopped
-needing them. Age is the narrower of the two ways to go about it, and the only
-one that can be left to run on its own:
-
-| Setting | Options |
-| --- | --- |
-| Clear dated folders | Never, or older than a month, three months (default), six months, a year |
-| Always keep | The newest 1, 3 (default), 5 or 10 folders, whatever their age |
-| Clear on the daily sweep | Off by default — see below |
-
-![The Clearing pane: how old a dated folder has to be, how many are always kept, and whether the daily sweep clears them](./assets/1.6.0/clearing.png)
-
-Left as it comes, nothing is ever removed on its own: the age setting only
-decides what shows up when you go looking.
-
-**Review Old Folders…** lists everything that qualifies with its item count and
-size, all of it ticked. Untick anything you want to keep, then **Move n Folders
-to Trash**. Nothing is removed until you press that button.
-
-![The old-folder review: every dated folder past the age you set, with its item count and size](./assets/review-old-folders.png)
-
-Switching on *Clear on the daily sweep* lets it happen unattended as part of the
-once-a-day run — never on a folder change, so a download landing can never
-trigger a removal.
-
-Three rules make this safe to leave on:
-
-- Only folders matching `YYYY-MM-DD` or `YYYY-MM` — the ones Tideline made
-  itself — are ever considered. Loose files, and folders you named yourself, are
-  invisible to it.
-- Age comes from the folder's *name*, measured from the end of the day or month
-  it covers, so a folder is never cleared sooner than its name suggests. The
-  folder's own timestamp is ignored; filing bumps that every time it drops
-  something new inside.
-- Folders go to the **Trash**, never straight to `unlink`. A setting you regret
-  is a drag back out of the Trash, not a restore from backup.
-
-Preview mode covers this too: it lists what would go and leaves it all in place.
-
-What the age you set is actually worth — how many folders qualify and what they
-add up to — is on *Reclaim space*, alongside the other two scans.
-
-### Activity log
-
-The last few hundred things Tideline moved, cleared or renamed, newest first,
-each with the folder it landed in. The full record, sweep by sweep, is the log
-file at `~/Library/Logs/Tideline.log` — **Open Log File** under *General*.
-
-### General
-
-A notification when files are filed, whether the folder's size sits next to the
-menu bar icon, buttons for the log and the Downloads folder, and **Uninstall…**. Then [Updates](#updates), and below that the version
-and build number (quote them in a bug report), plus links to the
-[source](https://github.com/estruyf/tideline),
-[issues](https://github.com/estruyf/tideline/issues) and the author.
-
-![The General pane: notifications, the menu bar size, the log and Downloads buttons, Uninstall, the update check and the version](./assets/1.6.0/general.png)
-
-#### Updates
-
-Tideline checks the [GitHub releases](https://github.com/estruyf/tideline/releases)
-page for a newer version once a day, and **Check Now** asks straight away. The
-check reads one public endpoint and sends nothing about you or your files.
-
-When there is something newer, the **Overview** pane and the menu bar say so, and
-**Update & Restart** does the rest: it downloads the release build, unpacks it,
-and only installs it once the copy passes three tests — it is Tideline, it is
-the version the release advertised, and it carries the same Developer ID
-signature and Apple notarisation as the copy you are running. Anything less and
-the download is thrown away untouched.
-
-The swap itself is the last step. The app quits, the new bundle replaces the old
-one, and Tideline reopens on the new version. If the copy fails halfway the old
-app is put straight back and reopened, so a bad download never leaves you
-without the app.
-
-When a check that ran on its own finds something newer, Tideline also says so
-in Notification Centre, once per version, so a new release does not wait for you
-to open the window. *Notify me when a new version is out* switches that off; it
-appears only where notifications were already allowed, since finding an update
-is never a reason to raise a permission prompt.
-
-Nothing downloads or installs on its own — a check only ever offers.
-**Skip This Version** silences one release without silencing the next, and
-*Check for updates automatically* switches the daily look off entirely. If the
-app cannot replace itself — it sits somewhere you cannot write to, or macOS is
-running it from a read-only quarantine copy — it says so and points you at the
-releases page.
-
-Nothing is ever overwritten. A name that is already taken in the target folder
-becomes `report-1.pdf`, `report-2.pdf`, and so on.
-
-## In the background
-
-Closing the window drops the Dock icon; the app keeps running and keeps filing.
-The menu bar icon stays. Its menu opens with the name and version, then the last
-run and what the folder is holding, **File Downloads Now**, **Open Tideline**, a
-**Filing Enabled** switch, **Reclaim space**, **Open Downloads Folder**,
-**Settings…**, **Help & Updates** and **Quit**.
-
-**Reclaim space** holds the three reviews — **Duplicates**, **Large files** and
-**Old dated folders** — with **Review All in Tideline…** at the foot, which
-opens the pane and starts the scans. The menu itself never scans and quotes no
-figures: what it could show would be as old as the last time the window was
-open. **Help & Updates** holds
-**Check for Updates…**, **Send Feedback…** and **Tideline on GitHub**, and wears
-a badge when there is a new version.
-
-**Open Tideline** (⌘O) brings the window up on whichever pane you left it on.
-**Settings…** (⌘,) opens the same window on *Filing*, since the rules are what
-you press ⌘, looking for. **Open Downloads Folder** is ⌘D.
-
-![The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews](./assets/1.8.0/menubar.png)
-
-**File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
-opens the window on the sheet that lists what a sweep would have moved. Before
-filing has been agreed to it reads **Start Filing…** and opens the window on the
-question, which is the only thing that ever starts a sweep.
-
-The size can sit next to the icon as well as inside the menu — **General ›
-Other › Show the folder size in the menu bar**, off by default.
-
-**Check for Updates…** reads **Update to 1.3.0…** once a check has found one,
-so a new version is visible without opening the window.
-
-All three **Review…** items bring the window up on their sheet rather than
-removing anything where you cannot see it. **Review Old Folders…** is greyed out
-while clearing is set to *Never*.
-
-Launched at login it starts with no window and no Dock icon at all. Clicking the
-app in Finder or Launchpad brings the window back.
-
-## Uninstall
-
-In the app: **General › Other › Uninstall…**. It removes the login item, its
-settings, the history and the log, then quits and opens Finder on the app so you
-can drag it to the Trash.
-
-By hand, if you would rather:
-
-```bash
-osascript -e 'quit app "Tideline"'
-rm -rf "/Applications/Tideline.app"
-rm -rf "$HOME/Library/Application Support/Tideline"
-rm -f  "$HOME/Library/Logs/Tideline.log"
-defaults delete be.eliostruyf.Tideline
-```
-
-Then, optionally, remove the leftovers macOS keeps:
-
-- **System Settings › General › Login Items** — remove Tideline if it is
-  still listed.
-- **System Settings › Privacy & Security › Files and Folders** — remove its
-  Downloads Folder permission.
-
-Your downloads and every dated folder stay exactly where they are. Uninstalling
-never moves a file back — if you want the folder as it was, use **Filing ›
-Putting it back** before you go.
-
-## Troubleshooting
-
-**Nothing moves.** Check the status row on *Overview*. An orange dot means macOS is
-blocking access — see [First launch](#first-launch). A grey dot means filing is
-paused, or has not been started yet: the headline says which, and **Start
-Filing…** answers the second.
-
-**Files are filed under the wrong day.** The day comes from the date the file
-landed on disk, so something copied or restored from elsewhere carries the date
-of the copy. Switch *Sort by* to *Date last modified* if that suits you better.
-
-**A file stayed put that should have moved.** Anything written to in the last 30
-seconds is left alone, on the assumption that something is still filling it in.
-The next sweep picks it up.
-
-**"Unable to expand … It is in an unsupported format."** You downloaded the
-build artifact from the Actions run page rather than the zip attached to the
-release. GitHub wraps every artifact in a zip of its own, so that download is a
-zip inside a zip — unpack it twice. Take the asset from the
-[latest release](https://github.com/estruyf/tideline/releases/latest) instead;
-it is the app, zipped once.
+current: Tideline looks for a newer release once a day and offers it. That is
+also why `brew upgrade` leaves it alone; the cask is marked as updating itself,
+so the two never race.
+
+Nothing is filed until you say so — what the app asks the first time you open it
+is on [First launch](https://estruyf.github.io/tideline/docs/first-launch.html).
+
+## Documentation
+
+The manual is at **[estruyf.github.io/tideline](https://estruyf.github.io/tideline/docs/)**:
+
+- [Install](https://estruyf.github.io/tideline/docs/install.html) and [First launch](https://estruyf.github.io/tideline/docs/first-launch.html) — getting it running, and the question it asks
+- [The window](https://estruyf.github.io/tideline/docs/the-window.html) — the panes, and what the colours mean
+- [Filing](https://estruyf.github.io/tideline/docs/filing.html), [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html), [Schedule](https://estruyf.github.io/tideline/docs/schedule.html), [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) — the rules a sweep follows
+- [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) — duplicates, big files, old dated folders
+- [The menu bar](https://estruyf.github.io/tideline/docs/menu-bar.html), [General and activity](https://estruyf.github.io/tideline/docs/general.html), [Updates](https://estruyf.github.io/tideline/docs/updates.html)
+- [Troubleshooting](https://estruyf.github.io/tideline/docs/troubleshooting.html) and [Uninstall](https://estruyf.github.io/tideline/docs/uninstall.html)
+- [Windows (beta)](https://estruyf.github.io/tideline/docs/windows.html) — what the Windows build does, and what it does not do yet
+
+The site is hand-written HTML in [`site/`](./site) with no build step, published
+by [`pages.yml`](./.github/workflows/pages.yml). `npm run site` serves it
+locally.
 
 ## Build it yourself
 

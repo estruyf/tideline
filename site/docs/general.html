@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>General and activity — Tideline</title>
+<meta name="description" content="Notifications, the folder size beside the menu bar icon, the log file, and the record of what Tideline moved.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/general.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="General and activity — Tideline">
+<meta property="og:description" content="Notifications, the folder size beside the menu bar icon, the log file, and the record of what Tideline moved.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/general.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html" aria-current="page">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>General and activity</h1>
+<p class="lead">The odds and ends: what gets a notification, where the log is, and the list of everything that moved.</p>
+
+<figure>
+  <img src="../assets/shots/general.png"
+       alt="The General pane: notifications, the menu bar size, the log and Downloads buttons, Uninstall, the update check and the version">
+</figure>
+
+<p>
+  A notification when files are filed, whether the folder's size sits next to
+  the menu bar icon, buttons for the log and the Downloads folder, and
+  <strong>Uninstall…</strong>. Then <a href="updates.html">Updates</a>, and
+  below that the version and build number — quote them in a bug report — plus
+  links to the
+  <a href="https://github.com/estruyf/tideline">source</a>,
+  <a href="https://github.com/estruyf/tideline/issues">issues</a> and the author.
+</p>
+
+<h2 id="activity">The activity log</h2>
+<p>
+  The last few hundred things Tideline moved, cleared or renamed, newest first,
+  each with the folder it landed in.
+</p>
+
+<figure>
+  <img src="../assets/shots/activity.png"
+       alt="The Activity pane: the last few hundred things Tideline moved, cleared or renamed, newest first">
+</figure>
+
+<p>
+  The full record, sweep by sweep, is the log file at
+  <code>~/Library/Logs/Tideline.log</code> — <strong>Open Log File</strong>
+  under <em>General</em>. That is the one to attach to a bug report;
+  <a href="filing.html#preview">preview mode</a> writes to it as well, so you can
+  watch a sweep decide without letting it move anything.
+</p>
+
+<div class="note note-info">
+  <strong>The app sends nothing about you or your files.</strong> The only
+  network request it ever makes is the
+  <a href="updates.html">update check</a>, which reads one public GitHub
+  endpoint. No account, no telemetry.
+</div>
+<div class="pager">
+<a href="menu-bar.html"><span>Previous</span>The menu bar</a>
+<a class="next" href="updates.html"><span>Next</span>Updates</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fgeneral.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fgeneral.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

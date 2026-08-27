@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tideline pitch image</title>
+<!--
+  The source of assets/pitch.jpg and assets/pitch-light.jpg.
+  Rendered by scripts/render-pitch.sh, which shoots it in a headless browser at
+  1200x630 with a 2x scale factor — 1.91:1, the ratio link previews expect.
+
+  It draws the same Finder window twice rather than a heap of loose icons beside
+  a window, because the claim is that one folder becomes the other. Two pictures
+  of different things cannot show that.
+
+  ?theme=light switches the palette. Both are rendered; the page and the README
+  pick one with <picture> and prefers-color-scheme.
+-->
+<style>
+  :root {
+    --bg-a: #10141c;
+    --bg-b: #1b2230;
+    --win: #1e242f;
+    --bar: #2a313d;
+    --bar-text: #d9dbe1;
+    --head: #252c38;
+    --row-a: #1e242f;
+    --row-b: #222936;
+    --text: #e7e9ee;
+    --dim: #8b93a3;
+    --rule: #333b49;
+    --label: #9ba4b7;
+    --accent: #ffd43b;
+    --folder-top: #7cc0ff;
+    --folder-bot: #4a9eea;
+    --doc: #f2f4f8;
+    --doc-edge: #c9cfda;
+    --arrow: #ffd43b;
+    --shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  }
+  body.light {
+    --bg-a: #eef1f6;
+    --bg-b: #ffffff;
+    --win: #ffffff;
+    --bar: #ececf0;
+    --bar-text: #33383f;
+    --head: #f4f5f8;
+    --row-a: #ffffff;
+    --row-b: #f7f8fa;
+    --text: #1d2330;
+    --dim: #6b7280;
+    --rule: #e2e5ea;
+    --label: #5b6474;
+    --accent: #a08000;
+    --folder-top: #8ecbff;
+    --folder-bot: #4a9eea;
+    --doc: #ffffff;
+    --doc-edge: #cdd3dd;
+    --arrow: #a08000;
+    --shadow: 0 20px 44px rgba(24, 32, 48, 0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+
+  body {
+    background: radial-gradient(120% 140% at 20% 0%, var(--bg-b) 0%, var(--bg-a) 62%);
+    font: 400 13px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    padding: 30px 40px 34px;
+  }
+
+  /* ---- Header ------------------------------------------------------------ */
+
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+  .mark { font-size: 17px; font-weight: 680; letter-spacing: -0.02em; }
+  .mark b { color: var(--accent); font-weight: 680; }
+  .tag { font-size: 13.5px; color: var(--dim); }
+
+  /* ---- The two windows --------------------------------------------------- */
+
+  .pair {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 44px 1fr;
+    align-items: center;
+    gap: 0;
+  }
+
+  .side { display: flex; flex-direction: column; height: 100%; }
+
+  .cap {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 9px;
+  }
+  .cap.after { color: var(--accent); }
+
+  .win {
+    flex: 1;
+    background: var(--win);
+    border-radius: 11px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titlebar {
+    height: 30px;
+    background: var(--bar);
+    display: flex;
+    align-items: center;
+    padding: 0 11px;
+    gap: 6px;
+    flex: none;
+    position: relative;
+  }
+  .dot { width: 9px; height: 9px; border-radius: 50%; }
+  .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+  .titlebar span {
+    position: absolute; left: 0; right: 0; text-align: center;
+    font-size: 11.5px; font-weight: 600; color: var(--bar-text);
+  }
+
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+
+  th {
+    background: var(--head);
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--dim);
+    text-align: left;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  th + th { border-left: 1px solid var(--rule); }
+
+  td {
+    font-size: 11px;
+    padding: 0 10px;
+    height: 23px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  tr:nth-child(even) td { background: var(--row-b); }
+  tr:nth-child(odd)  td { background: var(--row-a); }
+  td.meta { color: var(--dim); font-size: 10.5px; }
+
+  .name { display: flex; align-items: center; gap: 7px; overflow: hidden; }
+  .name em { font-style: normal; overflow: hidden; text-overflow: ellipsis; }
+  svg { flex: none; display: block; }
+
+  /* A folder Tideline made is the thing the picture is about, so it is the
+     only thing wearing the accent. */
+  tr.made td { background: rgba(255, 212, 59, 0.055); }
+  tr.made .name em { font-weight: 600; }
+
+  .arrow { display: flex; align-items: center; justify-content: center; }
+  .arrow svg { width: 26px; height: 26px; }
+
+  footer {
+    display: grid;
+    grid-template-columns: 1fr 44px 1fr;
+    margin-top: 13px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  footer div:last-child { color: var(--text); }
+  footer b { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark">Tideline</div>
+  <div class="tag">A tidy Downloads folder, every morning.</div>
+</header>
+
+<div class="pair">
+  <div class="side">
+    <div class="cap">Before</div>
+    <div class="win">
+      <div class="titlebar"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span>Downloads</span></div>
+      <table id="before"></table>
+    </div>
+  </div>
+
+  <div class="arrow">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--arrow)" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+  </div>
+
+  <div class="side">
+    <div class="cap after">After</div>
+    <div class="win">
+      <div class="titlebar"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span>Downloads</span></div>
+      <table id="after"></table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>Nineteen things in one heap, and four <b>artifact</b> zips you cannot tell apart.</div>
+  <div></div>
+  <div>Today's downloads stay loose. Everything older is filed by the day it arrived.</div>
+</footer>
+
+<script>
+const folder = `<svg width="14" height="14" viewBox="0 0 16 16">
+  <path d="M1 4.2c0-.7.5-1.2 1.2-1.2h3.1c.4 0 .8.2 1 .5l.7.9h6.8c.7 0 1.2.5 1.2 1.2v6.2c0 .7-.5 1.2-1.2 1.2H2.2c-.7 0-1.2-.5-1.2-1.2V4.2z"
+        fill="var(--folder-bot)"/>
+  <path d="M1 6.1h14v5.7c0 .7-.5 1.2-1.2 1.2H2.2c-.7 0-1.2-.5-1.2-1.2V6.1z" fill="var(--folder-top)"/>
+</svg>`;
+
+// A page with a turned corner, plus the extension across it the way macOS
+// stamps a type onto an otherwise blank document icon.
+function doc(ext, tint) {
+  return `<svg width="14" height="14" viewBox="0 0 16 16">
+    <path d="M3 1.4h6.2L13 5.1v9.5c0 .3-.2.5-.5.5h-9c-.3 0-.5-.2-.5-.5V1.9c0-.3.2-.5.5-.5z"
+          fill="var(--doc)" stroke="var(--doc-edge)" stroke-width=".7"/>
+    <path d="M9.2 1.4V4.6c0 .3.2.5.5.5H13" fill="none" stroke="var(--doc-edge)" stroke-width=".7"/>
+    <rect x="2.2" y="8.6" width="11.6" height="4.6" rx="1" fill="${tint}"/>
+    <text x="8" y="12.1" text-anchor="middle" font-family="-apple-system,system-ui,sans-serif"
+          font-size="3.9" font-weight="700" fill="#fff">${ext}</text>
+  </svg>`;
+}
+
+const TINT = {
+  zip: "#8b93a3", pdf: "#e0564f", png: "#4a9eea", xlsx: "#2f9e63",
+  key: "#e8a33d", pptx: "#e0714f", dmg: "#7a6cf0", pkg: "#7a6cf0",
+  csv: "#2f9e63", mov: "#c05ac0", xip: "#7a6cf0",
+};
+
+function icon(name, isFolder) {
+  if (isFolder) return folder;
+  const ext = name.split(".").pop().toLowerCase();
+  return doc(ext.slice(0, 4).toUpperCase(), TINT[ext] || "#8b93a3");
+}
+
+function render(id, rows) {
+  // Date needs the room: "25 Aug 2026 at 14:52" is the longest cell in the
+  // table, and a truncated timestamp looks like a bug rather than a folder.
+  const head = `<tr><th style="width:51%">Name</th><th style="width:29%">Date Modified</th>
+                <th style="width:20%">Size</th></tr>`;
+  document.getElementById(id).innerHTML = head + rows.map(r =>
+    `<tr class="${r.made ? "made" : ""}">
+       <td><div class="name">${icon(r.n, r.dir)}<em>${r.n}</em></div></td>
+       <td class="meta">${r.d}</td><td class="meta">${r.s}</td>
+     </tr>`).join("");
+}
+
+// Today is 27 Aug 2026, so anything from the 26th reads "Yesterday" — Finder
+// spells the two most recent days out and dates the rest. The two lists have to
+// reconcile: every file here is either still loose on the right or inside the
+// folder for the day it arrived, and the item counts say which.
+render("before", [
+  { n: "artifact-3.zip",                        d: "Today at 17:33",        s: "24,1 MB"  },
+  { n: "Screenshot 2026-08-27 at 09.41.12.png", d: "Today at 09:41",        s: "1,2 MB"   },
+  { n: "report.pdf",                            d: "Today at 09:12",        s: "860 KB"   },
+  { n: "artifact-2.zip",                        d: "Yesterday at 16:20",    s: "24,1 MB"  },
+  { n: "Screenshot 2026-08-26 at 16.02.55.png", d: "Yesterday at 16:02",    s: "1,4 MB"   },
+  { n: "invoice-2026-08.pdf",                   d: "Yesterday at 11:04",    s: "212 KB"   },
+  { n: "Figma.dmg",                             d: "25 Aug 2026 at 14:52",  s: "148,3 MB" },
+  { n: "artifact-1.zip",                        d: "25 Aug 2026 at 10:31",  s: "24,1 MB"  },
+  { n: "quarterly-figures.xlsx",                d: "24 Aug 2026 at 17:03",  s: "98 KB"    },
+  { n: "keynote-draft.key",                     d: "24 Aug 2026 at 09:20",  s: "42,7 MB"  },
+  { n: "artifact.zip",                          d: "23 Aug 2026 at 15:44",  s: "24,1 MB"  },
+  { n: "node-v24.4.0.pkg",                      d: "23 Aug 2026 at 08:15",  s: "76,4 MB"  },
+  { n: "techorama-deck.pptx",                   d: "22 Aug 2026 at 19:02",  s: "31,8 MB"  },
+  { n: "logo-pack.zip",                         d: "22 Aug 2026 at 13:37",  s: "8,9 MB"   },
+  { n: "contract-signed.pdf",                   d: "21 Aug 2026 at 16:11",  s: "1,1 MB"   },
+  { n: "recording-raw.mov",                     d: "21 Aug 2026 at 10:05",  s: "1,74 GB"  },
+  { n: "sponsors-export.csv",                   d: "20 Aug 2026 at 12:40",  s: "44 KB"    },
+  { n: "site-backup.zip",                       d: "20 Aug 2026 at 09:05",  s: "612,5 MB" },
+  { n: "Xcode_15.4.xip",                        d: "19 Aug 2026 at 22:14",  s: "7,21 GB"  },
+]);
+
+render("after", [
+  { n: "artifact-3.zip",                        d: "Today at 17:33",       s: "24,1 MB" },
+  { n: "Screenshot 2026-08-27 at 09.41.12.png", d: "Today at 09:41",       s: "1,2 MB"  },
+  { n: "report.pdf",                            d: "Today at 09:12",       s: "860 KB"  },
+  { n: "2026-08-26", dir: 1, made: 1, d: "Yesterday at 16:20",   s: "3 items" },
+  { n: "2026-08-25", dir: 1, made: 1, d: "25 Aug 2026 at 14:52", s: "2 items" },
+  { n: "2026-08-24", dir: 1, made: 1, d: "24 Aug 2026 at 17:03", s: "2 items" },
+  { n: "2026-08-23", dir: 1, made: 1, d: "23 Aug 2026 at 15:44", s: "2 items" },
+  { n: "2026-08-22", dir: 1, made: 1, d: "22 Aug 2026 at 19:02", s: "2 items" },
+  { n: "2026-08-21", dir: 1, made: 1, d: "21 Aug 2026 at 16:11", s: "2 items" },
+  { n: "2026-08-20", dir: 1, made: 1, d: "20 Aug 2026 at 12:40", s: "2 items" },
+  { n: "2026-08-19", dir: 1, made: 1, d: "19 Aug 2026 at 22:14", s: "1 item"  },
+]);
+
+if (new URLSearchParams(location.search).get("theme") === "light") {
+  document.body.classList.add("light");
+}
+</script>
+</body>
+</html>

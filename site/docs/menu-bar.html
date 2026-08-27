@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The menu bar — Tideline</title>
+<meta name="description" content="What the Tideline icon shows and what its menu can do without opening the window.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/menu-bar.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The menu bar — Tideline">
+<meta property="og:description" content="What the Tideline icon shows and what its menu can do without opening the window.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/menu-bar.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html" aria-current="page">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>The menu bar</h1>
+<p class="lead">Closing the window drops the Dock icon; the app keeps running and keeps filing. The menu bar icon stays.</p>
+
+<p>
+  Its menu opens with the name and version, then the last run and what the
+  folder is holding, followed by <strong>File Downloads Now</strong>,
+  <strong>Open Tideline</strong>, a <strong>Filing Enabled</strong> switch,
+  <strong>Reclaim space</strong>, <strong>Open Downloads Folder</strong>,
+  <strong>Settings…</strong>, <strong>Help &amp; Updates</strong> and
+  <strong>Quit</strong>.
+</p>
+
+<figure>
+  <img src="../assets/shots/menubar.png"
+       alt="The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews">
+</figure>
+
+<h2>Shortcuts</h2>
+<div class="table-scroll">
+<table>
+<thead><tr><th>Item</th><th>Key</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>Open Tideline</td><td>⌘O</td><td>Brings the window up on whichever pane you left it on</td></tr>
+<tr><td>Settings…</td><td>⌘,</td><td>Opens the same window on <a href="filing.html">Filing</a>, since the rules are what you press ⌘, looking for</td></tr>
+<tr><td>Open Downloads Folder</td><td>⌘D</td><td>Finder, on the folder Tideline is filing</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2>Reclaim space</h2>
+<p>
+  Holds the three reviews — <strong>Duplicates</strong>, <strong>Large
+  files</strong> and <strong>Old dated folders</strong> — with <strong>Review
+  All in Tideline…</strong> at the foot, which opens the pane and starts the
+  scans.
+</p>
+<p>
+  The menu itself never scans and quotes no figures: what it could show would be
+  as old as the last time the window was open. All three
+  <strong>Review…</strong> items bring the window up on their sheet rather than
+  removing anything where you cannot see it. <strong>Review Old Folders…</strong>
+  is greyed out while <a href="clearing.html">clearing</a> is set to
+  <em>Never</em>.
+</p>
+
+<h2>Help &amp; Updates</h2>
+<p>
+  Holds <strong>Check for Updates…</strong>, <strong>Send Feedback…</strong> and
+  <strong>Tideline on GitHub</strong>, and wears a badge when there is a new
+  version. <strong>Check for Updates…</strong> reads
+  <strong>Update to 1.3.0…</strong> once a check has found one, so a new version
+  is visible without opening the window. See <a href="updates.html">Updates</a>.
+</p>
+
+<h2>What File Downloads Now reads</h2>
+<ul>
+  <li>
+    While <a href="filing.html#preview">preview mode</a> is on it reads
+    <strong>Preview a Sweep…</strong>, and opens the window on the sheet that
+    lists what a sweep would have moved.
+  </li>
+  <li>
+    Before <a href="first-launch.html">filing has been agreed to</a> it reads
+    <strong>Start Filing…</strong> and opens the window on the question, which
+    is the only thing that ever starts a sweep.
+  </li>
+</ul>
+
+<h2>The folder size beside the icon</h2>
+<p>
+  The size can sit next to the icon as well as inside the menu —
+  <strong>General › Other › Show the folder size in the menu bar</strong>, off
+  by default.
+</p>
+
+<div class="note">
+  <strong>Launched at login</strong> it starts with no window and no Dock icon
+  at all. Clicking the app in Finder or Launchpad brings the window back.
+</div>
+<div class="pager">
+<a href="reclaim-space.html"><span>Previous</span>Reclaim space</a>
+<a class="next" href="general.html"><span>Next</span>General and activity</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fmenu-bar.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fmenu-bar.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First launch — Tideline</title>
+<meta name="description" content="The macOS permission prompt, the look at what a first sweep would do, and the button that starts filing.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/first-launch.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="First launch — Tideline">
+<meta property="og:description" content="The macOS permission prompt, the look at what a first sweep would do, and the button that starts filing.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/first-launch.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html" aria-current="page">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>First launch</h1>
+<p class="lead">Tideline starts knowing nothing about your Downloads folder, and files nothing until you press a button. This is what it asks, and why it asks in that order.</p>
+
+<h2>Tideline is not filing yet</h2>
+<p>
+  The window opens on that line, and it is the whole state of the app: it has
+  not read your Downloads folder, because reading it is what raises the macOS
+  permission prompt — and a system alert that arrives before the app has
+  introduced itself is a question with no context.
+</p>
+<p>
+  <strong>Allow Access…</strong> is what asks. The prompt is scoped to that one
+  folder, and nothing else on the disk becomes readable by allowing it.
+</p>
+
+<figure>
+  <img src="../assets/shots/permission.png"
+       alt="macOS asking whether Tideline may access files in your Downloads folder">
+  <figcaption>One question, about one folder, revocable in System Settings.</figcaption>
+</figure>
+
+<h2>Allowing is not the same as starting</h2>
+<p>
+  What it buys is a look. The sheet then says what a first sweep would actually
+  do to your folder as it stands — <em>143 items would move into 12 folders, 4
+  stay loose</em> — alongside the rule it would follow.
+</p>
+<p>
+  <strong>Start Filing</strong> files them and takes over from there.
+  <strong>Not Yet</strong> leaves everything exactly where it is, and the same
+  question waits on the Overview pane and in the menu bar.
+</p>
+
+<div class="note">
+  <strong>Nothing is filed until you press it.</strong> Not on launch, not when
+  the folder changes, not on the daily timer.
+</div>
+
+<h2>If the prompt was refused</h2>
+<p>
+  Answered with <em>Don't Allow</em>, or dismissed by accident, and the window
+  shows an orange banner. <strong>Choose Downloads Folder…</strong> is the way
+  back: macOS asks about a folder once and never again, but picking it yourself
+  grants the same permission on the spot.
+</p>
+<p>
+  Failing that, switch on <em>Downloads Folder</em> for Tideline under
+  <strong>System Settings › Privacy &amp; Security › Files and Folders</strong>.
+</p>
+
+<h2>Opening at login</h2>
+<p>
+  The window also offers to start Tideline at login, since filing only happens
+  while the app is running. <strong>Open at Login</strong> switches it on;
+  <strong>Not Now</strong> hides the suggestion for good. Either way the same
+  switch stays on the <a href="general.html">General</a> pane.
+</p>
+
+<div class="note note-info">
+  <strong>Want to see it decide before you commit?</strong> Switch on
+  <a href="filing.html#preview">Preview mode</a> first. Sweeps then report what
+  they would do and touch nothing at all.
+</div>
+<div class="pager">
+<a href="install.html"><span>Previous</span>Install</a>
+<a class="next" href="the-window.html"><span>Next</span>The window</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ffirst-launch.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ffirst-launch.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "tideline-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Tideline promo videos, cut from the screen recording and from window captures of the app, with Remotion.",
+  "license": "MIT",
+  "scripts": {
+    "assets": "./scripts/assets.sh",
+    "capture": "./scripts/capture.sh",
+    "start": "remotion studio",
+    "render": "remotion render Promo out/tideline-promo.mp4 --codec=h264 --crf=17",
+    "render:tour": "remotion render Tour out/tideline-tour.mp4 --codec=h264 --crf=17",
+    "render:all": "npm run render && npm run render:tour",
+    "web": "ffmpeg -i out/tideline-promo.mp4 -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an out/promo-web.mp4 -y && ffmpeg -i out/tideline-tour.mp4 -vf scale=1280:720:flags=lanczos -c:v libx264 -crf 26 -preset slow -pix_fmt yuv420p -movflags +faststart -an out/tour-web.mp4 -y",
+    "still": "remotion still Promo out/poster.png --frame=300",
+    "typecheck": "tsc --noEmit",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.518",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.518"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.0",
+    "typescript": "5.9.3"
+  }
+}

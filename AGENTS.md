@@ -28,11 +28,16 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | `windows/src-tauri/src/` | The Tauri shell — tray, schedule, commands, settings on disk |
 | `windows/src/` | The window: plain HTML, CSS and JS, no framework and no build step |
 | `docs/behaviour.md` | The filing contract both platforms implement |
+| `docs/*.md` | Technical documentation, for whoever builds or releases the app. Anything a **user** needs is on the website in `site/docs/`, not here |
 | `fixtures/sweep-cases.json` | The contract as runnable cases. Add a rule here first |
 | `homebrew/` | The Homebrew cask and the script that stamps it into `estruyf/homebrew-tap` |
+| `site/` | The website and the end-user manual: hand-written HTML and CSS, no framework and no build step. `stage.sh` folds the newest `assets/<version>/` in as `assets/shots/`, which is why no page names a version, and copies `assets/tour.mp4` beside it |
+| `scripts/pitch-image.html` | The source of the before/after banner. `scripts/render-pitch.sh` shoots it headless into `assets/pitch.jpg` and `assets/pitch-light.jpg` — edit the HTML, never the JPEGs |
+| `promo/` | Two promo videos in Remotion — a thirty-second cut of the screen recording, and a ninety-second tour built from window captures `promo/scripts/capture.sh` takes off the running app. Its own `package.json` and its own dependencies; the app still has none |
+| `.claude/skills/screenshots/` | How the README pictures are retaken off the running app, and what to check afterwards |
 | `docs/building.md`, `docs/signing.md`, `docs/releasing.md`, `docs/homebrew.md` | Build, distribution, release and cask notes |
 | `windows/README.md` | Building on Windows, what is ported, what is not |
-| `app/.build/`, `app/dist/`, `windows/**/target/`, `old-scripts/` | Ignored by git; never edit or commit |
+| `app/.build/`, `app/dist/`, `windows/**/target/`, `promo/out/`, `_site/`, `old-scripts/` | Ignored by git; never edit or commit |
 
 ## Commands
 
@@ -48,6 +53,9 @@ npm run win:test         # the Rust workspace: 47 tests
 npm run win:check        # type-check the engine against the Windows target
 npm run win:dev          # run the Tauri app (works on a Mac too, see below)
 npm run win:build        # NSIS installer — Windows only
+
+npm run site             # stage the website into _site/ and serve it on :8080
+npm run site:stage       # stage it without serving — what the Pages workflow runs
 ```
 
 `swift run` is not a useful way to test a change: it starts the executable
@@ -104,7 +112,8 @@ Cross-*building* the installer from macOS does not work; CI builds it on
   `Cargo.toml`, and sits at `0.1.0` until it reaches parity; the two ship on
   separate schedules and separate workflows.
 - **The macOS app has no dependencies.** Neither SwiftPM nor npm; the root
-  `package.json` is a shortcut to `build.sh` and nothing more. The Windows build
+  `package.json` holds shortcuts to `build.sh` and to the website's staging
+  script, and nothing more. The Windows build
   necessarily has some (Tauri, chrono, serde, trash), but the same instinct
   applies — the front end is hand-written HTML and CSS rather than a framework,
   and it should stay that way.
@@ -154,9 +163,28 @@ On the Rust side:
 - Add a **Keep a Changelog** entry under a new version heading in `CHANGELOG.md`,
   written the way the existing entries are — what it does, and why it behaves
   the way it does.
-- Update `README.md` if the change is visible in the window or the menu bar,
-  `docs/behaviour.md` and `fixtures/sweep-cases.json` if it touches the filing
-  rules, and `windows/README.md` if it changes what is ported.
+- **The website is the manual, and `README.md` is the pitch.** A change visible
+  in the window or the menu bar is written up in `site/docs/`; the README only
+  changes when the pitch, the install or the list of what it does changes. They
+  were one document until the site existed, so resist writing the detail twice.
+  Also update `docs/behaviour.md` and `fixtures/sweep-cases.json` if it touches
+  the filing rules, and `windows/README.md` if it changes what is ported.
+- **A new screenshot set goes in `assets/<version>/` and nothing else needs
+  editing.** `site/stage.sh` picks the highest-numbered folder, so the pages
+  follow it on their own — that is why they ask for `assets/shots/`. Keep the
+  filenames the same or a page loses its picture, which `stage.sh` will fail on
+  rather than publish.
+- **The pitch banner is generated, not drawn.** It is two Finder windows in
+  HTML — the same folder before and after — so the file lists have to reconcile:
+  every file on the left is either still loose on the right or inside the folder
+  for the day it arrived, and the item counts say which. Change one list and
+  change the other. `./scripts/render-pitch.sh` re-renders both themes.
+- **`assets/tour.mp4` is the rendered tour, and it is committed on purpose.**
+  `promo/out/` stays ignored because it also holds the 28 MB master and the
+  promo cut; the 4 MB 720p tour is a shipped asset like the screenshots, since
+  the Pages workflow only ever sees what is in the repository. Re-render it with
+  `npm run render:tour` in `promo/`, then copy the web cut over this one and
+  refresh `assets/tour-poster.jpg` from a frame of it.
 - Commit messages are short and descriptive, in the imperative or past tense —
   match `git log`. Version bumps are their own commit, made by `npm version`.
 - Releasing macOS is `npm version patch`, push the tag, then publish the release

@@ -1,0 +1,13 @@
+node_modules/
+out/
+
+# Compiled by scripts/capture.sh from scripts/grab.swift.
+.bin/
+
+# Build inputs, not sources. `npm run assets` copies the recording and the app
+# icon in; `npm run capture` retakes every window shot from the running app.
+# The recording is 7 MB and the shots are somebody's screen — both are cheaper
+# to regenerate than to carry.
+public/demo.mp4
+public/icon.png
+public/shots/

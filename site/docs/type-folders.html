@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Type folders — Tideline</title>
+<meta name="description" content="Send every .dmg to Installers/ whatever day it arrived on. Nine folders to choose from, all off until you turn one on.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/type-folders.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Type folders — Tideline">
+<meta property="og:description" content="Send every .dmg to Installers/ whatever day it arrived on. Nine folders to choose from, all off until you turn one on.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/type-folders.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html" aria-current="page">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Type folders</h1>
+<p class="lead">A folder at the root that takes everything with one of its extensions, instead of the dated folder.</p>
+
+<p>
+  Switch on <code>Installers</code> and every <code>.dmg</code>,
+  <code>.pkg</code>, <code>.mpkg</code>, <code>.iso</code> and <code>.app</code>
+  lands in <code>~/Downloads/Installers/</code>, whatever day it arrived on:
+</p>
+
+<pre class="tree"><code>~/Downloads/
+<span class="dir">├── Installers/</span>
+│   ├── Figma.dmg
+│   └── node.pkg
+<span class="dir">├── 2026-08-18/</span>
+│   └── invoice.pdf
+└── report.pdf          <span class="stays">← downloaded today, stays put</span></code></pre>
+
+<figure>
+  <img src="../assets/shots/type-folders.png"
+       alt="The Type folders pane: each folder with its extensions and a switch, all of them off until you turn one on">
+</figure>
+
+<h2>What ships, and what is on</h2>
+<p>
+  The app comes with <code>Installers</code>, <code>Archives</code>,
+  <code>Images</code>, <code>Documents</code>, <code>Spreadsheets</code>,
+  <code>Presentations</code>, <code>Audio</code>, <code>Video</code> and
+  <code>Fonts</code>, <strong>all switched off</strong> — nothing changes until
+  you turn one on.
+</p>
+<p>
+  Any of them can be renamed or re-scoped, and <strong>Add a folder of your
+  own</strong> takes a name and a list of extensions
+  (<code>torrent, magnet</code>) for anything the list does not cover.
+</p>
+
+<h2 id="catch-up">Catch Up</h2>
+<p>
+  Switching a folder on only steers what arrives next — files already tucked
+  into a dated folder stay there. <strong>Catch Up…</strong> brings them into
+  line: it looks through the dated folders, shows you everything the rules now
+  claim grouped by where it would go, and moves only what you leave checked.
+</p>
+<p>
+  A dated folder left empty by that goes to the Trash. Folders you made yourself
+  are never opened, and a name already taken in the type folder is never
+  overwritten — <code>report.pdf</code> arrives as <code>report-1.pdf</code>.
+</p>
+
+<h2>Where, not when</h2>
+<div class="note">
+  <strong>A type folder decides <em>where</em> something goes, not
+  <em>when</em>.</strong> A <code>.dmg</code> downloaded today still sits loose
+  in the root until it is older than the <em>Leave loose in the root</em>
+  window — it just goes to <code>Installers/</code> rather than to a dated
+  folder when its time comes.
+</div>
+
+<p>Three more things follow from that:</p>
+<ul>
+  <li>Type folders are flat. They are never filed away themselves.</li>
+  <li><a href="clearing.html">Clearing</a> never touches them — only dated folders are ever cleared.</li>
+  <li>Where two folders claim the same extension, the one higher up the list takes it, and the window says so.</li>
+</ul>
+<div class="pager">
+<a href="filing.html"><span>Previous</span>Filing</a>
+<a class="next" href="schedule.html"><span>Next</span>Schedule</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ftype-folders.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ftype-folders.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

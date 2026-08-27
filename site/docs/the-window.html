@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The window — Tideline</title>
+<meta name="description" content="The band, the sidebar, and the Overview pane: whether filing is on, when it last ran, and the folder as it stands.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/the-window.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="The window — Tideline">
+<meta property="og:description" content="The band, the sidebar, and the Overview pane: whether filing is on, when it last ran, and the folder as it stands.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/the-window.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html" aria-current="page">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>The window</h1>
+<p class="lead">A band across the top that stays put, a sidebar down the left, and one pane at a time beside it.</p>
+
+<p>
+  The band holds the app's name, what it does in one line, and the master on/off
+  switch. If macOS is blocking access, an orange banner sits under it, above
+  everything. The sidebar's foot always says which folder this is all about and
+  what it is holding, whichever pane is open.
+</p>
+
+<figure>
+  <img src="../assets/shots/overview.png"
+       alt="The Tideline window: the sidebar, the status card, and the Downloads folder as it stands">
+</figure>
+
+<h2>The colours mean something</h2>
+<p>
+  The palette is the app's own rather than the system accent — <code>#ffd43b</code>,
+  from the
+  <a href="https://github.com/estruyf/vscode-demotime-theme">Demo Time theme</a>.
+  It still follows Light and Dark mode: every colour has both.
+</p>
+<ul>
+  <li><strong>Yellow</strong> marks what Tideline put there and what it is about to touch — a filled button, the selected pane, the folders it made, a file due to move.</li>
+  <li><strong>Red</strong> is kept for faults.</li>
+  <li><strong>Blue</strong> is a button that only navigates.</li>
+  <li><strong>Green</strong> is running and watching.</li>
+</ul>
+
+<h2 id="overview">Overview</h2>
+<p>
+  Whether filing is on, when it last ran, what it did, and when the next sweep
+  is due — or <strong>Not filing yet</strong> and a <strong>Start Filing…</strong>
+  button, until the question on <a href="first-launch.html">First launch</a> has
+  been answered.
+</p>
+<p>
+  <strong>File Now</strong> runs a sweep immediately; <strong>Catch Up…</strong>
+  is beside it once a <a href="type-folders.html">type folder</a> is switched
+  on. <strong>Open at login</strong> sits in the same card, because filing only
+  happens while the app is running and that switch decides whether it is.
+</p>
+
+<h3>The folder as it stands</h3>
+<p>
+  Under that, right now: the type folders, the dated folders newest first, then
+  whatever is still loose, each one saying what it is and whether the next sweep
+  would move it.
+</p>
+<p>
+  The window used to draw a sketch of a tidy Downloads folder here, which was
+  the same picture whatever was actually in there; this is the real one. What it
+  marks as due comes from the same planner a sweep uses, so the panel and a
+  sweep cannot disagree about a file.
+</p>
+
+<h3>Waiting for you</h3>
+<p>
+  Across the bottom: what the scans turned up, how much of it could go, and a
+  link straight into the review that deals with each. Filing tidies a folder; it
+  does not shrink one, and this is the line that says so — the whole of it is on
+  <a href="reclaim-space.html">Reclaim space</a>.
+</p>
+<p>
+  The folder's own size is in the corner of the sidebar, where it is true on
+  every pane.
+</p>
+<div class="pager">
+<a href="first-launch.html"><span>Previous</span>First launch</a>
+<a class="next" href="filing.html"><span>Next</span>Filing</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fthe-window.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fthe-window.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

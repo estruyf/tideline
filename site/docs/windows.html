@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Beta — Tideline</title>
+<meta name="description" content="The Windows build of Tideline: what the beta does, what it does not do yet, and how it differs from the Mac app.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/windows.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Beta — Tideline">
+<meta property="og:description" content="The Windows build of Tideline: what the beta does, what it does not do yet, and how it differs from the Mac app.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/windows.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html" aria-current="page">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Windows <span class="beta">Beta</span></h1>
+<p class="lead">There is a Windows build. It files downloads by the day exactly as the Mac app does — and about half of everything else is not there yet.</p>
+
+<p>
+  It is a separate implementation of the same rules: Rust for the engine,
+  <a href="https://tauri.app">Tauri</a> for the window and the tray icon. The
+  two apps share no code, only a written contract, so they cannot quietly drift
+  apart on what a sweep does.
+</p>
+
+<div class="note note-warn">
+  <strong>It starts filing as soon as it is running.</strong> Unlike the Mac
+  app, it does not ask first — there is no <em>Start Filing</em> button yet, so
+  installing it and leaving it open is enough to move files. Switch on
+  <strong>Preview mode</strong> on the Filing tab before you point it at a
+  folder you care about; a preview walks the folder and touches nothing.
+</div>
+
+<h2>Getting it</h2>
+<p>
+  The installer is published as a <strong>pre-release</strong>, separately from
+  the macOS releases and on its own schedule. It is a 1.2 MB NSIS installer for
+  64-bit Windows, and it is not code-signed.
+</p>
+
+<p>
+  <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/download/win-v0.1.0/Tideline_0.1.0_x64-setup.exe">Download 0.1.0 for Windows</a>
+</p>
+
+<p>
+  Later builds are tagged <code>win-*</code> on the
+  <a href="https://github.com/estruyf/tideline/releases">releases page</a> and
+  marked as pre-releases. Windows versions its own numbering and sits at
+  <code>0.1.0</code> until it reaches parity with the Mac app, so a Windows
+  0.1.0 and a macOS 1.9.0 are the same week's work, not eight versions apart.
+</p>
+
+<h3>What it needs</h3>
+<ul>
+  <li>64-bit Windows.</li>
+  <li>
+    WebView2, which draws the window. It ships with Windows 11 and with
+    Windows 10 from 21H2, so in practice it is already there.
+  </li>
+</ul>
+
+<div class="note note-warn">
+  <strong>Windows will warn you about the installer.</strong> It is not signed
+  with a code-signing certificate, so SmartScreen shows
+  <em>“Windows protected your PC”</em>. <strong>More info</strong> then
+  <strong>Run anyway</strong> gets past it. Certificates are billed yearly and
+  reputation accrues per certificate, so signing is waiting until the app is
+  worth putting a subscription behind — the tradeoff is written up in
+  <a href="https://github.com/estruyf/tideline/blob/main/windows/README.md">the Windows README</a>.
+</div>
+
+<h2>What works</h2>
+<p>
+  The filing engine is complete and tested, and it is the part everything else
+  is built to serve:
+</p>
+<ul>
+  <li>
+    Daily and monthly folders, the window that keeps recent downloads loose in
+    the root, and <a href="type-folders.html">type folders</a> with their
+    extension lists.
+  </li>
+  <li>
+    The <a href="filing.html#skip-list">skip list</a>, including glob patterns,
+    partial downloads and the settling rule that leaves a file alone while
+    something is still writing to it.
+  </li>
+  <li>Never overwriting a name — collisions count up, as they do everywhere.</li>
+  <li><a href="filing.html#preview">Preview mode</a>.</li>
+  <li>The window: Status, Filing, Schedule and About.</li>
+  <li>The tray icon and its menu.</li>
+  <li>
+    The daily schedule, including catching up a run missed because the machine
+    was off or asleep.
+  </li>
+  <li>
+    <strong>Start at sign-in</strong>, from the Schedule tab or the tray.
+    Windows is the source of truth rather than the settings file — Task
+    Manager's Startup tab can switch it off behind the app's back, so the state
+    is read back from the OS on every launch.
+  </li>
+</ul>
+
+<h2>What is not there yet</h2>
+<p>Roughly in the order they are worth doing:</p>
+<ol>
+  <li><strong>Asking before the first sweep</strong> — see the warning above.</li>
+  <li>
+    <strong><a href="filing.html#putting-it-back">Putting it back</a></strong> —
+    the answer to “what if I try this and hate it”. Until it lands, undoing a
+    sweep on Windows means moving folders by hand.
+  </li>
+  <li><strong>Watching the folder</strong> — the setting is stored and honoured by nothing, so only the daily run and the tray's <em>File now</em> sweep.</li>
+  <li><strong><a href="clearing.html">Clearing</a></strong> old dated folders.</li>
+  <li><strong><a href="reclaim-space.html#duplicates">Duplicates</a></strong>.</li>
+  <li><strong><a href="reclaim-space.html#big-files">Large files</a></strong> and <strong><a href="type-folders.html#catch-up">Catch Up</a></strong>.</li>
+  <li><strong>Notifications</strong> after a sweep.</li>
+  <li>
+    <strong>The updater.</strong> There is none, so nothing tells you a new
+    build exists and nothing installs it — check the
+    <a href="https://github.com/estruyf/tideline/releases">releases page</a>
+    when you think of it.
+  </li>
+</ol>
+
+<h2>Where the two differ</h2>
+<div class="table-scroll">
+<table>
+<thead><tr><th></th><th>macOS</th><th>Windows</th></tr></thead>
+<tbody>
+<tr>
+  <td>The day a file is filed under</td>
+  <td>Date added, a real per-folder attribute</td>
+  <td>No equivalent exists, so creation time stands in</td>
+</tr>
+<tr>
+  <td>Permission to read Downloads</td>
+  <td>A prompt, and a banner if it is refused</td>
+  <td>None needed</td>
+</tr>
+<tr>
+  <td>Where removals go</td>
+  <td>The Trash</td>
+  <td>The Recycle Bin</td>
+</tr>
+<tr>
+  <td>Settings</td>
+  <td><code>UserDefaults</code></td>
+  <td><code>%APPDATA%\Tideline\settings.json</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>
+  The permission difference removes a whole chapter: there is no prompt to
+  explain and no privacy settings to send you to, which is why
+  <a href="first-launch.html">First launch</a> does not describe anything you
+  will see on Windows.
+</p>
+
+<div class="note note-info">
+  <strong>The rest of this manual describes the Mac app.</strong> The filing
+  rules on <a href="filing.html">Filing</a>, <a href="type-folders.html">Type
+  folders</a> and <a href="schedule.html">Schedule</a> are the same on both —
+  they come from the shared contract. Everything else here is macOS until the
+  list above is empty.
+</div>
+
+<p>
+  Bugs and missing pieces go in the
+  <a href="https://github.com/estruyf/tideline/issues">issue tracker</a>; being
+  told which of the unported features you want most is genuinely how the order
+  gets decided.
+</p>
+<div class="pager">
+<a href="uninstall.html"><span>Previous</span>Uninstall</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fwindows.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fwindows.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting — Tideline</title>
+<meta name="description" content="Nothing moves, a file stayed put, a file landed under the wrong day, and the zip that will not unpack.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/troubleshooting.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Troubleshooting — Tideline">
+<meta property="og:description" content="Nothing moves, a file stayed put, a file landed under the wrong day, and the zip that will not unpack.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/troubleshooting.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html" aria-current="page">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Troubleshooting</h1>
+<p class="lead">The four things that come up, and what each of them usually is.</p>
+
+<h2>Nothing moves</h2>
+<p>
+  Check the status row on <a href="the-window.html#overview">Overview</a>.
+</p>
+<ul>
+  <li>
+    <strong>An orange dot</strong> means macOS is blocking access — see
+    <a href="first-launch.html">First launch</a>.
+  </li>
+  <li>
+    <strong>A grey dot</strong> means filing is paused, or has not been started
+    yet. The headline says which, and <strong>Start Filing…</strong> answers the
+    second.
+  </li>
+</ul>
+<p>
+  Worth ruling out too: filing only runs while the app is running, so if the Mac
+  restarted and Tideline is not set to <a href="schedule.html">open at
+  login</a>, nothing has been sweeping.
+</p>
+
+<h2>Files are filed under the wrong day</h2>
+<p>
+  The day comes from the date the file landed on disk, so something copied or
+  restored from elsewhere carries the date of the copy. Switch <em>Sort by</em>
+  to <em>Date last modified</em> on the <a href="filing.html">Filing</a> pane if
+  that suits you better.
+</p>
+
+<h2>A file stayed put that should have moved</h2>
+<p>
+  Anything written to in the last 30 seconds is left alone, on the assumption
+  that something is still filling it in. The next sweep picks it up.
+</p>
+<p>
+  If it keeps staying put, check it against the
+  <a href="filing.html#skip-list">skip list</a>: hidden files, partial-download
+  extensions, and anything matching a name or pattern under <em>Never touch
+  these</em> are all held back deliberately.
+</p>
+
+<h2>“Unable to expand … It is in an unsupported format.”</h2>
+<p>
+  You downloaded the build artifact from the Actions run page rather than the
+  zip attached to the release. GitHub wraps every artifact in a zip of its own,
+  so that download is a zip inside a zip — unpack it twice. Take the asset from
+  the <a href="https://github.com/estruyf/tideline/releases/latest">latest
+  release</a> instead; it is the app, zipped once.
+</p>
+
+<h2>Still stuck</h2>
+<p>
+  The full record, sweep by sweep, is at
+  <code>~/Library/Logs/Tideline.log</code> — <strong>General › Open Log
+  File</strong>. Quote the version and build number from the foot of the
+  <a href="general.html">General</a> pane and open an
+  <a href="https://github.com/estruyf/tideline/issues">issue</a>.
+</p>
+
+<div class="note">
+  <strong>Not sure what a sweep is about to do?</strong> Switch on
+  <a href="filing.html#preview">Preview mode</a> and run one. It walks the folder
+  exactly as a real sweep would, reports what it would have moved, and touches
+  nothing.
+</div>
+<div class="pager">
+<a href="updates.html"><span>Previous</span>Updates</a>
+<a class="next" href="uninstall.html"><span>Next</span>Uninstall</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ftroubleshooting.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ftroubleshooting.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

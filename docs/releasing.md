@@ -107,8 +107,9 @@ Archive Utility gives up with *"unsupported format"*.
 ## Checklist
 
 - [ ] `CHANGELOG.md` has a section for the version, `[Unreleased]` is empty
-- [ ] Screenshot in `assets/` refreshed if the window changed, and the README
-      points at the new file
+- [ ] Screenshots retaken if the window changed, and the README points at the
+      new `assets/<version>/` folder — `promo/scripts/capture.sh assets` takes
+      the whole set, and `.claude/skills/screenshots/SKILL.md` is the procedure
 - [ ] `npm version <patch|minor|major>` — this rebuilds, so it fails before
       committing if the build is broken
 - [ ] `git push --follow-tags`

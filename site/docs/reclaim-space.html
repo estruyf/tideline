@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reclaim space — Tideline</title>
+<meta name="description" content="Duplicates, big files and old dated folders — everything that could give space back, found and shown in one place.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/reclaim-space.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Reclaim space — Tideline">
+<meta property="og:description" content="Duplicates, big files and old dated folders — everything that could give space back, found and shown in one place.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/reclaim-space.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html" aria-current="page">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Reclaim space</h1>
+<p class="lead">Filing never removes anything, so everything that could give space back is in one place: duplicates, big files, and dated folders old enough to clear.</p>
+
+<p>
+  Each shows what it found and the top few rows of it, with the review that
+  decides what actually goes.
+</p>
+
+<figure>
+  <img src="../assets/shots/reclaim-space.png"
+       alt="Reclaim space: what could be freed in one figure, then duplicates, big files and old dated folders, each with the top few rows of what it found">
+</figure>
+
+<h2>What scans on its own, and what does not</h2>
+<p>
+  Two of the three look on their own. Big files and old dated folders are found
+  by reading names, sizes and dates — a directory listing and a walk, neither of
+  which opens a file — so they run when the window opens and the answer is
+  already there when you arrive.
+</p>
+
+<div class="note">
+  <strong>Duplicates keep their button.</strong> Matching copies means hashing
+  them, which means reading the candidates end to end, and that is not something
+  to start behind your back.
+</div>
+
+<p>
+  <strong>Rescan</strong> at the top looks again, duplicates included. A scan is
+  also thrown away whenever the answer could have moved — after a sweep, after
+  anything goes to the Trash, after a setting that governs it changes — so the
+  next look is a fresh one rather than a figure from before the folder shifted
+  underneath it.
+</p>
+
+<h2>Could be freed</h2>
+<p>
+  That figure adds the three up. They overlap — a big file can sit inside a
+  folder old enough to clear, and a duplicate copy can be both — so each byte is
+  counted once, by the widest thing that would take it.
+</p>
+<p>
+  Nothing here moves on its own: a look only reads, and everything you tick
+  afterwards goes to the Trash rather than being deleted outright.
+</p>
+
+<h3>A folder too big to measure</h3>
+<p>
+  Underneath it is what the folder holds, which is measured up to 60,000 items
+  and then reported as a floor — walking a folder past that takes long enough to
+  be worth asking about. A folder that big says so instead of quoting a total the
+  scans above it can outgrow, and <strong>Scan the folder in full</strong> walks
+  the rest: the same reading walk, only allowed to finish, and the exact figure
+  stands for the rest of the session.
+</p>
+
+<h2 id="duplicates">The same file, more than once</h2>
+<p>
+  Downloading the same file twice is what a Downloads folder does. The second
+  one lands as <code>artifact-1.zip</code>, the third as
+  <code>artifact-2.zip</code>, and the name stops telling you anything.
+</p>
+<p>
+  <strong>Review Duplicates…</strong> finds them: it compares the root and the
+  folders Tideline made, groups files whose names match once a copy suffix is
+  taken off, and reads through the ones that also match in size to check they
+  really are the same file, byte for byte. Two files that merely look alike are
+  never called copies.
+</p>
+
+<figure>
+  <img src="../assets/shots/review-duplicates.png"
+       alt="The duplicate review: files grouped by what they really are, the newest of each kept and the rest ticked for the Trash">
+</figure>
+
+<p>
+  Each group starts with the newest copy kept and the rest ticked for the Trash;
+  untick anything you would rather hold on to. A group always keeps a copy — the
+  last one standing cannot be ticked. Nothing is compared until you ask, nothing
+  goes until the sheet says so, and everything goes to the Trash rather than
+  being deleted outright.
+</p>
+<p>
+  With the other copies gone, the one that stays can have its plain name back:
+  <code>artifact-1.zip</code> becomes <code>artifact.zip</code>, but only where
+  that name is free. Switch that off in the sheet if you would rather it kept
+  the name it has. A dated folder left empty by the removals goes to the Trash,
+  as it does after <a href="type-folders.html#catch-up">catching up</a>; a type
+  folder is left alone either way.
+</p>
+
+<h2 id="big-files">What is taking up the room</h2>
+<p>
+  <a href="clearing.html">Clearing</a> goes by age; this goes by size. Filing
+  tidies a folder, it never shrinks one, and a hundred neatly dated PDFs are not
+  what is taking up the space.
+</p>
+<p>
+  <strong>Review Large Files…</strong> lists the biggest files in the root and
+  in the folders Tideline made, largest first, with the folder each one sits in
+  and the day it arrived.
+</p>
+
+<figure>
+  <img src="../assets/shots/review-big-files.png"
+       alt="The big-file review: the largest downloads, largest first, with what ticking them would give back">
+</figure>
+
+<p>
+  Nothing starts ticked. A duplicate always leaves a copy behind; a big file is
+  the only copy there is, so each one is a deliberate choice — and the magnifier
+  at the end of a row opens it in Finder, because “can this go?” is usually
+  answered by looking at the thing rather than at its name. The footer keeps a
+  running total of what ticking them would give back.
+</p>
+<p>
+  <strong>Bigger than</strong> sets the size — 50 MB up to 5 GB, 100 MB to begin
+  with. It sits in the sheet as well as in settings, so you can turn it down
+  until the list has something in it and back up when it has too much.
+</p>
+
+<div class="note">
+  <strong>The same rules as everywhere else.</strong> Only plain files, only the
+  root and the folders Tideline made — a folder you made yourself is never
+  looked in, and neither is anything on the
+  <a href="filing.html#skip-list">skip list</a> or still downloading. What you
+  tick goes to the Trash, and a dated folder the removals leave empty goes with
+  it. <a href="filing.html#preview">Preview mode</a> previews all three.
+</div>
+
+<p>
+  All three reviews are on the <a href="menu-bar.html">menu bar</a> too, under
+  <strong>Reclaim space</strong>.
+</p>
+<div class="pager">
+<a href="clearing.html"><span>Previous</span>Clearing</a>
+<a class="next" href="menu-bar.html"><span>Next</span>The menu bar</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Freclaim-space.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Freclaim-space.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

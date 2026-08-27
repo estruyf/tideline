@@ -4,6 +4,10 @@ app/dist/
 node_modules/
 old-scripts/
 
+# Staged by site/stage.sh, and by the Pages workflow. The site itself is in
+# site/; this is only ever a copy with the screenshots folded in.
+_site/
+
 # Windows build (windows/)
 #
 # `**/target/` rather than a fixed path: cargo drops a target directory beside

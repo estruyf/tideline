@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uninstall — Tideline</title>
+<meta name="description" content="Removing Tideline, its settings and its log — and what it deliberately leaves exactly where it is.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/uninstall.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Uninstall — Tideline">
+<meta property="og:description" content="Removing Tideline, its settings and its log — and what it deliberately leaves exactly where it is.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/uninstall.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html" aria-current="page">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Uninstall</h1>
+<p class="lead">In the app, with Homebrew, or by hand. None of them moves a single one of your downloads back.</p>
+
+<h2>In the app</h2>
+<p>
+  <strong>General › Other › Uninstall…</strong>. It removes the login item, its
+  settings, the history and the log, then quits and opens Finder on the app so
+  you can drag it to the Trash.
+</p>
+
+<h2>With Homebrew</h2>
+<pre class="shell"><code>brew uninstall --cask tideline
+
+# or, to take its settings and log with it
+brew uninstall --zap --cask tideline</code></pre>
+
+<h2>By hand</h2>
+<pre class="shell"><code>osascript -e 'quit app "Tideline"'
+rm -rf "/Applications/Tideline.app"
+rm -rf "$HOME/Library/Application Support/Tideline"
+rm -f  "$HOME/Library/Logs/Tideline.log"
+defaults delete be.eliostruyf.Tideline</code></pre>
+
+<p>Then, optionally, remove the leftovers macOS keeps:</p>
+<ul>
+  <li>
+    <strong>System Settings › General › Login Items</strong> — remove Tideline
+    if it is still listed.
+  </li>
+  <li>
+    <strong>System Settings › Privacy &amp; Security › Files and Folders</strong>
+    — remove its Downloads Folder permission.
+  </li>
+</ul>
+
+<h2 id="your-files">Your files stay where they are</h2>
+<div class="note note-warn">
+  <strong>Uninstalling never moves a file back.</strong> Your downloads and every
+  dated folder stay exactly where they are. If you want the folder as it was,
+  use <a href="filing.html#putting-it-back">Put Everything Back…</a>
+  <em>before</em> you go — once the app is gone, so is the record of what it
+  filed.
+</div>
+<div class="pager">
+<a href="troubleshooting.html"><span>Previous</span>Troubleshooting</a>
+<a class="next" href="windows.html"><span>Next</span>Windows (beta)</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Funinstall.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Funinstall.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

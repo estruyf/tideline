@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filing — Tideline</title>
+<meta name="description" content="Which folder, how long files stay loose, how the dated folders are named, preview mode, and putting everything back.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/filing.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Filing — Tideline">
+<meta property="og:description" content="Which folder, how long files stay loose, how the dated folders are named, preview mode, and putting everything back.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/filing.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html" aria-current="page">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Filing</h1>
+<p class="lead">The rules a sweep follows: which folder it watches, how long a file stays loose in the root, and what the folder it lands in is called.</p>
+
+<div class="table-scroll">
+<table>
+<thead><tr><th>Setting</th><th>Options</th></tr></thead>
+<tbody>
+<tr><td>Folder</td><td><code>~/Downloads</code> by default; pick any folder</td></tr>
+<tr><td>Leave loose in the root</td><td>Today only, today and yesterday, the last 3 days, the last week</td></tr>
+<tr><td>Folder name</td><td>One folder per day (<code>2026-08-19</code>) or per month (<code>2026-08</code>)</td></tr>
+<tr><td>Sort by</td><td>Date added to the folder (Finder's “Date Added”), date created, or date last modified</td></tr>
+<tr><td>File folders too</td><td>Whether downloaded folders move like files</td></tr>
+<tr><td>Preview mode</td><td>Shows what <em>would</em> move and touches nothing</td></tr>
+</tbody>
+</table>
+</div>
+
+<figure>
+  <img src="../assets/shots/filing.png"
+       alt="The Filing pane: which folder, how long things stay loose, how the dated folders are named, and the list of names never to touch">
+</figure>
+
+<h2 id="preview">Preview mode</h2>
+<p>
+  A sweep that touches nothing. <strong>Preview Now</strong>, on the
+  <a href="the-window.html#overview">Overview</a> pane or in the
+  <a href="menu-bar.html">menu bar</a>, walks the folder exactly as a real sweep
+  would and then shows what it would have done: every item, grouped by the
+  folder it would have landed in, with what that adds up to. It is still written
+  to the log as before.
+</p>
+
+<div class="note">
+  <strong>It binds every destructive feature.</strong> Filing, clearing,
+  duplicate collapsing, the large-file review and catch-up all honour it. If it
+  is on, nothing anywhere in the app moves or trashes a file.
+</div>
+
+<h2 id="putting-it-back">Putting it back</h2>
+<p>
+  The way out. Filing is the one thing here you cannot undo with a single
+  gesture in Finder: a year of downloads sits across a hundred folders, and
+  dragging them out again by hand is not an answer.
+</p>
+<p>
+  <strong>Put Everything Back…</strong> lists everything Tideline ever filed,
+  grouped by the folder it would come out of, all of it ticked. Untick anything
+  you would rather leave where it is, and the rest moves back into the root. The
+  folders that leaves empty go to the Trash — type folders included, since an
+  empty <code>Installers/</code> is not something your Downloads folder had
+  before Tideline.
+</p>
+<p>
+  The same rules as everywhere else: a name already taken counts up to
+  <code>report-1.pdf</code>, folders you made yourself are never opened, nothing
+  is deleted, and preview mode previews it.
+</p>
+<p>
+  Filing switches off once a real restore finishes — the next sweep would put
+  back exactly what was just taken out — and the switch in the header starts it
+  again.
+</p>
+
+<h2 id="skip-list">Never touch these</h2>
+<p>
+  Exact names (<code>Inbox</code>) or patterns (<code>*.dmg</code>). It starts
+  with <code>Inbox</code> and <code>Screenshots</code>; both can go.
+</p>
+<p>On top of your list, the app always leaves alone:</p>
+<ul>
+  <li>Today's downloads — or whatever the <em>Leave loose in the root</em> window is set to</li>
+  <li>Hidden files</li>
+  <li>Partial downloads: <code>.crdownload</code>, <code>.download</code>, <code>.part</code>, <code>.partial</code>, <code>.opdownload</code>, <code>.tmp</code>, <code>.temp</code>, <code>.aria2</code>, and Safari's <code>.download</code> bundles</li>
+  <li>Anything written to in the last 30 seconds, on the assumption that something is still filling it in</li>
+  <li>The dated folders it created itself</li>
+  <li>Folders you made yourself — those are never opened, let alone moved</li>
+</ul>
+
+<h2>Where the day comes from</h2>
+<p>
+  <em>Sort by</em> decides. Left as it comes it is the date the file was added
+  to the folder, which is what Finder shows as “Date Added” and what you
+  usually mean by when you downloaded something. A file copied or restored from
+  elsewhere carries the date of the copy, so if that is throwing things off,
+  <em>Date last modified</em> may suit you better.
+</p>
+
+<div class="note note-info">
+  <strong>A collision never overwrites.</strong> If <code>report.pdf</code> is
+  already in the folder a file is moving to, the arriving one becomes
+  <code>report-1.pdf</code>, then <code>report-2.pdf</code>. This holds for
+  filing, for catch-up, for putting things back — everywhere.
+</div>
+<div class="pager">
+<a href="the-window.html"><span>Previous</span>The window</a>
+<a class="next" href="type-folders.html"><span>Next</span>Type folders</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ffiling.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Ffiling.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

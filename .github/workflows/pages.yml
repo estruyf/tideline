@@ -1,0 +1,54 @@
+name: Pages
+
+# Publishes site/ to GitHub Pages. The site is hand-written HTML and CSS with no
+# build step, so this job only stages files and uploads them.
+#
+# Staging exists for one reason: the screenshots live in assets/, versioned by
+# release, and the pages must not name a version or every one of them would need
+# editing on the next set. The newest assets/<version>/ folder is copied in as
+# assets/shots/, which is what the HTML asks for.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "assets/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never two deploys at once, and never cancel one halfway: a partial upload
+# would publish a site missing whatever had not been sent yet.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stage the site
+        run: ./site/stage.sh _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

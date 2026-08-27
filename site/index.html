@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tideline — a tidy Downloads folder, every morning</title>
+<meta name="description" content="A macOS menu bar app that files older downloads into folders named for the day they arrived. Today's files stay loose where you expect them. Free, open source, no account, no telemetry.">
+<link rel="icon" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Tideline — a tidy Downloads folder, every morning">
+<meta property="og:description" content="Today's downloads stay loose in the root where you expect them. Everything older is filed into a folder named for the day it arrived.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/">
+<meta property="og:image" content="https://estruyf.github.io/tideline/assets/pitch.jpg">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="./"><img src="icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="docs/">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>A tidy Downloads folder, every morning</h1>
+      <p class="lead">
+        Without hiding what you just downloaded. Today's files stay loose in the
+        root where you expect them. Everything older is filed into a folder
+        named for the day it arrived — when the day rolls over, yesterday's
+        files move on their own.
+      </p>
+      <div class="cta">
+        <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download for macOS</a>
+        <a class="btn btn-secondary" href="docs/">Read the docs</a>
+      </div>
+      <p class="cta-note">
+        macOS 14 or later. Free, open source, no account, no telemetry.
+      </p>
+    </div>
+
+    <div>
+      <pre class="tree"><code>~/Downloads/
+<span class="dir">├── 2026-08-17/</span>
+│   └── invoice.pdf
+<span class="dir">├── 2026-08-18/</span>
+│   ├── slides.key
+│   └── screenshot.png
+├── report.pdf          <span class="stays">← today</span>
+└── archive.zip         <span class="stays">← today</span></code></pre>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <figure>
+    <picture>
+      <source srcset="assets/pitch-light.jpg" media="(prefers-color-scheme: light)">
+      <img src="assets/pitch.jpg" width="2400" height="1260" alt="The same Downloads folder before and after Tideline: on the left nineteen loose files in one heap, including four artifact zips you cannot tell apart; on the right today's three still loose under their real names, and everything older filed into folders named for the day it arrived">
+    </picture>
+  </figure>
+</section>
+
+<section class="section-band">
+  <div class="wrap narrow">
+    <h2>Why</h2>
+    <p>
+      Download the same build artifact from GitHub twice and the second one
+      lands as <code>artifact-1.zip</code>, the third as
+      <code>artifact-2.zip</code>, and the name no longer tells you anything. So
+      you make a folder, drag the new file into it, rename it back to what it
+      was meant to be, and only then start working with it.
+    </p>
+    <p>
+      Making the folder, dragging the file in, renaming it back — none of that
+      takes long. It is just cumbersome, every single time. Tideline is that
+      folder, made for you every day.
+    </p>
+    <p>
+      Hence the idea: what if the Downloads folder were always clean? Not empty
+      — clean. Everything that came before sits in its own folder, so the moment
+      you download something it is the only thing in the root, under its real
+      name, ready to work with.
+    </p>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="section-head">
+    <h2>What it does</h2>
+    <p>
+      Filing is the whole of it. Everything else is there because a folder that
+      files itself still grows, and because nothing here should ever be a
+      surprise.
+    </p>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Files by the day</h3>
+      <p>One folder per day, or per month. Today's downloads stay loose — or the last three days, or the week, whichever you pick.</p>
+    </div>
+    <div class="card">
+      <h3>Type folders</h3>
+      <p>Send every <code>.dmg</code> to <code>Installers/</code> whatever day it arrived on. Nine to choose from, all off until you turn one on.</p>
+    </div>
+    <div class="card">
+      <h3>Preview mode</h3>
+      <p>A sweep that touches nothing and then tells you exactly what it would have moved. Every destructive feature honours it.</p>
+    </div>
+    <div class="card">
+      <h3>Puts it all back</h3>
+      <p>One sheet lists everything Tideline ever filed and moves it back into the root. The way out is a button, not a restore from backup.</p>
+    </div>
+    <div class="card">
+      <h3>Reclaim space</h3>
+      <p>Filing tidies a folder, it never shrinks one. Duplicates, big files and old dated folders are found and shown in one place.</p>
+    </div>
+    <div class="card">
+      <h3>Nothing is deleted</h3>
+      <p>Removals go to the Trash, never to <code>unlink</code>. A setting you regret is a drag back out.</p>
+    </div>
+    <div class="card">
+      <h3>Nothing is overwritten</h3>
+      <p>A name that is already taken counts up: <code>report.pdf</code>, <code>report-1.pdf</code>, <code>report-2.pdf</code>.</p>
+    </div>
+    <div class="card">
+      <h3>Runs when you say</h3>
+      <p>As soon as the folder changes, once a day at a time you pick, when the app starts, or any combination of the three.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="tour">
+  <div class="section-head">
+    <h2>Ninety seconds, every screen</h2>
+    <p>
+      The first run, a sweep, all six settings panes, Reclaim space, the
+      activity log and the menu bar. No sound — it is a silent tour, so nothing
+      is missed by watching it anywhere.
+    </p>
+  </div>
+  <figure>
+    <video controls playsinline preload="none"
+           poster="assets/tour-poster.jpg" width="1280" height="720">
+      <source src="assets/tour.mp4" type="video/mp4">
+      <p>
+        Your browser cannot play this video.
+        <a href="assets/tour.mp4">Download the tour</a> (MP4, 4 MB) instead.
+      </p>
+    </video>
+    <figcaption>
+      Every screen in the app, in the order you would meet them. The written
+      version is <a href="docs/">the documentation</a>.
+    </figcaption>
+  </figure>
+</section>
+
+<section class="section-band">
+  <div class="wrap narrow">
+    <h2>Why it is an app and not a script</h2>
+    <p>
+      The obvious way to build this is a script on a timer. The problem is
+      permissions: a script runs as whatever launched it, so macOS asks
+      <em>that</em> process for access. In practice that means granting
+      <strong>Full Disk Access</strong> to <code>bash</code>, your terminal or
+      launchd — a blunt, all-or-nothing switch that is awkward to explain and
+      easy to get wrong.
+    </p>
+    <p>An app bundle has its own identity, so macOS asks a single, specific question:</p>
+    <div class="note">
+      <strong>“Tideline” would like to access files in your Downloads folder.</strong>
+    </div>
+    <p>
+      One click, scoped to one folder, revocable in System Settings. Nothing
+      else on the disk becomes reachable.
+    </p>
+
+    <h2>And it stays small</h2>
+    <p>
+      Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on
+      disk because it ships for both Apple silicon and Intel. No Electron, no
+      bundled runtime, no helper process quietly installed beside it — one menu
+      bar app that schedules itself, and quitting it really is the end of it.
+    </p>
+  </div>
+</section>
+
+<section class="wrap narrow">
+  <h2>Install</h2>
+  <p>With <a href="https://brew.sh">Homebrew</a>:</p>
+  <pre class="shell"><code>brew install --cask estruyf/tap/tideline</code></pre>
+  <p>
+    Or grab the zip from the
+    <a href="https://github.com/estruyf/tideline/releases/latest">latest release</a>,
+    unzip it, and drag <strong>Tideline.app</strong> into <code>/Applications</code>.
+    Then see <a href="docs/first-launch.html">First launch</a> — nothing is filed
+    until you say so.
+  </p>
+
+  <div class="note note-info">
+    <strong>On Windows?</strong> There is a Windows build, in
+    <strong>beta</strong> — the same filing rules rewritten in Rust behind a
+    <a href="https://tauri.app">Tauri</a> window and tray icon. Filing, type
+    folders, the schedule and preview mode all work. Clearing, duplicates, the
+    big-file review and putting everything back do not yet, and it starts filing
+    without asking first. The macOS app is unaffected by any of it.
+    <a href="docs/windows.html">What the Windows beta does →</a>
+  </div>
+
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download for macOS</a>
+    <a class="btn btn-secondary" href="docs/">Read the docs</a>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="docs/">Docs</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+      <a href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2F" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2F&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

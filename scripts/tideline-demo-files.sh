@@ -30,7 +30,7 @@ SHOTS=0
 FORCE=0
 
 usage() {
-  sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'`
+  sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ $# -gt 0 ]; do
@@ -112,8 +112,13 @@ make_file() {
       ;;
     *)
       if [ "$kb" -ge 51200 ]; then
-        # sparse, so a 1.4 GB file costs nothing and appears instantly
-        mkfile -n "${kb}k" "$path"
+        # Real blocks, not `mkfile -n`. A sparse file has the size you asked
+        # for in `ls` and none of it on disk, and Tideline measures
+        # `totalFileAllocatedSize` because that is what reclaiming space
+        # actually gives back — so a sparse 1.4 GB file never appears in the
+        # big-file review that --big exists to fill. This costs the disk it
+        # says it does.
+        mkfile "${kb}k" "$path"
       else
         dd if=/dev/urandom of="$path" bs=1024 count="$kb" 2>/dev/null
       fi

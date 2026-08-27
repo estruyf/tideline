@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Updates — Tideline</title>
+<meta name="description" content="The daily check for a new release, the three tests a download has to pass, and how to switch it all off.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/updates.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Updates — Tideline">
+<meta property="og:description" content="The daily check for a new release, the three tests a download has to pass, and how to switch it all off.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/updates.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html" aria-current="page">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Updates</h1>
+<p class="lead">Tideline checks the GitHub releases page for a newer version once a day. Nothing downloads or installs on its own — a check only ever offers.</p>
+
+<p>
+  <strong>Check Now</strong> asks straight away. The check reads one public
+  endpoint and sends nothing about you or your files.
+</p>
+
+<h2>When there is something newer</h2>
+<p>
+  The <a href="the-window.html#overview">Overview</a> pane and the
+  <a href="menu-bar.html">menu bar</a> say so, and <strong>Update &amp;
+  Restart</strong> does the rest: it downloads the release build, unpacks it,
+  and only installs it once the copy passes three tests.
+</p>
+<ul>
+  <li>It is Tideline.</li>
+  <li>It is the version the release advertised.</li>
+  <li>It carries the same Developer ID signature and Apple notarisation as the copy you are running.</li>
+</ul>
+<p>Anything less and the download is thrown away untouched.</p>
+
+<h2>The swap</h2>
+<p>
+  The last step. The app quits, the new bundle replaces the old one, and
+  Tideline reopens on the new version. If the copy fails halfway the old app is
+  put straight back and reopened, so a bad download never leaves you without the
+  app.
+</p>
+
+<div class="note note-warn">
+  <strong>If the app cannot replace itself</strong> — it sits somewhere you
+  cannot write to, or macOS is running it from a read-only quarantine copy — it
+  says so and points you at the
+  <a href="https://github.com/estruyf/tideline/releases">releases page</a>.
+  That is the main reason to keep it in <code>/Applications</code>.
+</div>
+
+<h2>Being told about it</h2>
+<p>
+  When a check that ran on its own finds something newer, Tideline also says so
+  in Notification Centre, once per version, so a new release does not wait for
+  you to open the window.
+</p>
+<p>
+  <em>Notify me when a new version is out</em> switches that off. It appears
+  only where notifications were already allowed, since finding an update is
+  never a reason to raise a permission prompt.
+</p>
+
+<h2>Turning it down</h2>
+<ul>
+  <li><strong>Skip This Version</strong> silences one release without silencing the next.</li>
+  <li><em>Check for updates automatically</em> switches the daily look off entirely.</li>
+</ul>
+
+<div class="note note-info">
+  <strong>Installed with Homebrew?</strong> The cask is marked as self-updating,
+  so <code>brew upgrade</code> leaves Tideline alone and the two never race.
+  <code>brew upgrade --greedy</code> installs a new version through Homebrew
+  instead, if you would rather it came from there.
+</div>
+
+<p>
+  What changed in each version is in the
+  <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">changelog</a>.
+</p>
+<div class="pager">
+<a href="general.html"><span>Previous</span>General and activity</a>
+<a class="next" href="troubleshooting.html"><span>Next</span>Troubleshooting</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fupdates.html" title="Visitors to this page">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Festruyf.github.io%2Ftideline%2Fdocs%2Fupdates.html&amp;countColor=%23263759"
+           alt="Number of visitors to this page" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>
