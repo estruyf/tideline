@@ -83,9 +83,20 @@ folder. Allow it — without it the app can see nothing and moves nothing.
 
 ![macOS asking whether Tideline may access files in your Downloads folder](./assets/allow-downloads.png)
 
-If you dismissed the prompt, the window shows an orange banner with an **Open
-Privacy Settings** button. Switch on *Downloads Folder* for Tideline under
-**Privacy & Security › Files and Folders**, then quit and reopen the app.
+If you dismissed the prompt, the window shows an orange banner. **Choose
+Downloads Folder…** is the quickest way back: macOS asks about a protected
+folder once and never again, but picking the folder yourself grants the same
+permission on the spot. Failing that, switch on *Downloads Folder* for Tideline
+under **Privacy & Security › Files and Folders**.
+
+**Then it asks whether to start.** Nothing is filed until you say so — not on
+launch, not when the folder changes, not on the daily timer. The question comes
+with the rule Tideline would follow and what the first sweep would actually do
+to your folder as it stands: *143 items would move into 12 folders, 4 stay
+loose*. **Start Filing** files them and takes over from there; **Not Yet**
+leaves everything exactly where it is, and the same question waits on the
+Overview pane and in the menu bar. Preview mode works before you answer,
+because looking first is how the question gets answered.
 
 The window also offers to start Tideline at login, since filing only happens
 while the app is running. **Open at Login** switches it on; **Not Now** hides
@@ -111,8 +122,9 @@ navigates, green for running and watching.
 ### Overview
 
 Whether filing is on, when it last ran, what it did, and when the next sweep is
-due. **File Now** runs one immediately; **Catch Up…** is beside it once a type
-folder is switched on. **Open at login** sits in the same card, because filing
+due — or **Not filing yet** and a **Start Filing…** button, until the question
+above has been answered. **File Now** runs a sweep immediately; **Catch Up…**
+is beside it once a type folder is switched on. **Open at login** sits in the same card, because filing
 only happens while the app is running and that switch decides whether it is.
 
 Under that, the folder as it stands right now — the type folders, the dated
@@ -239,6 +251,21 @@ A run that is missed while the Mac sleeps fires as soon as it wakes.
 would and then shows what it would have done: every item, grouped by the folder it
 would have landed in, with what that adds up to. It is still written to the log
 as before.
+
+**Putting it back** — the way out. Filing is the one thing here you cannot undo
+with a single gesture in Finder: a year of downloads sits across a hundred
+folders, and dragging them out again by hand is not an answer. **Put Everything
+Back…** lists everything Tideline ever filed, grouped by the folder it would
+come out of, all of it ticked. Untick anything you would rather leave where it
+is, and the rest moves back into the root. The folders that leaves empty go to
+the Trash — type folders included, since an empty `Installers/` is not something
+your Downloads folder had before Tideline.
+
+The same rules as everywhere else: a name already taken counts up to
+`report-1.pdf`, folders you made yourself are never opened, nothing is deleted,
+and preview mode previews it. Filing switches off once a real restore finishes —
+the next sweep would put back exactly what was just taken out — and the switch
+in the header starts it again.
 
 **Never touch these** — exact names (`Inbox`) or patterns (`*.dmg`). It starts
 with `Inbox` and `Screenshots`; both can go. On top of your list, the app always
@@ -404,7 +431,9 @@ you press ⌘, looking for. **Open Downloads Folder** is ⌘D.
 ![The menu bar menu: what the last run did, what the folder holds, Open Tideline and the three reviews](./assets/1.8.0/menubar.png)
 
 **File Downloads Now** reads **Preview a Sweep…** while preview mode is on, and
-opens the window on the sheet that lists what a sweep would have moved.
+opens the window on the sheet that lists what a sweep would have moved. Before
+filing has been agreed to it reads **Start Filing…** and opens the window on the
+question, which is the only thing that ever starts a sweep.
 
 The size can sit next to the icon as well as inside the menu — **General ›
 Other › Show the folder size in the menu bar**, off by default.
@@ -443,13 +472,15 @@ Then, optionally, remove the leftovers macOS keeps:
   Downloads Folder permission.
 
 Your downloads and every dated folder stay exactly where they are. Uninstalling
-never moves a file back.
+never moves a file back — if you want the folder as it was, use **Filing ›
+Putting it back** before you go.
 
 ## Troubleshooting
 
 **Nothing moves.** Check the status row on *Overview*. An orange dot means macOS is
 blocking access — see [First launch](#first-launch). A grey dot means filing is
-paused.
+paused, or has not been started yet: the headline says which, and **Start
+Filing…** answers the second.
 
 **Files are filed under the wrong day.** The day comes from the date the file
 landed on disk, so something copied or restored from elsewhere carries the date
