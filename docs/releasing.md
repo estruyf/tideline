@@ -68,6 +68,7 @@ empty to only keep the build artifact.
 | `APPLE_ID` | Apple ID email for the developer account |
 | `APPLE_TEAM_ID` | Ten-character team ID |
 | `APPLE_APP_PASSWORD` | App-specific password, not the Apple ID password |
+| `HOMEBREW_TAP_TOKEN` | Fine-grained token with **Contents: write** on `estruyf/homebrew-tap`, so a release can update the cask. Optional: without it the workflow warns and the tap is updated by hand — see [Homebrew](./homebrew.md) |
 
 Export the certificate from **Keychain Access → My Certificates**, right-click
 the *Developer ID Application* entry → *Export*, save as `.p12` with a password,
@@ -80,6 +81,18 @@ base64 -i Certificates.p12 | pbcopy
 The workflow imports it into a throwaway keychain with a random per-run
 password, builds, and removes the keychain again on the way out, whether the
 build passed or failed.
+
+## The Homebrew tap
+
+The same job updates [`estruyf/homebrew-tap`](https://github.com/estruyf/homebrew-tap)
+once the zip is attached, so `brew install --cask estruyf/tap/tideline` serves
+the release within the same few minutes. It hashes the archive it just built
+rather than downloading it back, and it skips prereleases. A missing
+`HOMEBREW_TAP_TOKEN` is a warning, not a failure — the release still ships and
+the tap is a `homebrew/publish-cask.sh --push` away.
+
+[Homebrew](./homebrew.md) covers the cask itself, creating the tap the first
+time, and what it would take to reach homebrew-cask proper.
 
 ## Release asset vs build artifact
 
@@ -101,6 +114,8 @@ Archive Utility gives up with *"unsupported format"*.
 - [ ] `git push --follow-tags`
 - [ ] `gh release create v<version> --generate-notes`
 - [ ] Workflow green, and the zip is attached to the release
+- [ ] The tap moved: `brew update && brew info --cask estruyf/tap/tideline`
+      reports the new version
 - [ ] Download the asset on another Mac and open it — Gatekeeper should not
       complain
 - [ ] An older copy offers the update: **General › Updates › Check Now** on a

@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Catching up: everything already filed by date that the type folders now
-/// claim, grouped by where it would go. Uncheck anything you would rather leave
-/// where it is. Nothing moves until this sheet says so.
-struct RegroupView: View {
+/// Putting it back: everything sitting in a folder Tideline made, grouped by
+/// the folder it would come out of. Untick anything you would rather leave
+/// filed. Nothing moves until this sheet says so.
+struct RestoreView: View {
     @Binding var isPresented: Bool
 
     @ObservedObject private var settings = Settings.shared
@@ -20,7 +20,7 @@ struct RegroupView: View {
             Group {
                 if !didLoad {
                     scanning
-                } else if controller.regroupable.isEmpty {
+                } else if controller.restorable.isEmpty {
                     empty
                 } else {
                     list
@@ -39,10 +39,10 @@ struct RegroupView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Catch up on what's already filed", systemImage: "arrow.triangle.branch")
+            Label("Put everything back", systemImage: "arrow.uturn.backward")
                 .font(.headline)
 
-            Text("Switching a type folder on only changes where new downloads go. These are files already sitting in a dated folder that the rules now claim.")
+            Text("Everything Tideline filed moves back into \(settings.downloadsURL.lastPathComponent), and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo this.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -54,7 +54,7 @@ struct RegroupView: View {
         VStack(spacing: 10) {
             ProgressView()
                 .controlSize(.small)
-            Text("Looking through the dated folders…")
+            Text("Looking through the folders Tideline made…")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -65,11 +65,9 @@ struct RegroupView: View {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 26))
                 .foregroundStyle(.secondary)
-            Text(hasRules ? "Everything is already where it belongs" : "No type folders are switched on")
+            Text("There is nothing filed to put back")
                 .font(.body.weight(.medium))
-            Text(hasRules
-                 ? "Nothing in the dated folders matches a type folder you have switched on."
-                 : "Switch one on under Filing, then come back here to catch up.")
+            Text("No dated folders and no type folders with anything in them.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -79,7 +77,7 @@ struct RegroupView: View {
 
     private var list: some View {
         List {
-            ForEach(groups, id: \.target) { group in
+            ForEach(groups, id: \.folder) { group in
                 Section {
                     ForEach(group.items) { candidate in
                         Toggle(isOn: binding(for: candidate)) {
@@ -88,7 +86,7 @@ struct RegroupView: View {
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                                 Spacer(minLength: 12)
-                                Text(candidate.currentFolder)
+                                Text(Self.bytes.string(fromByteCount: candidate.byteSize))
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
@@ -97,7 +95,7 @@ struct RegroupView: View {
                     }
                 } header: {
                     HStack {
-                        Label(group.target, systemImage: "folder")
+                        Label(group.folder, systemImage: group.isByType ? "shippingbox" : "folder")
                         Spacer()
                         Button(allSelected(in: group) ? "None" : "All") {
                             toggleAll(in: group)
@@ -122,7 +120,7 @@ struct RegroupView: View {
                         .font(.caption)
                         .foregroundStyle(Theme.accentText)
                 } else if !chosen.isEmpty {
-                    Text("A dated folder left empty by this goes to the Trash.")
+                    Text("A name already taken in the root counts up — report.pdf, report-1.pdf.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -136,7 +134,7 @@ struct RegroupView: View {
             Button(actionTitle) { apply() }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
-                .disabled(selection.isEmpty || controller.regrouping)
+                .disabled(selection.isEmpty || controller.restoring)
         }
         .sheetBand()
     }
@@ -145,18 +143,18 @@ struct RegroupView: View {
 
     private func load() {
         didLoad = false
-        controller.findRegroupable { found in
+        controller.findRestorable { found in
             selection = Set(found.map(\.id))
             didLoad = true
         }
     }
 
     private func apply() {
-        let picked = controller.regroupable.filter { selection.contains($0.id) }
-        controller.regroup(picked) { _ in isPresented = false }
+        let picked = controller.restorable.filter { selection.contains($0.id) }
+        controller.restore(picked) { _ in isPresented = false }
     }
 
-    private func binding(for candidate: RegroupCandidate) -> Binding<Bool> {
+    private func binding(for candidate: RestoreCandidate) -> Binding<Bool> {
         Binding(
             get: { selection.contains(candidate.id) },
             set: { isOn in
@@ -167,30 +165,37 @@ struct RegroupView: View {
 
     // MARK: - Grouping
 
-    /// One section per destination, in the order the folders were found, so the
-    /// list reads as "here is what Installers would take, here is Images".
-    private struct TargetGroup {
-        var target: String
-        var items: [RegroupCandidate]
+    /// One section per folder it would come out of, newest first, the way the
+    /// scan found them — so the list reads as the folder does.
+    private struct SourceGroup {
+        var folder: String
+        var isByType: Bool
+        var items: [RestoreCandidate]
     }
 
-    private var groups: [TargetGroup] {
+    private var groups: [SourceGroup] {
         var order: [String] = []
-        var byTarget: [String: [RegroupCandidate]] = [:]
+        var byFolder: [String: [RestoreCandidate]] = [:]
 
-        for candidate in controller.regroupable {
-            if byTarget[candidate.targetFolder] == nil { order.append(candidate.targetFolder) }
-            byTarget[candidate.targetFolder, default: []].append(candidate)
+        for candidate in controller.restorable {
+            if byFolder[candidate.currentFolder] == nil { order.append(candidate.currentFolder) }
+            byFolder[candidate.currentFolder, default: []].append(candidate)
         }
 
-        return order.map { TargetGroup(target: $0, items: byTarget[$0] ?? []) }
+        return order.map {
+            SourceGroup(
+                folder: $0,
+                isByType: byFolder[$0]?.first?.isByType ?? false,
+                items: byFolder[$0] ?? []
+            )
+        }
     }
 
-    private func allSelected(in group: TargetGroup) -> Bool {
+    private func allSelected(in group: SourceGroup) -> Bool {
         group.items.allSatisfy { selection.contains($0.id) }
     }
 
-    private func toggleAll(in group: TargetGroup) {
+    private func toggleAll(in group: SourceGroup) {
         if allSelected(in: group) {
             for item in group.items { selection.remove(item.id) }
         } else {
@@ -200,27 +205,23 @@ struct RegroupView: View {
 
     // MARK: - Labels
 
-    private var hasRules: Bool {
-        settings.typeRules.contains { $0.isEnabled && !$0.extensions.isEmpty }
-    }
-
-    private var chosen: [RegroupCandidate] {
-        controller.regroupable.filter { selection.contains($0.id) }
+    private var chosen: [RestoreCandidate] {
+        controller.restorable.filter { selection.contains($0.id) }
     }
 
     private var actionTitle: String {
         let count = chosen.count
         let noun = count == 1 ? "Item" : "Items"
-        if settings.dryRun { return "Preview Moving \(count) \(noun)" }
-        return count == 0 ? "Move" : "Move \(count) \(noun)"
+        if settings.dryRun { return "Preview Putting \(count) \(noun) Back" }
+        return count == 0 ? "Put Back" : "Put \(count) \(noun) Back"
     }
 
     private var tally: String {
-        guard !controller.regroupable.isEmpty else { return "" }
+        guard !controller.restorable.isEmpty else { return "" }
         let bytes = chosen.reduce(Int64(0)) { $0 + $1.byteSize }
-        let folders = Set(chosen.map(\.targetFolder)).count
+        let folders = Set(chosen.map(\.currentFolder)).count
         let noun = folders == 1 ? "folder" : "folders"
-        return "\(chosen.count) of \(controller.regroupable.count) selected · \(folders) \(noun) · \(Self.bytes.string(fromByteCount: bytes))"
+        return "\(chosen.count) of \(controller.restorable.count) selected · out of \(folders) \(noun) · \(Self.bytes.string(fromByteCount: bytes))"
     }
 
     private static let bytes: ByteCountFormatter = {

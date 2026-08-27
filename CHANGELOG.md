@@ -5,6 +5,118 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-08-27
+
+### Added
+
+- **Tideline asks before it does anything.** A fresh install used to open with
+  a macOS permission alert already on top of the window, and to be filing
+  within seconds of that being answered — a system prompt before the app had
+  introduced itself, and a folder rearranged before anyone had agreed that it
+  should be.
+
+  It now opens on the window, and on the question. **Allow Access…** is what
+  raises the macOS prompt, at a moment you chose and after the sheet has said
+  what the permission is for and how far it reaches. Until it is pressed the
+  folder is not read at all: not swept, not measured, not scanned. Granting it
+  is still not starting — what it buys is the sheet being able to tell you what
+  a first sweep would actually do to the folder as it stands right now: *143
+  items would move into 12 folders, 4 stay loose*. Then the rule it would
+  follow, and two buttons. Nothing is swept until **Start Filing** is pressed: not on launch,
+  not when the folder changes, not on the daily timer. **Not Yet** leaves
+  everything exactly where it is, and the question is on the Overview pane and
+  in the menu bar for whenever you are ready. A preview still runs before the
+  answer, because a preview is how the question gets answered. An install that
+  predates all this has been filing for weeks and is left alone — an update is
+  no reason to stop and ask.
+
+- **Put Everything Back.** Filing was the one thing the app did that you could
+  not undo with a single gesture: a year of downloads spread across a hundred
+  folders is not something anyone drags back by hand. **Filing › Putting it
+  back** lists everything Tideline ever filed, grouped by the folder it would
+  come out of, all of it ticked — untick what you would rather leave filed,
+  then put the rest back into the root. The folders it empties go to the
+  Trash, type folders included: an empty `Installers/` is not something your
+  Downloads folder had before Tideline, so putting things back puts that back
+  as well. The usual rules hold — a name already taken counts up to
+  `report-1.pdf`, folders you made yourself are never opened, nothing is
+  deleted, and preview mode previews it.
+
+  Filing switches off once a real restore finishes. The next sweep would move
+  back exactly what was just taken out, and that is not an argument worth
+  having with your own downloads folder. The switch in the header starts it
+  again.
+
+- **Tideline installs with Homebrew.** `brew install --cask
+  estruyf/tap/tideline` fetches the same signed and notarized build the release
+  page hands out and puts it in `/Applications` — the download, the unzip and
+  the drag, done by the thing a lot of people already reach for first.
+
+  It knows the app updates itself, so `brew upgrade` does not reinstall over a
+  copy Tideline may have already replaced; `brew upgrade --greedy` hands the job
+  back to Homebrew for anyone who would rather it worked that way. It knows the
+  app needs macOS 14, which the in-app updater does not, so nobody installs a
+  bundle that will not launch. And `brew uninstall --cask --zap tideline`
+  removes the same three files the Uninstall sheet names, none of which are in
+  your Downloads folder: removing Tideline never touches what Tideline filed.
+
+  Every release updates the cask on its way out, so the tap is never a version
+  behind the release page.
+
+### Fixed
+
+- **Opening the app shows the window again.** Tideline decided whether a launch
+  was a login item by looking for an `XPC_SERVICE_NAME` in its environment, on
+  the theory that only launchd sets one. Launch Services sets one too, for every
+  app it starts, so from the second launch onwards every double-click looked
+  like a login launch and the app started into the menu bar with no window at
+  all — the only way back in was the menu bar icon. It now reads the flag the
+  launch notification actually carries for this, so opening the app from Finder,
+  the Dock or Launchpad puts the window on screen, while a login item still
+  starts with no window and no Dock icon. Closing the window is unchanged: the
+  app stays in the menu bar and keeps filing. Each launch says which it was in
+  the log file, so a report of "no window appeared" has something to stand on.
+
+### Changed
+
+- **The window says when access is still missing.** Waving away the welcome
+  sheet without granting the permission left a window that could not explain
+  itself: the status card said *Paused*, the folder card said nothing was
+  there, and no control anywhere would ask macOS. The banner across the top now
+  covers that state as well as a refusal — a lock rather than a warning
+  triangle, since not having asked is not a fault — and carries the one button
+  that raises the prompt. The status card leads with it too: what is blocking
+  filing outranks whether filing is switched on, so it reads *Waiting for
+  permission* and its button asks rather than files.
+
+- **The Overview pane fills the window again.** The card listing the folder
+  stretches to the height it is given, so when there is nothing in it to list —
+  no access yet, or an empty folder — the pane reads as three cards rather than
+  three cards adrift in a void.
+
+- **A refused permission is no longer a dead end.** macOS asks about a
+  protected folder once and never again, so a prompt answered with *Don't
+  Allow* — or dismissed by accident — left the app with no way to ask a second
+  time, and the banner could only point at System Settings and suggest a
+  restart. It now offers **Choose Downloads Folder…** as well: picking the
+  folder yourself grants the same permission, on the spot, without a trip
+  through System Settings or a relaunch. It doubles as the fix for a watched
+  folder that has been moved or deleted, since whatever you choose becomes the
+  folder Tideline watches.
+
+- **The sheets are the same window now.** Every review sheet — duplicates,
+  large files, old folders, catching up, putting things back, the preview and
+  the uninstall steps — was drawn on the system's own window grey while the
+  window behind it was the app's near-black. The palette reached the accents
+  inside them and nothing else, so a sheet read as a panel macOS had put on top
+  of Tideline rather than a part of it. They now use the same surfaces the
+  window does: the chrome shade behind the header and the buttons, the pane
+  shade under the list, and the theme's own hairline between them instead of
+  the system divider. The accent goes across with them: a sheet is a window of
+  its own, so the tint the window sets never reached it — every confirming
+  button and every tick box in a review came up in the system blue, and they
+  are the app's yellow now.
+
 ## [1.8.0] - 2026-08-27
 
 ### Changed
@@ -339,6 +451,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.9.0]: https://github.com/estruyf/tideline/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/estruyf/tideline/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/estruyf/tideline/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/estruyf/tideline/compare/v1.5.0...v1.6.0

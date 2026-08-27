@@ -15,7 +15,7 @@ struct PreviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Divider()
+            Hairline()
 
             Group {
                 if controller.plan.isEmpty {
@@ -24,12 +24,12 @@ struct PreviewView: View {
                     list
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sheetBody()
 
-            Divider()
+            Hairline()
             footer
         }
-        .frame(width: 520, height: 480)
+        .sheetSurface(width: 520, height: 480)
     }
 
     // MARK: - Pieces
@@ -44,7 +44,7 @@ struct PreviewView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     private var empty: some View {
@@ -94,7 +94,7 @@ struct PreviewView: View {
                 }
             }
         }
-        .listStyle(.inset)
+        .sheetList()
     }
 
     private var footer: some View {
@@ -115,7 +115,7 @@ struct PreviewView: View {
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     // MARK: - Grouping

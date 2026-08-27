@@ -25,6 +25,7 @@
     "logs": "tail -f \"$HOME/Library/Logs/Tideline.log\"",
     "icon": "cd app && swift Tools/make-icon.swift dist/AppIcon.iconset && open dist/AppIcon.iconset",
     "clean": "rm -rf app/.build app/dist",
+    "cask": "./homebrew/publish-cask.sh",
     "win:dev": "cd windows && npx tauri dev",
     "win:build": "cd windows && npx tauri build",
     "win:test": "cargo test --workspace --manifest-path windows/src-tauri/Cargo.toml",

@@ -87,6 +87,8 @@ final class Settings: ObservableObject {
         static let cleanupOnSchedule = "cleanupOnSchedule"
         static let cleanupKeepNewest = "cleanupKeepNewest"
         static let hasCompletedFirstRun = "hasCompletedFirstRun"
+        static let hasStartedFiling = "hasStartedFiling"
+        static let hasGrantedAccess = "hasGrantedAccess"
         static let hasAnsweredLoginSuggestion = "hasAnsweredLoginSuggestion"
         static let duplicateRestoreNames = "duplicateRestoreNames"
         static let largeFileThresholdMB = "largeFileThresholdMB"
@@ -145,8 +147,28 @@ final class Settings: ObservableObject {
         largeFileThresholdMB = defaults.integer(forKey: Key.largeFileThresholdMB)
         showSizeInMenuBar = defaults.bool(forKey: Key.showSizeInMenuBar)
         hasAnsweredLoginSuggestion = defaults.bool(forKey: Key.hasAnsweredLoginSuggestion)
+        hasStartedFiling = Settings.loadStartedFiling(from: defaults)
+        // An install that has been filing plainly had access to file with.
+        hasGrantedAccess = defaults.object(forKey: Key.hasGrantedAccess) as? Bool
+            ?? defaults.bool(forKey: Key.hasCompletedFirstRun)
         automaticUpdateChecks = defaults.bool(forKey: Key.automaticUpdateChecks)
         notifyOnUpdate = defaults.bool(forKey: Key.notifyOnUpdate)
+    }
+
+    /// Whether filing has ever been agreed to. A fresh install has not: the
+    /// window asks before the first sweep, because an app that rearranges a
+    /// folder the moment it opens has taken a decision that was not its to
+    /// take. An install that predates the question is treated as having
+    /// answered it — it has been filing for weeks, and an update is no reason
+    /// to stop and ask.
+    private static func loadStartedFiling(from defaults: UserDefaults) -> Bool {
+        if defaults.object(forKey: Key.hasStartedFiling) != nil {
+            return defaults.bool(forKey: Key.hasStartedFiling)
+        }
+
+        let upgraded = defaults.bool(forKey: Key.hasCompletedFirstRun)
+        defaults.set(upgraded, forKey: Key.hasStartedFiling)
+        return upgraded
     }
 
     static var defaultDownloadsPath: String {
@@ -157,6 +179,23 @@ final class Settings: ObservableObject {
     // MARK: - Stored preferences
 
     @Published var isEnabled: Bool { didSet { store(isEnabled, Key.isEnabled) } }
+
+    /// Set once someone has said yes to filing. Nothing is swept until they
+    /// have — not on launch, not on a folder change, not on the daily timer.
+    /// It goes through `store` because the answer is what the watcher and the
+    /// timer are waiting for.
+    @Published var hasStartedFiling: Bool { didSet { store(hasStartedFiling, Key.hasStartedFiling) } }
+
+    /// Set once macOS has actually let the app read the folder. It is the only
+    /// thing that makes reading it at launch safe: there is no way to ask for
+    /// access except by reading, so a read on an install that was never granted
+    /// anything is a permission prompt landing over a window that has not
+    /// introduced itself yet. Somewhere this is true, the read is silent.
+    /// Kept out of `store`: it changes nothing about the schedule.
+    @Published var hasGrantedAccess: Bool {
+        didSet { defaults.set(hasGrantedAccess, forKey: Key.hasGrantedAccess) }
+    }
+
     @Published var downloadsPath: String { didSet { store(downloadsPath, Key.downloadsPath) } }
     @Published var keepRecentDays: Int { didSet { store(keepRecentDays, Key.keepRecentDays) } }
     @Published var folderFormat: FolderFormat { didSet { store(folderFormat.rawValue, Key.folderFormat) } }

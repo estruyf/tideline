@@ -17,7 +17,7 @@ struct DuplicateView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Divider()
+            Hairline()
 
             Group {
                 if !didLoad {
@@ -28,12 +28,12 @@ struct DuplicateView: View {
                     list
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sheetBody()
 
-            Divider()
+            Hairline()
             footer
         }
-        .frame(width: 560, height: 500)
+        .sheetSurface(width: 560, height: 500)
         .onAppear(perform: load)
     }
 
@@ -49,7 +49,7 @@ struct DuplicateView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     private var scanning: some View {
@@ -101,7 +101,7 @@ struct DuplicateView: View {
                 }
             }
         }
-        .listStyle(.inset)
+        .sheetList()
     }
 
     private func row(_ copy: DuplicateCopy, in group: DuplicateGroup) -> some View {
@@ -180,7 +180,7 @@ struct DuplicateView: View {
                     .disabled(doomed.isEmpty || controller.collapsing)
             }
         }
-        .padding(20)
+        .sheetBand()
     }
 
     // MARK: - Behaviour

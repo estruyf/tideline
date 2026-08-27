@@ -24,8 +24,9 @@ folder, made for you every day.
 └── archive.zip         ← downloaded today, stays put
 ```
 
-**[Download for macOS](https://github.com/estruyf/tideline/releases/latest)** —
-macOS 14 or later. Free, open source, no account, no telemetry.
+**[Download for macOS](https://github.com/estruyf/tideline/releases/latest)**,
+or `brew install --cask estruyf/tap/tideline` — macOS 14 or later. Free, open
+source, no account, no telemetry.
 
 Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
 because it ships for both Apple silicon and Intel. No Electron, no bundled
@@ -68,35 +69,53 @@ the disk becomes reachable.
 
 ## Install
 
-Grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
+With [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask estruyf/tap/tideline
+```
+
+Or grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
 unzip it, and drag **Tideline.app** into `/Applications`.
 
-Once it is in `/Applications` it keeps itself current: Tideline looks for a
-newer release once a day and offers it — see [Updates](#updates).
+Either way it ends up in `/Applications`, which is where it keeps itself
+current: Tideline looks for a newer release once a day and offers it — see
+[Updates](#updates). That is also why `brew upgrade` leaves it alone; the cask
+is marked as updating itself, so the two never race. `brew upgrade --greedy`
+installs a new version through Homebrew instead, if you would rather it came
+from there.
+
+To remove it, `brew uninstall --cask tideline`, or `--zap` as well to take its
+settings and log with it. Neither touches anything Tideline filed — your
+Downloads folder is left exactly as it stands.
 
 Prefer to build it yourself? See [Building](./docs/building.md).
 
 ## First launch
 
-The window opens and the app immediately asks macOS for access to your Downloads
-folder. Allow it — without it the app can see nothing and moves nothing.
+The window opens on **Tideline is not filing yet**, and that is the whole state
+of the app: it has not read your Downloads folder, because reading it is what
+raises the macOS permission prompt and a system alert that arrives before the
+app has introduced itself is a question with no context.
 
-![macOS asking whether Tideline may access files in your Downloads folder](./assets/allow-downloads.png)
+**Allow Access…** is what asks. The prompt is scoped to that one folder, and
+nothing else on the disk becomes readable by allowing it.
 
-If you dismissed the prompt, the window shows an orange banner. **Choose
-Downloads Folder…** is the quickest way back: macOS asks about a protected
-folder once and never again, but picking the folder yourself grants the same
-permission on the spot. Failing that, switch on *Downloads Folder* for Tideline
-under **Privacy & Security › Files and Folders**.
+![macOS asking whether Tideline may access files in your Downloads folder](./assets/1.9.0/permission.png)
 
-**Then it asks whether to start.** Nothing is filed until you say so — not on
-launch, not when the folder changes, not on the daily timer. The question comes
-with the rule Tideline would follow and what the first sweep would actually do
-to your folder as it stands: *143 items would move into 12 folders, 4 stay
-loose*. **Start Filing** files them and takes over from there; **Not Yet**
+Allowing is not the same as starting. What it buys is a look: the sheet then
+says what a first sweep would actually do to your folder as it stands — *143
+items would move into 12 folders, 4 stay loose* — alongside the rule it would
+follow. **Start Filing** files them and takes over from there; **Not Yet**
 leaves everything exactly where it is, and the same question waits on the
-Overview pane and in the menu bar. Preview mode works before you answer,
-because looking first is how the question gets answered.
+Overview pane and in the menu bar. Nothing is filed until you press it — not on
+launch, not when the folder changes, not on the daily timer.
+
+If the prompt was answered with *Don't Allow*, or dismissed by accident, the
+window shows an orange banner. **Choose Downloads Folder…** is the way back:
+macOS asks about a folder once and never again, but picking it yourself grants
+the same permission on the spot. Failing that, switch on *Downloads Folder* for
+Tideline under **Privacy & Security › Files and Folders**.
 
 The window also offers to start Tideline at login, since filing only happens
 while the app is running. **Open at Login** switches it on; **Not Now** hides

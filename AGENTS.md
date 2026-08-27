@@ -1,8 +1,9 @@
 # Tideline
 
 A macOS menu-bar app that files older downloads into folders named for the day
-they arrived. Native Swift, SwiftPM, no dependencies — the shipped bundle is
-about 1.7 MB and that is a feature, not an accident.
+they arrived. Native Swift, SwiftPM, no dependencies — the release zip is about
+1.7 MB, and 5.8 MB unpacked because the bundle is universal. That is a feature,
+not an accident.
 
 A Windows build lives in `windows/`: the same filing rules rewritten in Rust,
 behind a Tauri v2 shell. It builds and its tests pass. The **filing engine is
@@ -28,7 +29,8 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | `windows/src/` | The window: plain HTML, CSS and JS, no framework and no build step |
 | `docs/behaviour.md` | The filing contract both platforms implement |
 | `fixtures/sweep-cases.json` | The contract as runnable cases. Add a rule here first |
-| `docs/building.md`, `docs/signing.md`, `docs/releasing.md` | Build, distribution and release notes |
+| `homebrew/` | The Homebrew cask and the script that stamps it into `estruyf/homebrew-tap` |
+| `docs/building.md`, `docs/signing.md`, `docs/releasing.md`, `docs/homebrew.md` | Build, distribution, release and cask notes |
 | `windows/README.md` | Building on Windows, what is ported, what is not |
 | `app/.build/`, `app/dist/`, `windows/**/target/`, `old-scripts/` | Ignored by git; never edit or commit |
 
@@ -64,6 +66,10 @@ There is no Swift test target. Confirm behaviour by running the real bundle:
 The Rust side does have tests — `npm run win:test` runs all 45. The rules are
 pure functions taking a list of entries and a moment, so a rule change is
 provable without a filesystem; only `sweep.rs` needs a real folder.
+
+The first-run flow — the permission prompt and the question that gates
+filing — only happens once per machine. `docs/building.md` has the commands
+that put the app back to knowing nothing about you.
 
 `npm run win:dev` works on a Mac: it builds the same Rust and the same front end
 into a macOS window, which is enough to iterate on the layout. The `cfg(windows)`
@@ -154,9 +160,14 @@ On the Rust side:
 - Commit messages are short and descriptive, in the imperative or past tense —
   match `git log`. Version bumps are their own commit, made by `npm version`.
 - Releasing macOS is `npm version patch`, push the tag, then publish the release
-  on GitHub; `release.yml` signs, notarizes, staples and attaches the zip. The
-  in-app updater depends on the asset name and the notarization —
-  `docs/releasing.md` has the details.
+  on GitHub; `release.yml` signs, notarizes, staples, attaches the zip and
+  stamps the Homebrew cask into the tap. The in-app updater depends on the asset
+  name and the notarization — `docs/releasing.md` has the details.
+- **The cask is `homebrew/tideline.rb`, and it is generated into the tap, not
+  edited there.** A change to it lands on the next release. `depends_on macos:`
+  has to move whenever `LSMinimumSystemVersion` does, and the `zap` paths
+  whenever `UninstallView` does — those are the two places it can silently fall
+  out of step with the app. `docs/homebrew.md` says why each stanza is there.
 - Windows has its own workflow, `windows.yml`. It tests on every push touching
   `windows/` or `fixtures/`, and builds the installer on demand. It is
   deliberately not tied to the release tag while the port is behind; make it

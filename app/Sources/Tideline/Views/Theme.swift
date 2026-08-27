@@ -8,8 +8,9 @@ import SwiftUI
 /// `NSColor(name:dynamicProvider:)`, so the window still follows the system
 /// appearance — switching to Light mode swaps the whole set, it does not leave
 /// dark cards on a white page. What it no longer follows is the *system accent*:
-/// `#ffd43b` is the app's own, and `.tint` in `MainView` hands it to every
-/// control, sheet included.
+/// `#ffd43b` is the app's own. `.tint` in `MainView` hands it to every control
+/// in the window; a sheet is a window of its own and the tint does not cross,
+/// so `sheetSurface` sets it again on that side.
 enum Theme {
 
     // MARK: Brand

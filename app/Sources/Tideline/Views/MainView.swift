@@ -14,7 +14,10 @@ struct MainView: View {
             HeaderBand()
 
             // Losing access stops everything, so it is said once above the
-            // sidebar rather than on a pane you might not be looking at.
+            // sidebar rather than on a pane you might not be looking at. That
+            // includes never having asked: waving away the welcome sheet with
+            // the permission still ungranted used to leave a window with no
+            // way to ask for it and nothing saying why it was empty.
             if !controller.access.isUsable {
                 Hairline()
                 AccessBanner()
@@ -48,6 +51,12 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingPlan) {
             PreviewView(isPresented: $controller.reviewingPlan)
         }
+        .sheet(isPresented: $controller.reviewingRestore) {
+            RestoreView(isPresented: $controller.reviewingRestore)
+        }
+        .sheet(isPresented: $controller.askingToStart) {
+            WelcomeView(isPresented: $controller.askingToStart)
+        }
         .onChange(of: updater.reveal) { _, reveal in
             // "Check for Updates…" in the menu bar lands on the pane that
             // shows what the check found.
@@ -70,12 +79,18 @@ struct MainView: View {
         .onChange(of: controller.reviewingRegroup) { _, reviewing in
             if reviewing { tab = .typeFolders }
         }
+        .onChange(of: controller.reviewingRestore) { _, reviewing in
+            if reviewing { tab = .filing }
+        }
         .onChange(of: controller.reveal) { _, wanted in
             guard let wanted else { return }
             tab = wanted
             controller.reveal = nil
         }
         .onAppear {
+            // A fresh install has said nothing about filing yet, so the window
+            // asks before it does anything. Answered once, never again.
+            if !settings.hasStartedFiling { controller.askingToStart = true }
             controller.refreshLoginItem()
             controller.refreshUsage()
             // The sidebar badge and Overview's "Waiting for you" are only worth
@@ -122,20 +137,42 @@ private struct HeaderBand: View {
 
             Spacer(minLength: 12)
 
-            Text(settings.isEnabled ? "Filing on" : "Filing paused")
+            Text(stateLabel)
                 .font(.caption)
                 .foregroundStyle(Theme.muted)
 
-            Toggle("", isOn: $settings.isEnabled)
+            // Switching this on before the question has been answered asks the
+            // question instead — the switch decides whether filing is paused,
+            // not whether it was ever agreed to.
+            Toggle("", isOn: Binding(
+                get: { settings.isEnabled && settings.hasStartedFiling },
+                set: { wanted in
+                    if wanted, !settings.hasStartedFiling {
+                        Controller.shared.askingToStart = true
+                    } else {
+                        settings.isEnabled = wanted
+                    }
+                }
+            ))
                 .toggleStyle(.switch)
                 .labelsHidden()
                 .controlSize(.small)
-                .help(settings.isEnabled ? "Filing is on" : "Filing is paused")
+                .help(helpText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.chrome)
+    }
+
+    private var stateLabel: String {
+        if !settings.hasStartedFiling { return "Not started" }
+        return settings.isEnabled ? "Filing on" : "Filing paused"
+    }
+
+    private var helpText: String {
+        if !settings.hasStartedFiling { return "Filing has not been started yet" }
+        return settings.isEnabled ? "Filing is on" : "Filing is paused"
     }
 }
 
@@ -194,6 +231,19 @@ private struct StatusPanel: View {
                     Spacer(minLength: 12)
 
                     Button {
+                        // No permission means no sweep, so the button that
+                        // would file asks macOS instead — pressing "File Now"
+                        // must never be what raises the prompt.
+                        guard controller.access != .notAsked else {
+                            controller.requestAccess()
+                            return
+                        }
+                        // Nothing has been agreed to yet, so the button that
+                        // would file asks first, and files once it has an answer.
+                        guard settings.hasStartedFiling else {
+                            controller.askingToStart = true
+                            return
+                        }
                         // In preview mode the sweep touches nothing and what it
                         // would have done opens in a sheet, like the other reviews.
                         controller.run(trigger: .manual, showingPlan: settings.dryRun)
@@ -201,7 +251,7 @@ private struct StatusPanel: View {
                         if controller.busy {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text(settings.dryRun ? "Preview Now" : "File Now")
+                            Text(actionTitle)
                                 .foregroundStyle(Theme.onAccent)
                         }
                     }
@@ -248,20 +298,38 @@ private struct StatusPanel: View {
         settings.typeRules.contains { $0.isEnabled && !$0.extensions.isEmpty }
     }
 
+    private var actionTitle: String {
+        if controller.access == .notAsked { return "Allow Access…" }
+        if !settings.hasStartedFiling { return "Start Filing…" }
+        return settings.dryRun ? "Preview Now" : "File Now"
+    }
+
+    /// What is in the way comes first. A folder that cannot be read stops
+    /// filing whatever the switches say, so it outranks paused and not-started
+    /// — the card should name the thing you would have to fix.
     private var dotColor: Color {
-        if !settings.isEnabled { return Theme.muted }
         if controller.access == .denied || controller.access == .missing { return Theme.danger }
+        if controller.access == .notAsked { return Theme.accentText }
+        if !settings.hasStartedFiling || !settings.isEnabled { return Theme.muted }
         return Theme.success
     }
 
     private var headline: String {
-        if !settings.isEnabled { return "Paused" }
-        if controller.access == .denied { return "Waiting for permission" }
+        if controller.access == .denied || controller.access == .notAsked { return "Waiting for permission" }
         if controller.access == .missing { return "Folder missing" }
+        if !settings.hasStartedFiling { return "Not filing yet" }
+        if !settings.isEnabled { return "Paused" }
         return controller.busy ? "Filing…" : "Watching \(settings.downloadsURL.lastPathComponent)"
     }
 
     private var detail: String {
+        guard controller.access != .notAsked else {
+            return "macOS has not been asked yet, and nothing is filed until it says yes."
+        }
+        guard settings.hasStartedFiling else {
+            return "Nothing has been moved. Tideline files older downloads once you start it."
+        }
+
         var parts: [String] = [controller.lastRunSummary]
         if settings.isEnabled, let next = controller.nextRunAt {
             parts.append("next sweep \(Self.time.string(from: next))")
@@ -300,11 +368,16 @@ private struct FolderPanel: View {
                     rows(of: snapshot)
                 }
             } else {
+                // Given the height of the pane, an empty card should fill it
+                // the way a full one does — a box sized to one line of text
+                // leaves the pane looking like three cards adrift in a void.
                 Text(emptyNote)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
                     .padding(.horizontal, 13)
                     .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
             Hairline()
@@ -383,6 +456,9 @@ private struct FolderPanel: View {
     }
 
     private var emptyNote: String {
+        guard controller.access != .notAsked else {
+            return "Tideline has not looked at the folder yet.\nAllow Access… asks macOS first."
+        }
         guard controller.access.isUsable else {
             return "Nothing to show until macOS grants access to the folder."
         }
@@ -1018,6 +1094,17 @@ private struct FilingTab: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            Section {
+                RestoreSection()
+            } header: {
+                Text("Putting it back")
+            } footer: {
+                Text("Everything Tideline filed goes back into the root, and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .settingsPane()
     }
@@ -1141,7 +1228,7 @@ private struct AccessBanner: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundStyle(controller.access == .unknown ? Theme.muted : Theme.danger)
+                .foregroundStyle(iconColour)
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
@@ -1153,10 +1240,25 @@ private struct AccessBanner: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack {
-                    if controller.access == .denied {
-                        Button("Open Privacy Settings") { controller.openPrivacySettings() }
+                    if controller.access == .notAsked {
+                        // The one button that raises the macOS prompt. Nothing
+                        // else in the window may, so this is the whole way in.
+                        Button("Allow Access…") { controller.requestAccess() }
+                            .buttonStyle(.borderedProminent)
+                    } else {
+                        // The prompt macOS shows is a one-time offer, so the
+                        // way back from a "no" is to hand the folder over
+                        // yourself. Not while the answer is still coming,
+                        // though — there is nothing to grant until macOS has
+                        // actually refused.
+                        if controller.access != .unknown {
+                            Button("Choose Downloads Folder…") { controller.chooseDownloadsFolder() }
+                        }
+                        if controller.access == .denied {
+                            Button("Open Privacy Settings") { controller.openPrivacySettings() }
+                        }
+                        Button("Check Again") { controller.refreshAccess() }
                     }
-                    Button("Check Again") { controller.refreshAccess() }
                 }
                 .controlSize(.small)
                 .padding(.top, 2)
@@ -1169,14 +1271,30 @@ private struct AccessBanner: View {
         .background(banner)
     }
 
+    private var iconColour: Color {
+        switch controller.access {
+        case .notAsked: return Theme.accentText
+        case .unknown: return Theme.muted
+        default: return Theme.danger
+        }
+    }
+
     /// Waiting on macOS to answer is not a fault yet, so the strip only turns
     /// red once the answer is no.
     private var banner: Color {
-        controller.access == .unknown ? Theme.hover : Theme.danger.opacity(0.12)
+        switch controller.access {
+        // Not having asked is not a fault, and neither is waiting on an
+        // answer, so neither turns the strip red. The accent is the app's
+        // "something is about to happen" colour, which is what this is.
+        case .notAsked: return Theme.accent.opacity(0.12)
+        case .unknown: return Theme.hover
+        default: return Theme.danger.opacity(0.12)
+        }
     }
 
     private var title: String {
         switch controller.access {
+        case .notAsked: return "Tideline still needs access to your Downloads folder"
         case .denied: return "Tideline can't read your Downloads folder"
         case .missing: return "That folder no longer exists"
         default: return "Checking access…"
@@ -1185,16 +1303,22 @@ private struct AccessBanner: View {
 
     private var explanation: String {
         switch controller.access {
+        case .notAsked:
+            return "Nothing has been read yet, and nothing can be filed until macOS is asked. The prompt covers this one folder and nothing else on the disk."
         case .denied:
-            return "macOS is blocking access. Open Privacy & Security › Files and Folders, switch on Downloads Folder for Tideline, then quit and reopen the app."
+            return "macOS asks about a folder once, and that answer was no. Choose the folder yourself to grant the same permission, or switch on Downloads Folder for Tideline under Privacy & Security › Files and Folders."
         case .missing:
-            return "\(settings.downloadsPath) is gone. Pick another folder under Filing."
+            return "\(settings.downloadsPath) is gone. Choose another folder here, or under Filing."
         default:
             return "Asking macOS for permission to read \(settings.downloadsPath)."
         }
     }
 
     private var icon: String {
-        controller.access == .unknown ? "hourglass" : "exclamationmark.triangle.fill"
+        switch controller.access {
+        case .notAsked: return "lock"
+        case .unknown: return "hourglass"
+        default: return "exclamationmark.triangle.fill"
+        }
     }
 }

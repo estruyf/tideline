@@ -5,12 +5,21 @@ import ServiceManagement
 import UserNotifications
 
 enum AccessState: Equatable {
+    /// Nobody has asked macOS yet, and deliberately so: reading the folder is
+    /// what raises the permission prompt, and a prompt that arrives before the
+    /// window has said what the app is for is a question with no context.
+    case notAsked
     case unknown
     case granted
     case denied
     case missing
 
     var isUsable: Bool { self == .granted }
+
+    /// Whether looking at the folder at all is allowed. A scan, a measurement
+    /// and a sweep all read it, and reading it before `notAsked` has been
+    /// answered would ask the question this state exists to hold back.
+    var mayRead: Bool { self == .unknown || self == .granted }
 }
 
 enum RunTrigger: String {
@@ -39,7 +48,7 @@ final class Controller: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var isRunning = false
 
-    @Published private(set) var access: AccessState = .unknown
+    @Published private(set) var access: AccessState = .notAsked
     @Published private(set) var history: [MoveRecord] = []
     @Published private(set) var lastRunAt: Date?
     @Published private(set) var lastRunSummary: String = "Not run yet"
@@ -74,6 +83,11 @@ final class Controller: ObservableObject {
 
     @Published private(set) var plan: [PlannedMove] = []
     @Published var reviewingPlan = false
+
+    /// Drives the sheet that asks whether to start filing at all. Owned here
+    /// rather than by the view, because the menu bar has to be able to ask for
+    /// it too — nothing starts filing without it.
+    @Published var askingToStart = false
 
     /// Files that exist more than once, as of the last scan.
     @Published private(set) var duplicates: [DuplicateGroup] = []
@@ -114,6 +128,13 @@ final class Controller: ObservableObject {
     @Published private(set) var regroupScanning = false
     @Published private(set) var regrouping = false
 
+    /// Everything sitting in a folder Tideline made, as of the last scan —
+    /// what putting it all back would move.
+    @Published private(set) var restorable: [RestoreCandidate] = []
+    @Published var reviewingRestore = false
+    @Published private(set) var restoreScanning = false
+    @Published private(set) var restoring = false
+
     private init() {
         history = log.loadHistory()
         lastRunAt = UserDefaults.standard.object(forKey: "lastRunAt") as? Date
@@ -143,17 +164,56 @@ final class Controller: ObservableObject {
 
     // MARK: - Lifecycle
 
+    /// Filing runs on two answers, not one: the switch in the header, and the
+    /// question asked once on a fresh install. Both have to be yes.
+    var filingActive: Bool { settings.isEnabled && settings.hasStartedFiling }
+
+    /// Says yes to the question the welcome sheet asks, and sweeps straight
+    /// away — the answer was to a button marked "Start Filing", so waiting for
+    /// midnight to act on it would be the wrong kind of cautious.
+    func startFiling() {
+        settings.hasStartedFiling = true
+        settings.isEnabled = true
+        log.write("filing started by the user")
+        reconfigure()
+        run(trigger: .manual)
+    }
+
     func start() {
+        // Reading the folder is what raises the permission prompt, so at launch
+        // it is only ever read where that cannot happen: an install that has
+        // been granted access already, or one that is filing and so plainly
+        // was. Anywhere else the window opens first and asks in its own words.
+        guard settings.hasGrantedAccess || settings.hasStartedFiling else {
+            access = .notAsked
+            return
+        }
+
         refreshAccess { [weak self] in
             guard let self else { return }
             self.reconfigure()
             self.refreshUsage(force: true)
             self.invalidateScans()
-            if self.settings.isEnabled, self.settings.runOnLaunch, self.access.isUsable {
+            if self.filingActive, self.settings.runOnLaunch, self.access.isUsable {
                 self.run(trigger: .launch)
             } else {
                 self.catchUpIfMissed()
             }
+        }
+    }
+
+    /// Raises the macOS permission prompt, on purpose and at a moment someone
+    /// chose. Reading the folder is what asks — there is no API for "ask me" —
+    /// so the first read is the request, and everything the window does with
+    /// the folder waits behind it.
+    func requestAccess() {
+        access = .unknown
+
+        refreshAccess { [weak self] in
+            guard let self else { return }
+            self.reconfigure()
+            self.refreshUsage(force: true)
+            self.scanWhatIsCheap()
         }
     }
 
@@ -165,7 +225,7 @@ final class Controller: ObservableObject {
         watcher = nil
         nextRunAt = nil
 
-        guard settings.isEnabled else { return }
+        guard filingActive else { return }
 
         if settings.watchFolder {
             let watcher = FolderWatcher { [weak self] in
@@ -196,7 +256,7 @@ final class Controller: ObservableObject {
     }
 
     private func handleWake() {
-        guard settings.isEnabled else { return }
+        guard filingActive else { return }
         // Timers can drift across sleep, so rebuild and cover anything missed.
         reconfigure()
         catchUpIfMissed()
@@ -204,7 +264,7 @@ final class Controller: ObservableObject {
 
     /// Runs if the scheduled time passed while the Mac was asleep or powered off.
     private func catchUpIfMissed() {
-        guard settings.isEnabled, settings.dailyRunEnabled, access.isUsable else { return }
+        guard filingActive, settings.dailyRunEnabled, access.isUsable else { return }
         guard let previous = previousOccurrence(before: Date()) else { return }
         if let lastRunAt, lastRunAt >= previous { return }
         run(trigger: .schedule)
@@ -235,6 +295,10 @@ final class Controller: ObservableObject {
     func run(trigger: RunTrigger, showingPlan: Bool = false) {
         guard !isRunning else { return }
         guard settings.isEnabled || trigger == .manual else { return }
+        // Until filing has been agreed to, the only sweep on offer is one that
+        // moves nothing: a preview is how you decide, so it cannot be gated on
+        // the decision.
+        guard settings.hasStartedFiling || (trigger == .manual && settings.dryRun) else { return }
 
         isRunning = true
         busy = true
@@ -356,6 +420,7 @@ final class Controller: ObservableObject {
     /// Looks for folders old enough to go. Measuring them touches every file
     /// inside, so it runs off the main thread like a sweep does.
     func findClearable(completion: @escaping ([CleanupCandidate]) -> Void = { _ in }) {
+        guard access.mayRead else { return completion([]) }
         scanning = true
         let configuration = CleanupConfiguration(settings)
 
@@ -412,6 +477,7 @@ final class Controller: ObservableObject {
     /// Walks the dated folders for anything the type rules now claim. Reads
     /// every dated folder, so it runs off the main thread like a sweep does.
     func findRegroupable(completion: @escaping ([RegroupCandidate]) -> Void = { _ in }) {
+        guard access.mayRead else { return completion([]) }
         regroupScanning = true
         let configuration = RegroupConfiguration(settings)
 
@@ -466,12 +532,98 @@ final class Controller: ObservableObject {
         lastRunSummary = summary
     }
 
+    /// What a sweep would move, worked out and thrown away. `run` is the only
+    /// thing that files, and this never calls it — the welcome sheet needs a
+    /// figure to put in front of someone before they decide, and asking the
+    /// planner is how you get one without touching the folder.
+    func inspectPlan(completion: @escaping (SweepPlan?) -> Void) {
+        let configuration = RunConfiguration(settings)
+        // Not on `inspectQueue`, which is serial: granting access starts a
+        // measurement of the whole folder on it, and a plan queued behind that
+        // is a spinner someone watches for as long as the walk takes. Planning
+        // only lists the root — it never opens a subfolder — so it is quick
+        // enough to run beside the walk rather than after it.
+        DispatchQueue.global(qos: .userInitiated).async {
+            let plan = try? Organizer.plan(settings: configuration)
+            DispatchQueue.main.async { completion(plan) }
+        }
+    }
+
+    // MARK: - Putting it back
+
+    /// Walks every folder the app made for what it would take back out. Reads
+    /// all of them, so it runs off the main thread like a sweep does.
+    func findRestorable(completion: @escaping ([RestoreCandidate]) -> Void = { _ in }) {
+        guard access.mayRead else { return completion([]) }
+        restoreScanning = true
+        let configuration = RestoreConfiguration(settings)
+
+        inspectQueue.async { [weak self] in
+            let found = Restorer.candidates(configuration: configuration)
+            DispatchQueue.main.async {
+                self?.restorable = found
+                self?.restoreScanning = false
+                completion(found)
+            }
+        }
+    }
+
+    func restore(_ selected: [RestoreCandidate], completion: @escaping (RestoreResult) -> Void) {
+        guard !restoring, !selected.isEmpty else { return }
+        restoring = true
+        let configuration = RestoreConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Restorer.apply(selected, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.finishRestoring(outcome)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishRestoring(_ outcome: RestoreResult) {
+        restoring = false
+        lastError = outcome.errors.first
+        remember(outcome.moved + outcome.emptied)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        guard !outcome.moved.isEmpty else { return }
+
+        let done = Set(outcome.moved.map(\.name))
+        restorable.removeAll { done.contains($0.name) }
+        refreshUsage(force: true)
+        invalidateScans()
+
+        // A real restore pauses filing. The next sweep would put back exactly
+        // what was just taken out, which is not an argument worth having with
+        // your own downloads folder — so the app stops and says it has, and
+        // starting again is a switch away.
+        if !outcome.moved.allSatisfy(\.wasPreview), settings.isEnabled {
+            settings.isEnabled = false
+            log.write("filing paused after putting everything back")
+        }
+
+        let noun = outcome.movedCount == 1 ? "item" : "items"
+        var summary = outcome.moved.allSatisfy(\.wasPreview)
+            ? "Previewed putting \(outcome.movedCount) \(noun) back"
+            : "Put \(outcome.movedCount) \(noun) back · filing paused"
+        if outcome.emptiedCount > 0 {
+            let folders = outcome.emptiedCount == 1 ? "folder" : "folders"
+            summary += " · \(outcome.emptiedCount) empty \(folders) to the Trash"
+        }
+        lastRunSummary = summary
+    }
+
     // MARK: - What the folder holds
 
     /// Measures the watched folder. Walking it is not free, so a figure this
     /// fresh is left alone unless the caller insists — after a sweep, say.
     func refreshUsage(force: Bool = false) {
-        guard access != .denied, access != .missing else {
+        guard access.mayRead else {
             usage = nil
             snapshot = nil
             return
@@ -519,6 +671,7 @@ final class Controller: ObservableObject {
     func scanWhatIsCheap(force: Bool = false) {
         guard access.isUsable else { return }
 
+
         if force || largeFilesScannedAt == nil {
             findLargeFiles()
         }
@@ -543,6 +696,7 @@ final class Controller: ObservableObject {
     /// Looks for files that exist more than once. Hashing every candidate is
     /// the slow part, so this runs off the main thread and the sheet waits.
     func findDuplicates(completion: @escaping ([DuplicateGroup]) -> Void = { _ in }) {
+        guard access.mayRead else { return completion([]) }
         duplicateScanning = true
         let configuration = DedupeConfiguration(settings)
 
@@ -613,6 +767,7 @@ final class Controller: ObservableObject {
     /// nothing is read through — but it can pause on a file still being
     /// written, so it keeps off the main thread like the other scans.
     func findLargeFiles(completion: @escaping ([LargeFile]) -> Void = { _ in }) {
+        guard access.mayRead else { return completion([]) }
         largeFileScanning = true
         let configuration = LargeFileConfiguration(settings)
 
@@ -716,6 +871,16 @@ final class Controller: ObservableObject {
     // MARK: - Access
 
     func refreshAccess(then completion: (() -> Void)? = nil) {
+        // While the question has not been put, nobody probes. Reading the
+        // folder is what raises the prompt, so `requestAccess` — which clears
+        // this state first — is the only way in. Opening the window, checking
+        // again and recovering from an error all go through here, and none of
+        // them should be able to raise a system alert on their own.
+        guard access != .notAsked else {
+            completion?()
+            return
+        }
+
         let url = settings.downloadsURL
         // Reading a protected folder is what triggers the macOS prompt, and it
         // blocks until the user answers — so never do it on the main thread.
@@ -731,8 +896,47 @@ final class Controller: ObservableObject {
 
             DispatchQueue.main.async { [weak self] in
                 self?.access = state
+                // Remembered so the next launch knows a read is silent, and
+                // forgotten again the moment it stops being true — a
+                // permission withdrawn in System Settings puts the app back to
+                // asking rather than to prompting out of nowhere.
+                self?.settings.hasGrantedAccess = state == .granted
                 completion?()
             }
+        }
+    }
+
+    /// The way back from a refused prompt. macOS asks for a protected folder
+    /// once and never again, so a "no" — or a prompt dismissed by accident —
+    /// leaves the app with no way to ask a second time. Choosing the folder in
+    /// an open panel is the second way in: picking it yourself is the same
+    /// permission, granted by hand rather than by answering an alert, and it
+    /// works without a trip through System Settings or a restart.
+    ///
+    /// Whatever is chosen becomes the watched folder, so the same button also
+    /// answers the case where the old one has been moved or deleted.
+    func chooseDownloadsFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = false
+        panel.prompt = "Grant Access"
+        panel.message = "Choose your Downloads folder to give Tideline access to it."
+        panel.directoryURL = FileManager.default.fileExists(atPath: settings.downloadsURL.path)
+            ? settings.downloadsURL
+            : URL(fileURLWithPath: NSHomeDirectory())
+
+        NSApp.activate(ignoringOtherApps: true)
+        guard panel.runModal() == .OK, let chosen = panel.url else { return }
+
+        if chosen.path != settings.downloadsPath {
+            settings.downloadsPath = chosen.path
+        }
+        log.write("access granted by hand for \(chosen.path)")
+        refreshAccess { [weak self] in
+            self?.refreshUsage(force: true)
+            self?.invalidateScans()
         }
     }
 

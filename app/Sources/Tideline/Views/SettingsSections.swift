@@ -421,6 +421,35 @@ struct TypeFolderSection: View {
 
 // MARK: - Skip list
 
+/// The one thing filing cannot be undone with a single gesture in Finder, so
+/// the app offers the gesture itself. It only ever opens the review sheet —
+/// nothing moves from a settings pane.
+struct RestoreSection: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Undo filing")
+                    .font(.callout)
+                Text(settings.dryRun
+                     ? "Preview mode — the review will show what would come back and move nothing."
+                     : "Lists everything filed, grouped by the folder it would come out of. Nothing moves until you say so.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Put Everything Back…") { controller.reviewingRestore = true }
+                .disabled(controller.restoring)
+        }
+        .padding(.vertical, 2)
+    }
+}
+
 struct SkipListSection: View {
     @ObservedObject private var settings = Settings.shared
     @State private var draft = ""

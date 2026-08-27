@@ -14,7 +14,7 @@ struct CleanupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Divider()
+            Hairline()
 
             Group {
                 if !didLoad {
@@ -25,12 +25,12 @@ struct CleanupView: View {
                     list
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sheetBody()
 
-            Divider()
+            Hairline()
             footer
         }
-        .frame(width: 480, height: 460)
+        .sheetSurface(width: 480, height: 460)
         .onAppear(perform: load)
     }
 
@@ -46,7 +46,7 @@ struct CleanupView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     private var scanning: some View {
@@ -89,7 +89,7 @@ struct CleanupView: View {
                 .toggleStyle(.checkbox)
             }
         }
-        .listStyle(.inset)
+        .sheetList()
     }
 
     private var footer: some View {
@@ -115,7 +115,7 @@ struct CleanupView: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(selection.isEmpty || controller.clearing)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     // MARK: - Behaviour

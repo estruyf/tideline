@@ -88,3 +88,60 @@ npm run logs
 The log at `~/Library/Logs/Tideline.log` is the fastest way to see what a sweep
 did. Switch on *Preview mode* under **Filing** to watch it decide without
 touching a file.
+
+## Testing the first run
+
+The first run is the part of the app a stranger sees and you never do: the
+window opens on **Tideline is not filing yet**, macOS is not asked for the
+Downloads folder until **Allow Access…** is pressed, and nothing is swept until
+**Start Filing** is. Once you have answered it, that is answered for good — so
+changing it means putting the app back to knowing nothing about you.
+
+State lives in four places, and the permission macOS remembers is a fifth that
+nothing in the app can clear:
+
+```bash
+# A running app rewrites its preferences on the way out, so quit it first.
+# Not with a quit event: a sheet is modal, and the welcome sheet is exactly
+# what is on screen when you are testing this — the app would stay up and
+# quietly reopen with the settings it already had.
+pkill -x Tideline; sleep 1
+
+defaults delete be.eliostruyf.Tideline          # every setting
+killall cfprefsd                                # the prefs daemon caches the domain
+rm -rf "$HOME/Library/Application Support/Tideline"   # the activity history
+rm -f  "$HOME/Library/Logs/Tideline.log"              # the log
+
+# The Downloads permission. Nothing in the app can reset this one
+tccutil reset SystemPolicyDownloadsFolder be.eliostruyf.Tideline
+
+open -a Tideline
+```
+
+Two things survive that and can leave it looking like a first run when it is
+not one:
+
+- **The login item** is registered with macOS rather than stored in
+  preferences, so deleting the domain leaves it switched on. Turn *Open at
+  login* off before you reset, or take it out under **System Settings ›
+  General › Login Items**.
+- **`tccutil reset` clears the permission for every copy** of the app — the
+  release build as well as the one you just built. The two carry different
+  signatures, so granting it to one never granted it to the other anyway.
+
+**General › Other › Uninstall…** does the same as the four commands above and
+unregisters the login item with them, then quits and opens Finder on the app
+without deleting it. Paired with the permission, that is the whole reset:
+
+```bash
+tccutil reset SystemPolicyDownloadsFolder be.eliostruyf.Tideline && open -a Tideline
+```
+
+To land in a particular state rather than the first one, write the two flags
+that govern it — `hasGrantedAccess` is what decides whether the app reads the
+folder at launch, and `hasStartedFiling` whether it files at all:
+
+```bash
+defaults write be.eliostruyf.Tideline hasGrantedAccess -bool false
+defaults write be.eliostruyf.Tideline hasStartedFiling -bool false
+```

@@ -18,7 +18,7 @@ struct LargeFileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Divider()
+            Hairline()
 
             Group {
                 if !didLoad {
@@ -29,12 +29,12 @@ struct LargeFileView: View {
                     list
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .sheetBody()
 
-            Divider()
+            Hairline()
             footer
         }
-        .frame(width: 580, height: 520)
+        .sheetSurface(width: 580, height: 520)
         .onAppear(perform: load)
     }
 
@@ -50,7 +50,7 @@ struct LargeFileView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
+        .sheetBand()
     }
 
     private var scanning: some View {
@@ -85,7 +85,7 @@ struct LargeFileView: View {
                 row(file)
             }
         }
-        .listStyle(.inset)
+        .sheetList()
     }
 
     private func row(_ file: LargeFile) -> some View {
@@ -177,7 +177,7 @@ struct LargeFileView: View {
                     .disabled(doomed.isEmpty || controller.trimming)
             }
         }
-        .padding(20)
+        .sheetBand()
     }
 
     // MARK: - Behaviour

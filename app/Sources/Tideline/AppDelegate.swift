@@ -19,6 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var updatesItem: NSMenuItem?
 
     private let settings = Settings.shared
+    private let log = ActivityLog.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMainMenu()
@@ -29,9 +30,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         // Keep the menu bar title in step with what the app is doing.
         controller.$busy
-            .combineLatest(controller.$access, settings.$isEnabled)
+            .combineLatest(controller.$access, settings.$isEnabled, settings.$hasStartedFiling)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _, _ in self?.updateStatusItemAppearance() }
+            .sink { [weak self] _, _, _, _ in self?.updateStatusItemAppearance() }
             .store(in: &cancellables)
 
         // The size only appears beside the icon when asked for, but when it is
@@ -48,18 +49,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         Updater.shared.start()
 
-        if !settings.hasCompletedFirstRun || !wasLaunchedAtLogin {
-            showWindow(nil)
-        } else {
+        if wasLaunchedAtLogin(notification) {
             NSApp.setActivationPolicy(.accessory)
+            log.write("launched in the background — no window")
+        } else {
+            showWindow(nil)
+            log.write("launched by hand — window opened")
         }
         settings.hasCompletedFirstRun = true
     }
 
-    /// launchd sets XPC_SERVICE_NAME for login items; Finder launches do not.
-    private var wasLaunchedAtLogin: Bool {
-        let value = ProcessInfo.processInfo.environment["XPC_SERVICE_NAME"] ?? ""
-        return !value.isEmpty && value != "0"
+    /// launchd starting the app at login marks the launch as not the default
+    /// one; opening it from Finder, the Dock or Launchpad marks it as default.
+    ///
+    /// This used to read `XPC_SERVICE_NAME`, on the theory that only login
+    /// items had one. Every Launch Services launch has one — a double-click
+    /// included — so the test was true for every launch after the first, and
+    /// the window stopped appearing when you opened the app. The key below is
+    /// what the launch notification carries for exactly this question; it has
+    /// no Swift name, so it is spelled out.
+    private func wasLaunchedAtLogin(_ notification: Notification) -> Bool {
+        let key = "NSApplicationLaunchIsDefaultLaunchKey"
+        guard let isDefault = notification.userInfo?[key] as? Bool else { return false }
+        return !isDefault
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -251,10 +263,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     private func updateStatusItemAppearance() {
-        let symbol = settings.isEnabled ? "tray.full" : "tray"
+        let active = settings.isEnabled && settings.hasStartedFiling
+        let symbol = active ? "tray.full" : "tray"
         statusItem?.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Tideline")
         statusItem?.button?.image?.isTemplate = true
-        statusItem?.button?.appearsDisabled = !settings.isEnabled
+        statusItem?.button?.appearsDisabled = !active
 
         if settings.showSizeInMenuBar, let usage = Controller.shared.usage {
             statusItem?.button?.title = " " + FolderUsage.bytes.string(fromByteCount: usage.totalBytes)
@@ -268,6 +281,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     /// In preview mode this files nothing; it opens the window on the sheet
     /// that lists what a sweep would have done.
     @objc private func runNow() {
+        // Nothing has been agreed to yet, so this asks in the window rather
+        // than filing a folder nobody has said it may touch.
+        guard settings.hasStartedFiling else {
+            showWindow(nil)
+            DispatchQueue.main.async {
+                Controller.shared.askingToStart = true
+            }
+            return
+        }
         guard settings.dryRun else {
             Controller.shared.run(trigger: .manual)
             return
@@ -279,6 +301,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     @objc private func toggleEnabled() {
+        guard settings.hasStartedFiling else {
+            showWindow(nil)
+            DispatchQueue.main.async {
+                Controller.shared.askingToStart = true
+            }
+            return
+        }
         settings.isEnabled.toggle()
     }
 
@@ -413,11 +442,16 @@ extension AppDelegate: NSMenuDelegate {
             usageLine?.badge = nil
         }
 
-        enabledItem?.state = settings.isEnabled ? .on : .off
+        enabledItem?.state = settings.isEnabled && settings.hasStartedFiling ? .on : .off
 
         // Preview mode never files anything, so the item that would say it does
-        // says what it actually does instead.
-        fileNowItem?.title = settings.dryRun ? "Preview a Sweep…" : "File Downloads Now"
+        // says what it actually does instead. Before filing has been agreed to,
+        // neither is on offer: the row asks the question instead.
+        if !settings.hasStartedFiling {
+            fileNowItem?.title = "Start Filing…"
+        } else {
+            fileNowItem?.title = settings.dryRun ? "Preview a Sweep…" : "File Downloads Now"
+        }
 
         // Says what the last check found, rather than making you open the window
         // to learn there is nothing to do.
@@ -433,6 +467,7 @@ extension AppDelegate: NSMenuDelegate {
         case .missing: return "Watched folder is missing"
         default: break
         }
+        if !settings.hasStartedFiling { return "Not filing yet" }
         if controller.busy { return "Filing…" }
         return settings.isEnabled ? controller.lastRunSummary : "Filing paused"
     }
@@ -441,7 +476,7 @@ extension AppDelegate: NSMenuDelegate {
     /// running, and everything as it should be.
     private func dotColour(for controller: Controller) -> Color {
         if controller.access == .denied || controller.access == .missing { return Theme.danger }
-        if !settings.isEnabled { return Theme.muted }
+        if !settings.isEnabled || !settings.hasStartedFiling { return Theme.muted }
         return controller.busy ? Theme.accent : Theme.success
     }
 

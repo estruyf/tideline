@@ -8,6 +8,33 @@ rather than discovered later.
 Anything in this document is covered by the shared fixtures in
 [fixtures/](../fixtures) so the two stay in step without sharing a build.
 
+## Before the first sweep
+
+**The folder is not read until someone asks for it.** Reading a protected
+folder is what raises the platform's permission prompt, so a fresh install
+reads nothing at all: no sweep, no measurement, no scan. The window opens
+first, says what the permission is for, and the prompt arrives only when the
+button asking for it is pressed. An app that fires a system alert before it has
+introduced itself is asking a question with no context attached.
+
+Once asked, that is remembered, and later launches probe as normal — a granted
+permission does not need announcing twice.
+
+Filing is opt-in. A fresh install has agreed to nothing, and nothing is swept —
+not on launch, not on a folder change, not on the daily timer — until someone
+has said yes once. The window asks, with the rule it would follow and what that
+first sweep would do to the folder as it stands; the answer is remembered and
+never asked for again.
+
+The enabled switch and this answer are separate: the switch pauses and resumes
+filing, the answer is whether filing was ever agreed to. Both must be yes.
+
+A preview is the exception, because a preview is how the question gets
+answered: it moves nothing, so it runs before consent as well as after.
+
+An install that predates the question is treated as having answered it. It has
+been filing for weeks, and an update is no reason to stop and ask.
+
 ## A sweep
 
 One sweep reads the root folder — never a subfolder — and decides, per entry,
@@ -102,6 +129,29 @@ Duplicate, large-file and catch-up reviews look in the root plus the folders
 this app made — dated folders and type folders, including the folders of rules
 that are currently switched off, since files put there while a rule was on are
 still sitting in them. A folder the user made is never opened.
+
+## Putting it back
+
+The mirror of a sweep, and the only way filing is undone in one gesture.
+
+It reads the same folders a review does — the dated folders and the type
+folders, the folders of switched-off rules included — and takes their
+**immediate contents** back into the root. A folder that was filed as one thing
+comes back as one thing; nothing is unpacked. A folder the user made is never
+opened.
+
+The rules that govern a sweep govern this too: a name already taken in the root
+counts up, and nothing is deleted. A folder this empties goes to the recycle
+bin, **including a type folder** — clearing leaves those alone, but an empty
+`Installers/` is not something the folder had before the app, so putting things
+back puts that back as well.
+
+A real restore then **pauses filing**. The next sweep would move back exactly
+what was just taken out, and that is not an argument to have with someone's
+downloads folder. Resuming is the switch in the header; the answer to the
+question above stands, so it is not asked again.
+
+Preview mode covers it: it lists what would come back and moves nothing.
 
 ## Preview mode
 
