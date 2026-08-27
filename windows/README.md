@@ -13,7 +13,7 @@ file leans on something Darwin-only: `addedToDirectoryDateKey`, `trashItem`,
 `DispatchSource.makeFileSystemObjectSource`, `CryptoKit`. Sharing it would have
 saved roughly 1,500 of 6,500 lines and cost a Swift-on-Windows toolchain, a
 WinUI binding layer instead of SwiftUI, and ~40 MB of Swift runtime DLLs beside
-an app whose entire pitch is that it is 1.7 MB with no runtime.
+an app whose entire pitch is a 1.7 MB download with no runtime.
 
 So the two share a *contract* rather than a build:
 [`docs/behaviour.md`](../docs/behaviour.md) in prose and

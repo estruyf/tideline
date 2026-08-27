@@ -1,10 +1,17 @@
 # Tideline
 
-Keeps `~/Downloads` tidy without hiding what you just downloaded.
+![A Downloads folder before and after: a heap of loose files and repeated artifact.zip copies on the left, and on the right the same folder with today's downloads at the top and everything older in folders named for the day it arrived](./assets/pitch.jpg)
 
-Today's files stay loose in the root where you expect them. Everything older
-gets filed into a `YYYY-MM-DD` folder named for the day it was downloaded. When
-the day rolls over, yesterday's files move into yesterday's folder on their own.
+**A tidy Downloads folder, every morning, without hiding what you just
+downloaded.** Today's files stay loose in the root where you expect them.
+Everything older is filed into a `YYYY-MM-DD` folder named for the day it
+arrived — when the day rolls over, yesterday's files move on their own.
+
+Download the same build artifact from GitHub twice and the second one lands as
+`artifact-1.zip`, the third as `artifact-2.zip`, and the name no longer tells
+you anything. So you make a folder, drag the new file into it, rename it back to
+what it was meant to be, and only then start working with it. Tideline is that
+folder, made for you every day.
 
 ```
 ~/Downloads/
@@ -17,12 +24,15 @@ the day rolls over, yesterday's files move into yesterday's folder on their own.
 └── archive.zip         ← downloaded today, stays put
 ```
 
-macOS 14 or later. A native 1.7 MB app — no Electron, no runtime, no helper
-daemon. It schedules itself and sits in the menu bar.
+**[Download for macOS](https://github.com/estruyf/tideline/releases/latest)** —
+macOS 14 or later. Free, open source, no account, no telemetry.
+
+Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
+because it ships for both Apple silicon and Intel. No Electron, no bundled
+runtime, no helper process quietly installed beside it — one menu bar app that
+schedules itself, and quitting it really is the end of it.
 
 ![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.6.0/overview.png)
-
-**[Download the latest release](https://github.com/estruyf/tideline/releases/latest)**
 
 > **Windows.** A Windows build is in progress under [`windows/`](./windows) —
 > the same filing rules, rewritten in Rust with a [Tauri](https://tauri.app)
@@ -33,12 +43,8 @@ daemon. It schedules itself and sits in the menu bar.
 
 ## Why
 
-Downloading the same build artifact from GitHub twice is all it takes. The second
-one lands as `artifact-1.zip`, the third as `artifact-2.zip`, and now the name no
-longer tells you anything. So you make a folder, drag the new file into it,
-rename it back to what it was meant to be, and only then start working with it.
-
-None of that takes long. It is just cumbersome, every single time.
+Making the folder, dragging the file in, renaming it back — none of that takes
+long. It is just cumbersome, every single time.
 
 Hence the idea: what if the Downloads folder were always clean? Not empty —
 clean. Everything that came before sits in its own folder, so the moment you
