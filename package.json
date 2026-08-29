@@ -1,6 +1,6 @@
 {
   "name": "tideline",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "Files older downloads into folders named for the day they arrived. Native on macOS, Tauri on Windows.",
   "license": "MIT",
   "author": "Elio Struyf",
