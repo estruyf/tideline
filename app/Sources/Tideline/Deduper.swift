@@ -290,10 +290,20 @@ enum Deduper {
 
     /// `artifact-1.zip`, `artifact (2).zip` and `artifact(3).zip` all reduce to
     /// `artifact`. Four digits or more is a year or a version, not a copy, so
-    /// `invoice-2024.pdf` keeps its name whole.
+    /// `invoice-2024.pdf` keeps its name whole, and a name that ends in a date
+    /// keeps the whole date.
     static func stem(of name: String) -> (base: String, copy: Int?) {
         let withoutExtension = (name as NSString).deletingPathExtension
         guard !withoutExtension.isEmpty else { return (name, nil) }
+
+        // A trailing `-14` is a copy count in `report-14.pdf` and the day of
+        // the month in `notes-2026-02-14.pdf`. Reading the day as a count
+        // splits the name down the middle, and a name split there stops
+        // matching its own copies: `notes-2026-02-14.pdf` reduced to
+        // `notes-2026-02` while `notes-2026-02-14 (1).pdf` reduced to
+        // `notes-2026-02-14`, so the original never joined the group it
+        // belonged to.
+        if endsInDate(withoutExtension) { return (withoutExtension, nil) }
 
         for pattern in suffixPatterns {
             let range = NSRange(withoutExtension.startIndex..<withoutExtension.endIndex, in: withoutExtension)
@@ -310,6 +320,41 @@ enum Deduper {
 
         return (withoutExtension, nil)
     }
+
+    /// The name ends in a date, so what follows the last hyphen is a day or a
+    /// month. Only the shapes that a copy count could never take are counted:
+    /// the month and the day have to be real, so `report-2026-14` is still the
+    /// fourteenth copy rather than the fourteenth month, and both are padded to
+    /// two digits, because nothing that writes a copy pads its number —
+    /// `report-2024-1.pdf` is the copy of `report-2024.pdf` it looks like.
+    private static func endsInDate(_ stem: String) -> Bool {
+        let range = NSRange(stem.startIndex..<stem.endIndex, in: stem)
+
+        for pattern in trailingDatePatterns {
+            guard let match = pattern.firstMatch(in: stem, range: range),
+                  let monthRange = Range(match.range(at: 2), in: stem),
+                  let month = Int(stem[monthRange]), (1...12).contains(month)
+            else { continue }
+
+            // The day is only there in the first of the two shapes.
+            if match.numberOfRanges > 3 {
+                guard let dayRange = Range(match.range(at: 3), in: stem),
+                      let day = Int(stem[dayRange]), (1...31).contains(day)
+                else { continue }
+            }
+
+            return true
+        }
+
+        return false
+    }
+
+    /// `2026-02-14` and `2026-02`, the two ways a date ends a download's name.
+    /// A day-first date ends in its year, which four digits already protect.
+    private static let trailingDatePatterns: [NSRegularExpression] = [
+        try! NSRegularExpression(pattern: #"(\d{4})-(\d{2})-(\d{2})$"#),
+        try! NSRegularExpression(pattern: #"(\d{4})-(\d{2})$"#),
+    ]
 
     /// `artifact-1` and `artifact (2)`, as browsers and this app write them.
     private static let suffixPatterns: [NSRegularExpression] = [

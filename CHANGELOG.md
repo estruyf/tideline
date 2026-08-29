@@ -5,6 +5,27 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A download named after a date never matched its own copies.** The duplicate
+  review reads a trailing `-14` as a copy count, which is right for
+  `report-14.pdf` and wrong for `notes-2026-02-14.pdf`, where it is the day of
+  the month. Reading the day as a count split the name down the middle, so
+  `notes-2026-02-14.pdf` reduced to `notes-2026-02` while
+  `notes-2026-02-14 (1).pdf` reduced to `notes-2026-02-14` — the original and
+  its copies landed in different groups, and the one file that could have kept
+  its plain name was the one left out.
+
+  A name that ends in a date now keeps the whole date. Only the shapes a copy
+  count could never take are treated that way: the month and the day have to be
+  real, so `report-2026-14.pdf` is still the fourteenth copy rather than the
+  fourteenth month, and both have to be padded to two digits, because nothing
+  that writes a copy pads its number — `report-2024-1.pdf` is the copy of
+  `report-2024.pdf` it looks like. A copy of a dated name still counts:
+  `notes-2026-02-14-1.pdf` is copy one.
+
 ## [1.11.0] - 2026-08-29
 
 ### Added
