@@ -5,7 +5,7 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.1] - 2026-08-29
 
 ### Fixed
 
@@ -513,6 +513,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.11.1]: https://github.com/estruyf/tideline/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/estruyf/tideline/compare/v1.9.0...v1.11.0
 [1.9.0]: https://github.com/estruyf/tideline/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/estruyf/tideline/compare/v1.7.0...v1.8.0
