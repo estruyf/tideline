@@ -41,7 +41,7 @@ because it ships for both Apple silicon and Intel. No Electron, no bundled
 runtime, no helper process quietly installed beside it — one menu bar app that
 schedules itself, and quitting it really is the end of it.
 
-![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.9.0/overview.png)
+![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.10.0/overview.png)
 
 > **Windows — beta.** There is a Windows build under [`windows/`](./windows):
 > the same filing rules, rewritten in Rust behind a [Tauri](https://tauri.app)

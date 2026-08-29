@@ -9,7 +9,7 @@
 #   ./scripts/capture.sh tour     # the eight tabs, for the Tour composition
 #   ./scripts/capture.sh welcome  # the two first-run screens (resets flags)
 #   ./scripts/capture.sh menubar  # the menu bar extra, opened
-#   ./scripts/capture.sh assets   # the whole README set into assets/1.9.0/
+#   ./scripts/capture.sh assets   # the whole README set into assets/1.10.0/
 #
 # It needs Accessibility for whatever is running it, and it moves the window.
 # Point Tideline at a demo folder first: shots of a real Downloads folder have
@@ -196,10 +196,10 @@ welcome)
 
 assets)
   # The README set: the same eight panes plus the three review sheets and the
-  # menu, into assets/1.9.0/. Sheets are shown inside the window they belong
+  # menu, into assets/1.10.0/. Sheets are shown inside the window they belong
   # to rather than floating on their own, which is how every other shot on that
   # page shows the app.
-  dest="$repo/assets/1.9.0"
+  dest="$repo/assets/1.10.0"
   mkdir -p "$dest"
   build_grab
   park_at $assets_size
