@@ -42,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   which it did not before — the old sort was not stable, so a group with one
   shared timestamp could reshuffle between scans.
 
+## [1.10.0] - 2026-08-29
+
+*Skipped due to a release workflow error*
+
 ## [1.9.0] - 2026-08-27
 
 ### Added
