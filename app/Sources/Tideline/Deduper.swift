@@ -11,8 +11,12 @@ struct DuplicateCopy: Identifiable, Equatable {
     var folder: String
     var date: Date
     var byteSize: Int64
+    /// The number in its copy suffix — 1 for `artifact-1.zip`, 2 for
+    /// `artifact (2).zip` — and nil for a name that carries no suffix at all.
+    var copyNumber: Int?
+
     /// Its name carries a copy suffix: `artifact-1.zip`, `artifact (2).zip`.
-    var isSuffixed: Bool
+    var isSuffixed: Bool { copyNumber != nil }
 }
 
 /// A set of files with the same name, bar a copy suffix, and the same contents.
@@ -98,7 +102,7 @@ enum Deduper {
                     folder: place.label,
                     date: Organizer.date(of: item, basis: configuration.dateBasis) ?? .distantPast,
                     byteSize: size,
-                    isSuffixed: stem.isSuffixed
+                    copyNumber: stem.copy
                 ))
             }
         }
@@ -115,7 +119,7 @@ enum Deduper {
             }
 
             for (digest, identical) in byDigest where identical.count > 1 {
-                let sorted = identical.sorted { $0.date > $1.date }
+                let sorted = identical.sorted(by: isNewer)
                 groups.append(DuplicateGroup(
                     id: digest,
                     baseName: plainName(for: sorted),
@@ -131,6 +135,37 @@ enum Deduper {
                 ? $0.baseName.localizedStandardCompare($1.baseName) == .orderedAscending
                 : $0.reclaimable > $1.reclaimable
         }
+    }
+
+    /// Newest first, which decides which copy a group keeps.
+    ///
+    /// The comparison is by day, not by instant. "Date added" is kept to the
+    /// microsecond, and copies that arrived together — ten written in a row, a
+    /// folder restored from a backup, a synced folder landing at once — end up
+    /// microseconds apart in whatever order the copying walked them, which is
+    /// usually alphabetical. That put `(9)` after `(10)`, and the group kept
+    /// the wrong one. Sub-second order is an artefact of what moved the files,
+    /// never a record of when they were downloaded.
+    ///
+    /// Within a day the copy suffix is the reliable signal, because it is the
+    /// downloader's own count: `(10)` exists only because `(9)` was already
+    /// there, and a name with no suffix at all came before either. Days apart
+    /// still separate them first, so a file downloaded again today beats the
+    /// copy left over from January. The finer timestamp and then the path only
+    /// settle two copies the suffix cannot — the same plain name in two
+    /// folders — so the same folder always produces the same list.
+    private static func isNewer(_ left: DuplicateCopy, _ right: DuplicateCopy) -> Bool {
+        let calendar = Calendar.current
+        let leftDay = calendar.startOfDay(for: left.date)
+        let rightDay = calendar.startOfDay(for: right.date)
+        if leftDay != rightDay { return leftDay > rightDay }
+
+        let leftCopy = left.copyNumber ?? 0
+        let rightCopy = right.copyNumber ?? 0
+        if leftCopy != rightCopy { return leftCopy > rightCopy }
+
+        if left.date != right.date { return left.date > right.date }
+        return left.url.path < right.url.path
     }
 
     // MARK: - Collapsing
@@ -256,23 +291,24 @@ enum Deduper {
     /// `artifact-1.zip`, `artifact (2).zip` and `artifact(3).zip` all reduce to
     /// `artifact`. Four digits or more is a year or a version, not a copy, so
     /// `invoice-2024.pdf` keeps its name whole.
-    static func stem(of name: String) -> (base: String, isSuffixed: Bool) {
+    static func stem(of name: String) -> (base: String, copy: Int?) {
         let withoutExtension = (name as NSString).deletingPathExtension
-        guard !withoutExtension.isEmpty else { return (name, false) }
+        guard !withoutExtension.isEmpty else { return (name, nil) }
 
         for pattern in suffixPatterns {
             let range = NSRange(withoutExtension.startIndex..<withoutExtension.endIndex, in: withoutExtension)
             guard let match = pattern.firstMatch(in: withoutExtension, range: range),
-                  match.numberOfRanges > 1,
-                  let base = Range(match.range(at: 1), in: withoutExtension)
+                  match.numberOfRanges > 2,
+                  let base = Range(match.range(at: 1), in: withoutExtension),
+                  let number = Range(match.range(at: 2), in: withoutExtension)
             else { continue }
 
             let stripped = String(withoutExtension[base]).trimmingCharacters(in: .whitespaces)
             if stripped.isEmpty { continue }
-            return (stripped, true)
+            return (stripped, Int(withoutExtension[number]))
         }
 
-        return (withoutExtension, false)
+        return (withoutExtension, nil)
     }
 
     /// `artifact-1` and `artifact (2)`, as browsers and this app write them.

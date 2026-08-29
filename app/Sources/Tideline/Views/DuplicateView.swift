@@ -107,40 +107,56 @@ struct DuplicateView: View {
     private func row(_ copy: DuplicateCopy, in group: DuplicateGroup) -> some View {
         let isGoing = doomed.contains(copy.id)
 
-        return Toggle(isOn: binding(for: copy, in: group)) {
-            HStack(spacing: 8) {
-                Text(copy.name)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .strikethrough(isGoing, color: .secondary)
-                    .foregroundStyle(isGoing ? Color.secondary : Color.primary)
+        return HStack(spacing: 8) {
+            Toggle(isOn: binding(for: copy, in: group)) {
+                HStack(spacing: 8) {
+                    Text(copy.name)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .strikethrough(isGoing, color: .secondary)
+                        .foregroundStyle(isGoing ? Color.secondary : Color.primary)
 
-                if !isGoing {
-                    Text("keeping")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(Theme.success)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Theme.success.opacity(0.14), in: Capsule())
+                    if !isGoing {
+                        Text("keeping")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(Theme.success)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Theme.success.opacity(0.14), in: Capsule())
+                    }
                 }
-
-                Spacer(minLength: 12)
-
-                Text(copy.folder)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(Theme.hover, in: Capsule())
-
-                Text(Self.day.string(from: copy.date))
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 74, alignment: .trailing)
             }
+            .toggleStyle(.checkbox)
+            .help(isGoing ? "Send this copy to the Trash" : "This copy stays")
+
+            Spacer(minLength: 12)
+
+            Text(copy.folder)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Theme.hover, in: Capsule())
+
+            Text(Self.day.string(from: copy.date))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 74, alignment: .trailing)
+
+            // The copies are byte-for-byte the same, so this is never about
+            // which one to keep — it is about seeing what the thing actually is
+            // before agreeing that nine of them can go.
+            Button {
+                controller.reveal(copy.url)
+            } label: {
+                Image(systemName: "magnifyingglass")
+            }
+            .buttonStyle(.borderless)
+            .help("Show \(copy.name) in Finder")
         }
-        .toggleStyle(.checkbox)
-        .help(isGoing ? "Send this copy to the Trash" : "This copy stays")
+        .contextMenu {
+            Button("Show in Finder") { controller.reveal(copy.url) }
+        }
     }
 
     private var footer: some View {

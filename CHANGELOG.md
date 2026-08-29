@@ -5,6 +5,43 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-08-29
+
+### Added
+
+- **The duplicate review opens a copy in Finder.** The magnifier at the end of
+  a row, and **Show in Finder** on a right-click, the same as the big-file
+  review has. The copies in a group are byte-for-byte the same, so this is
+  never about which one to keep — it is about seeing what the thing actually is
+  before agreeing that nine of them can go.
+
+- **The type-folder fields name themselves.** The folder name and extensions
+  fields carried their example as their placeholder, which is also what
+  VoiceOver read out — so the field for a folder's name announced itself as
+  "Installers". They now have a label of their own, hidden because the row
+  beside them already says it, and a placeholder that describes what to type
+  rather than standing in for one particular answer.
+
+### Fixed
+
+- **The duplicate review kept the wrong copy.** A group could keep
+  `report (9).json` while `report (10).json` sat below it, ticked for the Trash.
+
+  The sheet ordered a group by "date added" alone, down to the microsecond.
+  Copies that arrived together — ten written in a row, a folder restored from a
+  backup, a synced folder landing at once — are microseconds apart in whatever
+  order the copying happened to walk them, which is usually alphabetical, and
+  that puts `(10)` between `(1)` and `(2)`. Sub-second order is a record of what
+  moved the files, not of when they were downloaded.
+
+  Copies are now ordered by day, and within a day by the copy suffix, which is
+  the downloader's own count: `(10)` exists only because `(9)` was already
+  there, and a name with no suffix came before either. Days apart still separate
+  first, so a file downloaded again today still beats the copy left over from
+  January. The list also comes out in the same order every time it is scanned,
+  which it did not before — the old sort was not stable, so a group with one
+  shared timestamp could reshuffle between scans.
+
 ## [1.9.0] - 2026-08-27
 
 ### Added
@@ -451,6 +488,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.10.0]: https://github.com/estruyf/tideline/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/estruyf/tideline/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/estruyf/tideline/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/estruyf/tideline/compare/v1.6.0...v1.7.0

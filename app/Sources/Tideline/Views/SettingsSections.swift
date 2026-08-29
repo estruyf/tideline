@@ -258,13 +258,15 @@ struct TypeFolderSection: View {
     private func editor(for rule: TypeRule) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             LabeledContent("Folder name") {
-                TextField("Installers", text: $nameDraft)
+                TextField("Folder name", text: $nameDraft, prompt: Text("What the folder is called"))
+                    .labelsHidden()
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { commit(rule) }
             }
 
             LabeledContent("Extensions") {
-                TextField("dmg, pkg, iso", text: $extensionsDraft)
+                TextField("Extensions", text: $extensionsDraft, prompt: Text("Extensions to match, separated by commas"))
+                    .labelsHidden()
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { commit(rule) }
             }
@@ -299,13 +301,15 @@ struct TypeFolderSection: View {
         if addingRule {
             VStack(alignment: .leading, spacing: 10) {
                 LabeledContent("Folder name") {
-                    TextField("Torrents", text: $newName)
+                    TextField("Folder name", text: $newName, prompt: Text("What the folder is called"))
+                        .labelsHidden()
                         .textFieldStyle(.roundedBorder)
                         .onSubmit(add)
                 }
 
                 LabeledContent("Extensions") {
-                    TextField("torrent, magnet", text: $newExtensions)
+                    TextField("Extensions", text: $newExtensions, prompt: Text("Extensions to match, separated by commas"))
+                        .labelsHidden()
                         .textFieldStyle(.roundedBorder)
                         .onSubmit(add)
                 }
