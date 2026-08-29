@@ -80,7 +80,7 @@ pkill -x Tideline; defaults import be.eliostruyf.Tideline /tmp/tideline.plist; o
 Repoint the links at the new folder and check that every one of them resolves:
 
 ```bash
-sed -i '' 's|/assets/1.9.0/|/assets/1.10.0/|g' README.md
+sed -i '' 's|/assets/1.9.0/|/assets/1.11.0/|g' README.md
 grep -o '(\./assets/[^)]*)' README.md | tr -d '()' | while read -r p; do
   [ -f "$p" ] || echo "missing: $p"
 done
