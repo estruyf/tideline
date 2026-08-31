@@ -152,7 +152,7 @@ tell application "System Events" to tell process "Tideline"
     end if
   end repeat
 
-  if (count of cx) is not 8 then error "found " & (count of cx) & " sidebar rows, expected 8"
+  if (count of cx) is not ${sidebar_rows:-10} then error "found " & (count of cx) & " sidebar rows, expected ${sidebar_rows:-10}"
   click at {item $1 of cx, item $1 of cy}
 end tell
 AS
@@ -169,6 +169,8 @@ tour)
   # Routing rules were added between the old entries, so this is not the old
   # list with two names appended.
   names=(overview reclaim move-out schedule filing routing-rules type-folders clearing activity general)
+  # tab() checks the sidebar still looks the way this list says it does.
+  sidebar_rows=${#names[@]}
   for i in "${!names[@]}"; do
     tab "$((i + 1))"
     # Reclaim measures the folder when its pane opens, and the figure landing
@@ -213,6 +215,8 @@ assets)
   # Routing rules were added between the old entries, so this is not the old
   # list with two names appended.
   names=(overview reclaim move-out schedule filing routing-rules type-folders clearing activity general)
+  # tab() checks the sidebar still looks the way this list says it does.
+  sidebar_rows=${#names[@]}
   for i in "${!names[@]}"; do
     # A sheet left open by the pane before this one would otherwise sit on top
     # of every shot after it.
