@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Install — Tideline</title>
-<meta name="description" content="Install Tideline with Homebrew or from the release zip. macOS 14 or later, free and open source.">
+<meta name="description" content="Install Tideline with Homebrew or from the release disk image. macOS 14 or later, free and open source.">
 <link rel="icon" href="../icon.png">
 <link rel="stylesheet" href="../style.css">
 <link rel="canonical" href="https://estruyf.github.io/tideline/docs/install.html">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Install — Tideline">
-<meta property="og:description" content="Install Tideline with Homebrew or from the release zip. macOS 14 or later, free and open source.">
+<meta property="og:description" content="Install Tideline with Homebrew or from the release disk image. macOS 14 or later, free and open source.">
 <meta property="og:url" content="https://estruyf.github.io/tideline/docs/install.html">
 </head>
 <body>
@@ -72,16 +72,23 @@
 </nav>
 <main class="doc" id="main">
 <h1>Install</h1>
-<p class="lead">Homebrew or a zip, either way it ends up in <code>/Applications</code>. macOS 14 or later, Apple silicon and Intel both.</p>
+<p class="lead">Homebrew or a disk image, either way it ends up in <code>/Applications</code>. macOS 14 or later, Apple silicon and Intel both.</p>
 
 <h2>With Homebrew</h2>
 <pre class="shell"><code>brew install --cask estruyf/tap/tideline</code></pre>
 
 <h2>Or from the release</h2>
 <p>
-  Grab the zip from the
-  <a href="https://github.com/estruyf/tideline/releases/latest">latest release</a>,
-  unzip it, and drag <strong>Tideline.app</strong> into <code>/Applications</code>.
+  Open <strong>Tideline-&lt;version&gt;-macos-universal.dmg</strong> from the
+  <a href="https://github.com/estruyf/tideline/releases/latest">latest release</a>
+  and drag <strong>Tideline.app</strong> onto the Applications folder next to it.
+  Then eject the image; nothing is left behind.
+</p>
+<p>
+  The zip attached to the same release is the same build, signed and notarized
+  the same way. It is there because it is what Tideline downloads when it
+  <a href="updates.html">updates itself</a> — an update should not have to mount
+  anything — and either one installs by hand just as well.
 </p>
 
 <div class="note note-warn">

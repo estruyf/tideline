@@ -5,6 +5,26 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-08-31
+
+### Added
+
+- **A disk image beside the zip.** The manual download is now
+  `Tideline-<version>-macos-universal.dmg`: a window with the app on the left,
+  the Applications folder on the right, and an arrow between them. Dragging it
+  across is the whole install, and there is no unpacking step to get wrong —
+  which also retires the oldest support question, the zip inside a zip that
+  comes off the Actions page instead of the release.
+
+  It is also the first place there is room to say the thing a zip cannot:
+  Tideline runs in the menu bar and has no Dock icon. That is the first question
+  anybody has after installing it, and now it is answered before they ask.
+
+  The zip stays, and stays the asset the in-app updater fetches. An update
+  should be a file the app can unpack on its own rather than a volume it has to
+  mount, so the two downloads exist for two different readers. Homebrew keeps
+  reading the zip as well.
+
 ## [1.12.0] - 2026-08-31
 
 ### Added
@@ -601,6 +621,8 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.12.1]: https://github.com/estruyf/tideline/compare/v1.12.0...v1.12.1
+[1.12.0]: https://github.com/estruyf/tideline/compare/v1.11.2...v1.12.0
 [1.11.2]: https://github.com/estruyf/tideline/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/estruyf/tideline/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/estruyf/tideline/compare/v1.9.0...v1.11.0

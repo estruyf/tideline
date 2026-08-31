@@ -24,6 +24,7 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | `app/Package.swift` | One executable target, macOS 14+, zero dependencies |
 | `app/build.sh` | Build, bundle, icon, sign, notarize, staple, zip |
 | `app/Resources/Info.plist` | Bundle template; `__VERSION__` / `__BUILD__` substituted at build time |
+| `app/Resources/dmg/DS_Store` | The disk image's window layout, recorded once by `app/Tools/make-dmg-layout.sh` and committed so a release build never has to drive Finder |
 | `windows/src-tauri/crates/tideline-core/` | The Rust filing engine. `organizer` holds the rules and is pure; `sweep` does the I/O |
 | `windows/src-tauri/src/` | The Tauri shell — tray, schedule, commands, settings on disk |
 | `windows/src/` | The window: plain HTML, CSS and JS, no framework and no build step |
@@ -32,6 +33,7 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | `fixtures/sweep-cases.json` | The contract as runnable cases. Add a rule here first |
 | `homebrew/` | The Homebrew cask and the script that stamps it into `estruyf/homebrew-tap` |
 | `site/` | The website and the end-user manual: hand-written HTML and CSS, no framework and no build step. `stage.sh` folds the newest `assets/<version>/` in as `assets/shots/`, which is why no page names a version, and copies `assets/tour.mp4` beside it |
+| `scripts/dmg-background.html` | The source of the disk image background. `scripts/render-dmg-background.sh` shoots it at 1x and 2x and folds both into `assets/dmg/background.tiff` |
 | `scripts/pitch-image.html` | The source of the before/after banner. `scripts/render-pitch.sh` shoots it headless into `assets/pitch.jpg` and `assets/pitch-light.jpg` — edit the HTML, never the JPEGs |
 | `promo/` | Two promo videos in Remotion — a thirty-second cut of the screen recording, and a ninety-second tour built from window captures `promo/scripts/capture.sh` takes off the running app. Its own `package.json` and its own dependencies; the app still has none |
 | `.claude/skills/screenshots/` | How the README pictures are retaken off the running app, and what to check afterwards |
@@ -44,6 +46,9 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 ```bash
 npm run build            # universal binary into app/dist/
 npm run build:install    # build, copy to /Applications, launch it
+npm run build:dmg        # build, then wrap it in app/dist/Tideline.dmg
+npm run dmg:background   # re-render assets/dmg/background.tiff from the HTML
+npm run dmg:layout       # re-record app/Resources/dmg/DS_Store (needs a real Finder)
 npm run logs             # tail ~/Library/Logs/Tideline.log
 npm run quit             # quit the running app
 npm run clean            # throw away build artefacts
@@ -105,6 +110,20 @@ Cross-*building* the installer from macOS does not work; CI builds it on
   clearing, duplicate collapsing, large-file review and catch-up all have to
   honour it. A new feature that moves or trashes anything gets a preview path
   before it gets a button.
+- **The disk image is assembled from committed pieces, and the layout is
+  recorded rather than built.** `build.sh --dmg` copies
+  `assets/dmg/background.tiff` and `app/Resources/dmg/DS_Store` into a staging
+  folder and hands it to `hdiutil`; it drives no Finder, which is the only
+  reason it runs in CI. Re-record the layout with `npm run dmg:layout` when the
+  artwork or the icon positions change, and check the result by building an
+  image and opening it — the live Finder window that script leaves behind is not
+  a reliable preview. The volume is always named `Tideline`, with no version in
+  it, because the recorded layout refers to the background through the volume.
+- **A release attaches two downloads, and they are not interchangeable.** The
+  disk image is for a person; the zip is what the in-app updater fetches and
+  what the Homebrew cask reads. `Updater.macAsset` matches the zip by name and
+  falls back to any `.zip` with *tideline* in it, so the image can never be
+  picked up by mistake — and renaming the zip is a change to that function.
 - **`package.json` is the macOS version, and the only one.** `build.sh` reads it
   into the plist — never hand-edit `CFBundleShortVersionString`. The release
   workflow refuses a tag that disagrees with it. The Windows build versions

@@ -5,6 +5,7 @@
 #   ./build.sh                 universal release build, ad-hoc signed
 #   ./build.sh --install       also copy it into /Applications and launch it
 #   ./build.sh --zip           also produce a zip next to the app
+#   ./build.sh --dmg           also produce a disk image next to the app
 #   ./build.sh --notarize      sign, notarize with Apple, staple, and zip
 #
 # The version is read from ../package.json. Bump it with `npm version patch`
@@ -51,14 +52,18 @@ NOTARY_PASSWORD="${NOTARY_PASSWORD:-}"
 DIST="dist"
 APP="$DIST/$APP_NAME.app"
 CONTENTS="$APP/Contents"
+DMG_BACKGROUND="../assets/dmg/background.tiff"
+DMG_LAYOUT="Resources/dmg/DS_Store"
 
 INSTALL=0
 ZIP=0
+DMG=0
 NOTARIZE=0
 for arg in "$@"; do
   case "$arg" in
     --install) INSTALL=1 ;;
     --zip) ZIP=1 ;;
+    --dmg) DMG=1 ;;
     --notarize) NOTARIZE=1; ZIP=1 ;;
     *) echo "unknown option: $arg" >&2; exit 1 ;;
   esac
@@ -111,6 +116,50 @@ if [ "$ZIP" -eq 1 ]; then
   ditto -c -k --keepParent "$APP" "$DIST/$APP_NAME.zip"
 fi
 
+# Assembles the staging folder and squeezes it into a compressed image. It
+# drives no Finder: the window's size, its background and where the two icons
+# sit all come out of Resources/dmg/DS_Store, which Tools/make-dmg-layout.sh
+# recorded once on a real Mac. That is the whole reason this works in CI.
+#
+# The volume has to be called "Tideline" every time, with no version in it.
+# The recorded layout refers to the background through the volume, so a volume
+# named anything else opens as a blank window.
+build_dmg() {
+  local stage="$DIST/dmg-stage"
+
+  echo "==> Building the disk image"
+  [ -f "$DMG_BACKGROUND" ] || {
+    echo "no $DMG_BACKGROUND — run ../scripts/render-dmg-background.sh" >&2; exit 1; }
+  [ -f "$DMG_LAYOUT" ] || {
+    echo "no $DMG_LAYOUT — run ./Tools/make-dmg-layout.sh" >&2; exit 1; }
+
+  rm -rf "$stage" "$DIST/$APP_NAME.dmg"
+  mkdir -p "$stage/.background"
+  cp -R "$APP" "$stage/$APP_NAME.app"
+  ln -s /Applications "$stage/Applications"
+  cp "$DMG_BACKGROUND" "$stage/.background/background.tiff"
+  cp "$DMG_LAYOUT" "$stage/.DS_Store"
+  # A leading dot only hides the folder from people who have not asked Finder
+  # to show hidden files; the flag hides it from everyone.
+  chflags hidden "$stage/.background"
+
+  hdiutil create -volname "$APP_NAME" -srcfolder "$stage" \
+    -fs HFS+ -format UDZO -imagekey zlib-level=9 -ov -quiet "$DIST/$APP_NAME.dmg"
+  rm -rf "$stage"
+
+  # An unsigned image would warn on download even though the app inside it is
+  # notarized, so it is signed with the same identity when there is one.
+  if [ "$IDENTITY" != "-" ]; then
+    codesign --force --timestamp --sign "$IDENTITY" "$DIST/$APP_NAME.dmg"
+  fi
+}
+
+# Built before notarization only when there is nothing to notarize. Otherwise
+# it waits until the app inside it carries its stapled ticket.
+if [ "$DMG" -eq 1 ] && [ "$NOTARIZE" -eq 0 ]; then
+  build_dmg
+fi
+
 if [ "$NOTARIZE" -eq 1 ]; then
   echo "==> Submitting to Apple for notarization (this takes a few minutes)"
   if [ -n "$NOTARY_APPLE_ID" ] && [ -n "$NOTARY_TEAM_ID" ] && [ -n "$NOTARY_PASSWORD" ]; then
@@ -134,6 +183,29 @@ if [ "$NOTARIZE" -eq 1 ]; then
 
   echo "==> Verifying Gatekeeper acceptance"
   spctl --assess --type execute --verbose=2 "$APP"
+
+  # Built from the stapled app, then notarized in its own right. Apple wants it
+  # in this order: someone who never unpacks the image is checked against the
+  # image's ticket, and someone who drags the app out has the app's own.
+  if [ "$DMG" -eq 1 ]; then
+    build_dmg
+
+    echo "==> Notarizing the disk image"
+    if [ -n "$NOTARY_APPLE_ID" ] && [ -n "$NOTARY_TEAM_ID" ] && [ -n "$NOTARY_PASSWORD" ]; then
+      xcrun notarytool submit "$DIST/$APP_NAME.dmg" \
+        --apple-id "$NOTARY_APPLE_ID" \
+        --team-id "$NOTARY_TEAM_ID" \
+        --password "$NOTARY_PASSWORD" \
+        --wait
+    else
+      xcrun notarytool submit "$DIST/$APP_NAME.dmg" \
+        --keychain-profile "$NOTARY_PROFILE" --wait
+    fi
+
+    xcrun stapler staple "$DIST/$APP_NAME.dmg"
+    spctl --assess --type open --context context:primary-signature \
+      --verbose=2 "$DIST/$APP_NAME.dmg"
+  fi
 fi
 
 if [ "$INSTALL" -eq 1 ]; then
@@ -148,4 +220,5 @@ fi
 echo
 echo "Done: $(pwd)/$APP"
 [ "$ZIP" -eq 1 ] && echo "Zip:  $(pwd)/$DIST/$APP_NAME.zip"
+[ "$DMG" -eq 1 ] && echo "DMG:  $(pwd)/$DIST/$APP_NAME.dmg"
 exit 0

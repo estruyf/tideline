@@ -2,8 +2,20 @@
 
 [`.github/workflows/release.yml`](../.github/workflows/release.yml) builds,
 signs, notarizes and staples on a macOS runner whenever a release is
-**published**, then attaches `Tideline-<version>-macos-universal.zip` to that
-release and keeps it as a build artifact for 90 days.
+**published**, then attaches both `Tideline-<version>-macos-universal.zip` and
+`Tideline-<version>-macos-universal.dmg` to that release and keeps them as build
+artifacts for 90 days.
+
+The two are the same build for two different readers. The disk image is what a
+person downloads: it opens onto the app, the Applications folder and an arrow
+between them. The zip is what the app downloads when it updates itself, because
+an update should be something it can unpack on its own rather than a volume it
+has to mount. Homebrew reads the zip too — see [Homebrew](./homebrew.md).
+
+Both are notarized, and each is stapled: the app's own ticket covers a copy
+dragged out of the image, the image's covers a download that is checked before
+it is ever opened. That is two round trips to Apple in one release, so the job
+takes a few minutes longer than it used to.
 
 ## What the in-app updater expects
 
@@ -16,11 +28,13 @@ release matter to it:
   `CFBundleShortVersionString`. A tag that does not parse as a version is
   ignored, and the workflow already refuses a tag that disagrees with
   `package.json`.
-- **The zip is the asset.** The updater looks for
+- **The zip is the asset, not the disk image.** The updater looks for
   `Tideline-<version>-macos-universal.zip` first, and falls back to any attached
-  `.zip` with *tideline* in its name. A release with no zip yet reports "no
-  macOS build attached", which is what people see in the window between
-  publishing and the workflow finishing.
+  `.zip` with *tideline* in its name — the `.dmg` cannot match either test, on
+  purpose. A release with no zip yet reports "no macOS build attached", which is
+  what people see in the window between publishing and the workflow finishing.
+  Renaming the zip is therefore a change to `Updater.macAsset`; renaming the
+  disk image is not.
 - **Signed and notarized, as the workflow already does.** The updater refuses to
   install a build that is not signed by the same team as the running copy, and
   refuses one Gatekeeper turns down. An unsigned or ad-hoc build attached to a

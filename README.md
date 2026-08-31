@@ -111,8 +111,11 @@ With [Homebrew](https://brew.sh):
 brew install --cask estruyf/tap/tideline
 ```
 
-Or grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
-unzip it, and drag **Tideline.app** into `/Applications`.
+Or open the disk image from the
+[latest release](https://github.com/estruyf/tideline/releases/latest) and drag
+**Tideline.app** onto the Applications folder beside it. The zip attached to the
+same release is the same build, and is the one Tideline downloads when it
+updates itself.
 
 Either way it ends up in `/Applications`, which is where it keeps itself
 current: Tideline looks for a newer release once a day and offers it. That is
