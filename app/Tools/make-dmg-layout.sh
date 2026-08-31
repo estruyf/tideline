@@ -24,11 +24,14 @@
 #     silently does nothing, so the image comes out with 64px icons and no
 #     background. Finder also has to be frontmost.
 #
-#   * A Finder that has been running a while can place icons dozens of points
-#     below where it is told, consistently enough across rebuilds to look like a
-#     rule worth compensating for. It is not one: after `killall Finder` the same
-#     script places them exactly. If the icons ever come out low, restart Finder
-#     and measure again before subtracting anything here.
+#   * Finder must not be showing hidden files while it lays this out. With
+#     `AppleShowAllFiles` on, the `.background` folder is a visible item, Finder
+#     auto-places it, and the two icons that were positioned by hand come out
+#     about 48 points below where they were put — consistently enough across
+#     rebuilds to look like a rule worth compensating for. It is not one. The
+#     script turns the setting off for the duration and puts it back, so the
+#     layout does not depend on how whoever runs it likes their Finder. That
+#     costs two Finder restarts, which close any windows that are open.
 #
 set -euo pipefail
 
@@ -47,7 +50,12 @@ APP="dist/Tideline.app"
 # with scripts/dmg-background.html — the picture draws a well around each icon,
 # so moving one here means re-rendering the background to match.
 WIDTH=640
-HEIGHT=420
+# Taller than the artwork by the height of a title bar, because Finder takes
+# that out of the bounds it is given: 453 asks for a window whose *content* is
+# the 420 the picture is drawn at. Get this wrong in one direction and the
+# bottom of the picture is cropped; wrong in the other and the view is
+# scrollable, which shows up as a scroll bar down the right edge.
+HEIGHT=453
 ICON_Y=198          # the icon's centre; the artwork draws a well around it
 APP_X=160
 APPS_X=480
@@ -57,11 +65,28 @@ APPS_X=480
 
 tmp="$(mktemp -d)"
 device=""
+# Empty means the key was never set, which is not the same as set to false:
+# putting back a literal false would leave the machine subtly changed.
+SHOW_ALL_WAS="$(defaults read com.apple.finder AppleShowAllFiles 2>/dev/null || true)"
 cleanup() {
   [ -n "$device" ] && hdiutil detach "$device" -quiet -force 2>/dev/null || true
   rm -rf "$tmp"
+  # `defaults read` answers 1 or 0, and `defaults write -bool` refuses both:
+  # it takes true/false. Handing the value straight back prints the usage
+  # screen and silently leaves the setting where this script put it.
+  case "$SHOW_ALL_WAS" in
+    "")            defaults delete com.apple.finder AppleShowAllFiles 2>/dev/null || true ;;
+    1|YES|yes|true|TRUE) defaults write com.apple.finder AppleShowAllFiles -bool true ;;
+    *)             defaults write com.apple.finder AppleShowAllFiles -bool false ;;
+  esac
+  killall Finder 2>/dev/null || true
 }
 trap cleanup EXIT
+
+echo "==> Hiding hidden files while Finder lays this out"
+defaults write com.apple.finder AppleShowAllFiles -bool false
+killall Finder 2>/dev/null || true
+sleep 3
 
 # A read-write image, because Finder has to be able to write its .DS_Store into
 # it. The size is generous and irrelevant: this image is thrown away.

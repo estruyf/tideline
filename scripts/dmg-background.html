@@ -16,12 +16,11 @@
   A well is taller than it is wide because Finder writes the item's name under
   its icon, and that name is part of what has to sit inside the box.
 
-  The canvas is 420 but only the top 375 or so is ever seen: the window's title
-  bar comes out of the height that build.sh asks for, and how much it takes is
-  the running system's business, not ours. Drawing into a canvas that is taller
-  than any title bar could leave, and keeping everything well above the fold, is
-  what stops a shorter window on some other release of macOS from clipping a
-  line of the text.
+  All 420 of it is seen. A Finder window's title bar comes out of the height it
+  is given, so make-dmg-layout.sh asks for 453 to leave 420 of content. Those
+  two numbers move together: ask for too little and the bottom of this picture
+  is cropped, ask for too much and the view can be scrolled, which shows up as a
+  scroll bar down the right-hand edge.
 
   ?theme=light switches the palette, but only one file can be the background and
   the dark one ships.
