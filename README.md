@@ -116,8 +116,12 @@ unzip it, and drag **Tideline.app** into `/Applications`.
 
 Either way it ends up in `/Applications`, which is where it keeps itself
 current: Tideline looks for a newer release once a day and offers it. That is
-also why `brew upgrade` leaves it alone; the cask is marked as updating itself,
-so the two never race.
+also why a plain `brew upgrade` leaves it alone; the cask is marked as updating
+itself, so the two never race. To take a version from Homebrew instead, name it:
+
+```bash
+brew upgrade --cask estruyf/tap/tideline
+```
 
 Nothing is filed until you say so — what the app asks the first time you open it
 is on [First launch](https://estruyf.github.io/tideline/docs/first-launch.html).

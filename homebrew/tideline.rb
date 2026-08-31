@@ -20,7 +20,7 @@ cask "tideline" do
 
   # The in-app updater has no floor of its own, so this is the only thing
   # standing between someone on macOS 13 and a bundle that will not launch.
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Tideline.app"
 

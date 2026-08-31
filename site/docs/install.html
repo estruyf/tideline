@@ -100,10 +100,16 @@
   itself means being somewhere it can write.
 </p>
 <p>
-  That is also why <code>brew upgrade</code> leaves it alone: the cask is marked
-  as updating itself, so the two never race.
-  <code>brew upgrade --greedy</code> installs a new version through Homebrew
-  instead, if you would rather it came from there.
+  That is also why a plain <code>brew upgrade</code> leaves it alone: the cask
+  is marked as updating itself, so the two never race. Naming it is enough to
+  take a version from Homebrew instead:
+</p>
+
+<pre class="shell"><code>brew upgrade --cask estruyf/tap/tideline</code></pre>
+
+<p>
+  <code>brew upgrade --greedy</code> does the same thing across every cask that
+  updates itself, if that is how you would rather work.
 </p>
 
 <h2>What it is</h2>

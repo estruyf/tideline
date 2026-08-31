@@ -129,9 +129,11 @@
 
 <div class="note note-info">
   <strong>Installed with Homebrew?</strong> The cask is marked as self-updating,
-  so <code>brew upgrade</code> leaves Tideline alone and the two never race.
-  <code>brew upgrade --greedy</code> installs a new version through Homebrew
-  instead, if you would rather it came from there.
+  so a plain <code>brew upgrade</code> leaves Tideline alone and the two never
+  race. Naming it takes the new version from Homebrew instead:
+  <code>brew upgrade --cask estruyf/tap/tideline</code>.
+  <code>brew upgrade --greedy</code> does the same across every self-updating
+  cask you have.
 </div>
 
 <p>

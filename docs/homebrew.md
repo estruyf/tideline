@@ -15,12 +15,16 @@ next release will overwrite the change.
 - **`auto_updates true`.** Tideline checks GitHub once a day and installs a new
   version itself. Telling Homebrew that stops `brew upgrade` from reinstalling
   over a copy the app may have already replaced. Someone who would rather
-  Homebrew drove it runs `brew upgrade --greedy`, which works because the tap
-  moves on every release either way.
-- **`depends_on macos: ">= :sonoma"`.** `LSMinimumSystemVersion` is 14.0, and
-  the in-app updater has no floor of its own — so for anyone still on macOS 13
-  this line is the only thing between them and a bundle that will not launch.
-  It has to move whenever the plist does.
+  Homebrew drove it runs `brew upgrade --cask estruyf/tap/tideline`, or
+  `brew upgrade --greedy` for every self-updating cask at once — naming ours is
+  enough to override the skip. Either works, because the tap moves on every
+  release regardless.
+- **`depends_on macos: :sonoma`.** `LSMinimumSystemVersion` is 14.0, and the
+  in-app updater has no floor of its own — so for anyone still on macOS 13 this
+  line is the only thing between them and a bundle that will not launch. It has
+  to move whenever the plist does. The bare symbol is a *minimum*, not an exact
+  match: Homebrew parses `depends_on macos:` with a `>=` comparator. The older
+  `">= :sonoma"` string meant the same thing and now warns on every command.
 - **`uninstall quit:`.** It is a background app with no Dock icon, so without
   this an upgrade would swap the bundle out from under a running copy.
 - **`zap trash:`** names the same three paths as the app's own **Uninstall**
