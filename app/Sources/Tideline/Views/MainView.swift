@@ -42,6 +42,9 @@ struct MainView: View {
         .sheet(isPresented: $controller.reviewingRegroup) {
             RegroupView(isPresented: $controller.reviewingRegroup)
         }
+        .sheet(isPresented: $controller.reviewingCollect) {
+            CollectView(isPresented: $controller.reviewingCollect)
+        }
         .sheet(isPresented: $controller.reviewingDuplicates) {
             DuplicateView(isPresented: $controller.reviewingDuplicates)
         }
@@ -77,7 +80,13 @@ struct MainView: View {
             if reviewing { tab = .reclaim }
         }
         .onChange(of: controller.reviewingRegroup) { _, reviewing in
-            if reviewing { tab = .typeFolders }
+            // Catching up is offered from both rule panes, and it acts on both
+            // kinds of rule, so asking from either one leaves you where you
+            // asked. Only somewhere else lands you on a pane that explains it.
+            if reviewing, tab != .rules, tab != .typeFolders { tab = .typeFolders }
+        }
+        .onChange(of: controller.reviewingCollect) { _, reviewing in
+            if reviewing { tab = .collect }
         }
         .onChange(of: controller.reviewingRestore) { _, reviewing in
             if reviewing { tab = .filing }
@@ -106,6 +115,8 @@ struct MainView: View {
         case .reclaim: ReclaimTab(tab: $tab)
         case .schedule: ScheduleTab()
         case .filing: FilingTab()
+        case .collect: CollectTab()
+        case .rules: RoutingRuleTab()
         case .typeFolders: TypeFolderTab()
         case .clearing: ClearingTab()
         case .activity: ActivityTab()
@@ -129,7 +140,7 @@ private struct HeaderBand: View {
                 Text("Tideline")
                     .font(.callout.weight(.semibold))
                 Text("Today's downloads stay put · everything older is filed by the day it arrived")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -138,7 +149,7 @@ private struct HeaderBand: View {
             Spacer(minLength: 12)
 
             Text(stateLabel)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(Theme.muted)
 
             // Switching this on before the question has been answered asks the
@@ -223,7 +234,7 @@ private struct StatusPanel: View {
                         Text(headline)
                             .font(.callout.weight(.semibold))
                         Text(detail)
-                            .font(.caption)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -267,7 +278,7 @@ private struct StatusPanel: View {
 
                 if let error = controller.lastError {
                     Text(error)
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(Theme.danger)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -284,7 +295,7 @@ private struct StatusPanel: View {
                     Text("Open at login")
                         .font(.callout)
                     Text("Starts in the background with no window and no Dock icon. Left off, nothing is filed until you open Tideline yourself.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -372,7 +383,7 @@ private struct FolderPanel: View {
                 // the way a full one does — a box sized to one line of text
                 // leaves the pane looking like three cards adrift in a void.
                 Text(emptyNote)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 13)
@@ -393,12 +404,12 @@ private struct FolderPanel: View {
             Spacer(minLength: 12)
 
             Text(tally)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
 
             Button("Open in Finder") { controller.revealDownloadsFolder() }
                 .linkButton()
-                .font(.caption)
+                .font(.callout)
 
             // Reading the folder again also re-measures it, since both happen
             // in the same look.
@@ -406,10 +417,11 @@ private struct FolderPanel: View {
                 controller.refreshUsage(force: true)
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.caption)
+                    .font(.callout)
             }
             .buttonStyle(.borderless)
             .help("Read the folder again")
+                .accessibilityLabel("Read the folder again")
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 9)
@@ -437,7 +449,7 @@ private struct FolderPanel: View {
 
             if snapshot.isTruncated {
                 Text("…and more — open the folder in Finder for the rest")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.tertiary)
                     .padding(.horizontal, 13)
                     .padding(.top, 3)
@@ -467,7 +479,7 @@ private struct FolderPanel: View {
 
     private var footer: some View {
         Text("Anything older than \(window) moves into \(destination).")
-            .font(.caption)
+            .explanation()
             .foregroundStyle(.secondary)
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
@@ -507,7 +519,7 @@ private struct EntryRow: View {
             Spacer(minLength: 12)
 
             Text(note)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(entry.isDue ? Theme.accentText : Theme.muted)
                 .lineLimit(1)
         }
@@ -558,24 +570,24 @@ private struct WaitingPanel: View {
 
                     if reclaimable > 0 {
                         Text("\(FolderUsage.bytes.string(fromByteCount: reclaimable)) could go")
-                            .font(.caption.weight(.medium))
+                            .font(.callout.weight(.medium))
                             .foregroundStyle(Theme.accentText)
 
                         Button("Reclaim space") { tab = .reclaim }
                             .linkButton()
-                            .font(.caption)
+                            .font(.callout)
                     }
                 }
 
                 if rows.isEmpty {
                     Text(emptyNote)
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
 
                     Button("Look for Space to Reclaim") { tab = .reclaim }
                         .linkButton()
-                        .font(.caption)
+                        .font(.callout)
                 } else {
                     ForEach(rows, id: \.label) { row in
                         HStack(spacing: 8) {
@@ -583,12 +595,12 @@ private struct WaitingPanel: View {
                                 .fill(Theme.accentText)
                                 .frame(width: 6, height: 6)
                             Text(row.label)
-                                .font(.caption)
+                                .font(.callout)
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 8)
                             Button("Review") { row.review() }
                                 .linkButton()
-                                .font(.caption)
+                                .font(.callout)
                         }
                     }
                 }
@@ -691,7 +703,7 @@ private struct ReclaimTab: View {
         HStack(alignment: .bottom, spacing: 16) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Could be freed")
-                    .font(.caption.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
 
@@ -700,14 +712,14 @@ private struct ReclaimTab: View {
                     .foregroundStyle(reclaimable > 0 ? Theme.accentText : Theme.muted)
 
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if needsFullScan {
                     Button("Scan the folder in full") { controller.measureFolderInFull() }
                         .linkButton()
-                        .font(.caption)
+                        .font(.callout)
                         .disabled(controller.measuring)
                         .help("Walks every file in \(shortPath) to replace the floor with the real total")
                 }
@@ -726,10 +738,10 @@ private struct ReclaimTab: View {
     private var footnote: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "info.circle")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.tertiary)
             Text(footnoteText)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -807,7 +819,7 @@ private struct ReclaimTab: View {
                         Text("Old dated folders")
                             .font(.callout.weight(.semibold))
                         Text("Clearing is switched off, so no folder is ever old enough to go.")
-                            .font(.caption)
+                            .explanation()
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -968,12 +980,12 @@ private struct ScanCard<Accessory: View>: View {
                             .font(.callout.weight(.semibold))
                         if bytes > 0 {
                             Text(FolderUsage.bytes.string(fromByteCount: bytes))
-                                .font(.caption.weight(.medium))
+                                .font(.callout.weight(.medium))
                                 .foregroundStyle(Theme.accentText)
                         }
                     }
                     Text(summary)
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -988,7 +1000,7 @@ private struct ScanCard<Accessory: View>: View {
                     Button(reviewTitle, action: review)
                 } else if hasScanned {
                     Text("Nothing to reclaim")
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(Theme.muted)
                 } else {
                     Button("Scan", action: scan)
@@ -1007,13 +1019,13 @@ private struct ScanCard<Accessory: View>: View {
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Text(row.detail)
-                                .font(.caption)
+                                .font(.callout)
                                 .foregroundStyle(.tertiary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
                             Spacer(minLength: 12)
                             Text(row.size)
-                                .font(.caption.monospacedDigit())
+                                .font(.callout.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 13)
@@ -1064,7 +1076,7 @@ private struct ScheduleTab: View {
                 Text("When it runs")
             } footer: {
                 Text("A sweep is cheap — nothing moves unless a file is older than the window set under Filing.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1090,7 +1102,7 @@ private struct FilingTab: View {
                 Text("Never touch these")
             } footer: {
                 Text("Exact names, or patterns such as *.dmg. Partial downloads, hidden files and the dated folders themselves are always left alone.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1101,7 +1113,33 @@ private struct FilingTab: View {
                 Text("Putting it back")
             } footer: {
                 Text("Everything Tideline filed goes back into the root, and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo it.")
-                    .font(.caption)
+                    .explanation()
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .settingsPane()
+    }
+}
+
+// MARK: - Move out
+
+private struct CollectTab: View {
+    var body: some View { CollectPane() }
+}
+
+// MARK: - Routing rules
+
+private struct RoutingRuleTab: View {
+    var body: some View {
+        Form {
+            Section {
+                RoutingRuleSection()
+            } header: {
+                Text("Routing rules")
+            } footer: {
+                Text("A folder at the root that takes files matching what you describe, instead of the dated folder. A rule looks at the name, or at the site the file was downloaded from — which is how an invoice gets found when it is a PDF like every other PDF. Rules are tried before the type folders, top down, and the first one that matches wins. Files still wait out the window set under Filing.")
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1121,7 +1159,7 @@ private struct TypeFolderTab: View {
                 Text("Type folders")
             } footer: {
                 Text("A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window set under Filing — a type folder decides where something goes, not when. Everything here starts switched off.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1141,7 +1179,7 @@ private struct ClearingTab: View {
                 Text("Clearing out")
             } footer: {
                 Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched. What a clear-out would take back is listed under Reclaim space.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1161,7 +1199,7 @@ private struct ActivityTab: View {
                 Text("Recent activity")
             } footer: {
                 Text("The last few hundred things Tideline moved, cleared or renamed. The full record, sweep by sweep, is in the log file under General.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -1235,7 +1273,7 @@ private struct AccessBanner: View {
                     .font(.callout.weight(.medium))
 
                 Text(explanation)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 

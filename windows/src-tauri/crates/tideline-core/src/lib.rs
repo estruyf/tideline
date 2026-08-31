@@ -9,12 +9,14 @@
 //! The behaviour this implements is written down in `docs/behaviour.md`.
 
 pub mod organizer;
+pub mod rule;
 pub mod settings;
 pub mod skip;
 pub mod sweep;
 pub mod typefolder;
 
 pub use organizer::{Entry, PlannedMove, SweepPlan};
+pub use rule::{Field, Rule, RuleRouter, RuleTest};
 pub use settings::{DateBasis, FolderFormat, RunConfiguration, TypeRule};
 pub use sweep::{preview, run, scan, MoveRecord, RunResult, SweepError};
 pub use typefolder::TypeRouter;

@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use tideline_core::rule::Rule;
 use tideline_core::settings::{DateBasis, FolderFormat, RunConfiguration, TypeRule};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +28,8 @@ pub struct AppSettings {
     pub include_folders: bool,
     pub notify_on_move: bool,
     pub skip_names: Vec<String>,
+    /// Tried before the type rules, and in this order.
+    pub rules: Vec<Rule>,
     pub type_rules: Vec<TypeRule>,
     pub cleanup_after_days: i64,
     pub cleanup_on_schedule: bool,
@@ -54,6 +57,8 @@ impl Default for AppSettings {
             include_folders: true,
             notify_on_move: false,
             skip_names: vec!["Inbox".into(), "Screenshots".into()],
+            // Nothing is shipped: a rule only exists because someone wrote it.
+            rules: Vec::new(),
             type_rules: TypeRule::built_ins(),
             cleanup_after_days: 90,
             cleanup_on_schedule: false,
@@ -78,6 +83,12 @@ impl AppSettings {
             dry_run: self.dry_run,
             skip_names: self.skip_names.clone(),
             // Only the rules that are switched on ever reach a sweep.
+            rules: self
+                .rules
+                .iter()
+                .filter(|r| r.is_enabled)
+                .cloned()
+                .collect(),
             type_rules: self
                 .type_rules
                 .iter()

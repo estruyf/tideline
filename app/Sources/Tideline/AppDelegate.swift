@@ -210,6 +210,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         reclaim.submenu = reclaimMenu
         menu.addItem(reclaim)
 
+        // Beside the reviews rather than beside the sweep: like them it finds
+        // things and asks, and unlike the sweep it never acts on its own.
+        menu.addItem(withTitle: "Move Out…", action: #selector(collect), keyEquivalent: "")
+            .target = self
+
         menu.addItem(.separator())
 
         menu.addItem(withTitle: "Open Downloads Folder", action: #selector(openDownloads), keyEquivalent: "d")
@@ -336,6 +341,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         showWindow(nil)
         DispatchQueue.main.async {
             Controller.shared.reviewingLargeFiles = true
+        }
+    }
+
+    /// Same shape as the reviews: the window comes up on the sheet, because
+    /// nothing leaves the watched folder anywhere the sheet is not.
+    @objc private func collect() {
+        showWindow(nil)
+        DispatchQueue.main.async {
+            Controller.shared.reviewingCollect = true
         }
     }
 

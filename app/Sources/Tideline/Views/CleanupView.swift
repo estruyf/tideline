@@ -42,7 +42,7 @@ struct CleanupView: View {
                 .font(.headline)
 
             Text("Dated folders Tideline made, older than \(Self.window(settings.cleanupAfterDays)). They go to the Trash, so nothing here is lost until you empty it.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -67,7 +67,7 @@ struct CleanupView: View {
             Text("Nothing is old enough to clear")
                 .font(.body.weight(.medium))
             Text("The newest \(settings.cleanupKeepNewest) \(settings.cleanupKeepNewest == 1 ? "folder stays" : "folders stay") whatever their age.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
         }
         .padding(20)
@@ -82,7 +82,7 @@ struct CleanupView: View {
                             .font(.body.monospacedDigit())
                         Spacer(minLength: 12)
                         Text(detail(for: candidate))
-                            .font(.caption)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -96,11 +96,11 @@ struct CleanupView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually move.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.accentText)
                 }
             }

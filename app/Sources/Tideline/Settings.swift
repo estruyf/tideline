@@ -82,6 +82,9 @@ final class Settings: ObservableObject {
         static let includeFolders = "includeFolders"
         static let notifyOnMove = "notifyOnMove"
         static let skipNames = "skipNames"
+        static let rules = "rules"
+        static let collectDestinations = "collectDestinations"
+        static let lastCollectSearch = "lastCollectSearch"
         static let typeRules = "typeRules"
         static let cleanupAfterDays = "cleanupAfterDays"
         static let cleanupOnSchedule = "cleanupOnSchedule"
@@ -139,6 +142,9 @@ final class Settings: ObservableObject {
         includeFolders = defaults.bool(forKey: Key.includeFolders)
         notifyOnMove = defaults.bool(forKey: Key.notifyOnMove)
         skipNames = defaults.stringArray(forKey: Key.skipNames) ?? Settings.defaultSkipNames
+        rules = Settings.loadRules(from: defaults)
+        collectDestinations = Settings.loadDestinations(from: defaults)
+        lastCollectSearch = Settings.loadTests(from: defaults)
         typeRules = Settings.loadTypeRules(from: defaults)
         cleanupAfterDays = defaults.integer(forKey: Key.cleanupAfterDays)
         cleanupOnSchedule = defaults.bool(forKey: Key.cleanupOnSchedule)
@@ -209,6 +215,20 @@ final class Settings: ObservableObject {
     @Published var includeFolders: Bool { didSet { store(includeFolders, Key.includeFolders) } }
     @Published var notifyOnMove: Bool { didSet { store(notifyOnMove, Key.notifyOnMove) } }
     @Published var skipNames: [String] { didSet { store(skipNames, Key.skipNames) } }
+
+    /// Folders that claim files by what they are called or where they came
+    /// from, tried before the type rules and in this order. Nothing is shipped:
+    /// a rule only exists because someone wrote it.
+    @Published var rules: [Rule] { didSet { storeRules() } }
+
+    /// Places to collect into, outside the watched folder. Each is a bookmark
+    /// and a template rather than a path, so a saved place survives the folder
+    /// above it being renamed.
+    @Published var collectDestinations: [CollectDestination] { didSet { storeDestinations() } }
+
+    /// The last search typed by hand, offered as a starting point next time.
+    /// One search, not a history: the point is to pick up where you left off.
+    @Published var lastCollectSearch: [RuleTest] { didSet { storeLastSearch() } }
 
     /// Folders that claim files by extension — `Installers`, `Images` — instead
     /// of letting the date decide. Every rule ships switched off.
@@ -330,6 +350,9 @@ final class Settings: ObservableObject {
         dryRun = false
         includeFolders = true
         skipNames = Settings.defaultSkipNames
+        rules = []
+        collectDestinations = []
+        lastCollectSearch = []
         typeRules = TypeRule.builtIns
         downloadsPath = Settings.defaultDownloadsPath
         cleanupAfterDays = 90
@@ -346,6 +369,53 @@ final class Settings: ObservableObject {
     /// a migration. A list that fails to decode falls back to the shipped rules,
     /// all of which are off — filing carries on by date, which is what it did
     /// before and never the destructive answer.
+    /// Stored as JSON, like the type rules. A list that fails to decode falls
+    /// back to none at all: filing carries on by date and by type, which is
+    /// what it did before the rule was written and never the destructive answer.
+    private static func loadRules(from defaults: UserDefaults) -> [Rule] {
+        guard
+            let data = defaults.data(forKey: Key.rules),
+            let stored = try? JSONDecoder().decode([Rule].self, from: data)
+        else { return [] }
+
+        return stored
+    }
+
+    private func storeRules() {
+        guard let data = try? JSONEncoder().encode(rules) else { return }
+        store(data, Key.rules)
+    }
+
+    /// A saved place that fails to decode is dropped rather than guessed at: a
+    /// destination is a folder the app is about to write into, and half of one
+    /// is not something to act on.
+    private static func loadDestinations(from defaults: UserDefaults) -> [CollectDestination] {
+        guard
+            let data = defaults.data(forKey: Key.collectDestinations),
+            let stored = try? JSONDecoder().decode([CollectDestination].self, from: data)
+        else { return [] }
+
+        return stored.filter { !$0.bookmark.isEmpty }
+    }
+
+    private func storeDestinations() {
+        guard let data = try? JSONEncoder().encode(collectDestinations) else { return }
+        store(data, Key.collectDestinations)
+    }
+
+    private static func loadTests(from defaults: UserDefaults) -> [RuleTest] {
+        guard
+            let data = defaults.data(forKey: Key.lastCollectSearch),
+            let stored = try? JSONDecoder().decode([RuleTest].self, from: data)
+        else { return [] }
+        return stored
+    }
+
+    private func storeLastSearch() {
+        guard let data = try? JSONEncoder().encode(lastCollectSearch) else { return }
+        store(data, Key.lastCollectSearch)
+    }
+
     private static func loadTypeRules(from defaults: UserDefaults) -> [TypeRule] {
         guard
             let data = defaults.data(forKey: Key.typeRules),

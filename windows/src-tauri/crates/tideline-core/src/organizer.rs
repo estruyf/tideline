@@ -6,6 +6,7 @@
 //! three apart is what lets the rules be tested against fixtures, and is why a
 //! preview and a real sweep cannot drift: both call the same [`plan`].
 
+use crate::rule::RuleRouter;
 use crate::settings::RunConfiguration;
 use crate::skip::matches_skip_list;
 use crate::typefolder::TypeRouter;
@@ -50,6 +51,11 @@ pub struct Entry {
     pub settled: bool,
     #[serde(default)]
     pub hidden: bool,
+    /// Every URL the download was recorded as arriving from — the source and
+    /// the referrer, where the platform kept them. Empty is normal: a file
+    /// saved out of a mail client or fetched with `curl` carries none.
+    #[serde(default)]
+    pub where_from: Vec<String>,
 }
 
 fn default_true() -> bool {
@@ -77,6 +83,9 @@ pub struct PlannedMove {
     pub stamp: DateTime<Local>,
     pub size: u64,
     pub is_folder: bool,
+    /// True when a routing rule claimed it. Exclusive with `is_by_type`.
+    #[serde(default)]
+    pub is_by_rule: bool,
     /// True when a type rule claimed it rather than the date.
     pub is_by_type: bool,
 }
@@ -93,6 +102,7 @@ pub struct SweepPlan {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Skipped {
     ManagedFolder,
+    RuleFolder,
     TypeFolder,
     OnSkipList,
     StillDownloading,
@@ -123,6 +133,7 @@ pub fn is_managed_folder_name(name: &str) -> bool {
 /// `now` is passed in rather than read, so a fixture can pin the day and the
 /// grace window means the same thing in a test as it does at midnight.
 pub fn plan(entries: &[Entry], config: &RunConfiguration, now: DateTime<Local>) -> SweepPlan {
+    let rules = RuleRouter::new(&config.rules);
     let router = TypeRouter::new(&config.type_rules);
     let cutoff = start_of_day(now) - Duration::days(config.keep_recent_days.max(0));
 
@@ -133,7 +144,7 @@ pub fn plan(entries: &[Entry], config: &RunConfiguration, now: DateTime<Local>) 
 
     for entry in sorted {
         plan.inspected += 1;
-        match decide(entry, config, &router, cutoff) {
+        match decide(entry, config, &rules, &router, cutoff) {
             Ok(planned) => plan.moves.push(planned),
             Err(_) => plan.left_alone += 1,
         }
@@ -146,6 +157,7 @@ pub fn plan(entries: &[Entry], config: &RunConfiguration, now: DateTime<Local>) 
 fn decide(
     entry: &Entry,
     config: &RunConfiguration,
+    rules: &RuleRouter,
     router: &TypeRouter,
     cutoff: DateTime<Local>,
 ) -> Result<PlannedMove, Skipped> {
@@ -155,7 +167,12 @@ fn decide(
     if is_managed_folder_name(&entry.name) {
         return Err(Skipped::ManagedFolder);
     }
-    // A folder a type rule owns is a destination, not something to file.
+    // A folder a rule owns is a destination, not something to file. This holds
+    // even while the rule has no tests yet, so a folder does not get filed away
+    // in the middle of writing the rule that fills it.
+    if rules.owns(&entry.name) {
+        return Err(Skipped::RuleFolder);
+    }
     if router.owns(&entry.name) {
         return Err(Skipped::TypeFolder);
     }
@@ -192,10 +209,17 @@ fn decide(
         return Err(Skipped::StillBeingWritten);
     }
 
-    // The rule decides where it goes; the window above already decided that it
-    // goes at all.
-    let claimed = router.folder_name(&ext);
-    let target_folder = match claimed {
+    // A rule decides where it goes; the window above already decided that it
+    // goes at all. Routing rules are asked first, or `Documents` would swallow
+    // an invoice before `Invoices` ever saw it.
+    let by_rule = rules.folder_name(entry);
+    let by_type = if by_rule.is_none() {
+        router.folder_name(&ext)
+    } else {
+        None
+    };
+
+    let target_folder = match by_rule.or(by_type) {
         Some(folder) => folder.to_string(),
         None => stamp.format(config.folder_format.date_format()).to_string(),
     };
@@ -206,7 +230,8 @@ fn decide(
         stamp,
         size: entry.size,
         is_folder: entry.is_dir,
-        is_by_type: claimed.is_some(),
+        is_by_rule: by_rule.is_some(),
+        is_by_type: by_type.is_some(),
     })
 }
 
@@ -293,6 +318,7 @@ mod tests {
             size: 1024,
             settled: true,
             hidden: false,
+            where_from: Vec::new(),
         }
     }
 

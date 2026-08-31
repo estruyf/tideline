@@ -124,6 +124,13 @@ watching and the reviews instead.
   launch and after every toggle. Started that way the app comes up in the tray
   with no window — it is passed `--minimized`.
 
+- **Routing rules**, in the engine. `tideline-core::rule` matches a file by its
+  name or by where it was downloaded from — read out of the `Zone.Identifier`
+  stream that browsers write beside a download — and the shared fixtures cover
+  the lot. The Tauri settings file carries `rules` and a sweep honours them.
+  What is missing is the window: there is no way to write one yet, so a rule has
+  to arrive in the settings file from somewhere else.
+
 ## What is not
 
 In rough order of how much each is worth doing next:
@@ -145,10 +152,17 @@ In rough order of how much each is worth doing next:
 5. **Duplicates** — `Deduper.swift`. Needs a SHA-256 (`sha2`) in place of
    CryptoKit.
 6. **Large files** and **Catch Up** — `Weigher.swift`, `Regrouper.swift`.
-7. **Notifications** on a completed sweep — the plugin is registered,
+7. **A window for routing rules.** The engine matches them already; this is the
+   editor — a folder name, a list of conditions, and the case switch. Worth
+   doing before anything below it, since the rules are otherwise unreachable.
+8. **Move out** — `Collector.swift`. Finding across the folders the app made,
+   the places-and-templates the destinations need, and putting a whole batch
+   back. It leans on the reviews' shape, none of which is ported yet, so it
+   sensibly comes after them.
+9. **Notifications** on a completed sweep — the plugin is registered,
    `notify_on_move` is stored, nothing sends one yet.
-8. **The updater** — the biggest one, and the one with a cost attached. See
-   below.
+10. **The updater** — the biggest one, and the one with a cost attached. See
+    below.
 
 ## Signing, and why the updater is last
 

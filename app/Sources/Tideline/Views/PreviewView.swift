@@ -40,7 +40,7 @@ struct PreviewView: View {
                 .font(.headline)
 
             Text("Preview mode is on, so nothing was touched. This is where each item would have gone, had it not been.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -55,7 +55,7 @@ struct PreviewView: View {
             Text("Nothing is due to move")
                 .font(.body.weight(.medium))
             Text("Everything in \(settings.downloadsURL.lastPathComponent) is either inside the window you leave loose, or on the list of things never to touch.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -78,17 +78,17 @@ struct PreviewView: View {
                                 .truncationMode(.middle)
                             Spacer(minLength: 12)
                             Text(Self.bytes.string(fromByteCount: move.byteSize))
-                                .font(.caption.monospacedDigit())
+                                .font(.callout.monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.vertical, 1)
                     }
                 } header: {
                     HStack {
-                        Label(group.folder, systemImage: group.isByType ? "tag" : "folder")
+                        Label(group.folder, systemImage: group.isByRule || group.isByType ? "tag" : "folder")
                         Spacer()
-                        Text(group.isByType ? "by type" : "by date")
-                            .font(.caption)
+                        Text(group.isByRule ? "by rule" : group.isByType ? "by type" : "by date")
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -101,10 +101,10 @@ struct PreviewView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 Text("Preview mode — nothing was moved. Switch it off under Filing to let a sweep do this for real.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(Theme.accentText)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -122,6 +122,7 @@ struct PreviewView: View {
 
     private struct FolderGroup {
         var folder: String
+        var isByRule: Bool
         var isByType: Bool
         var items: [PlannedMove]
     }
@@ -138,7 +139,12 @@ struct PreviewView: View {
 
         return order.map {
             let items = byFolder[$0] ?? []
-            return FolderGroup(folder: $0, isByType: items.first?.isByType ?? false, items: items)
+            return FolderGroup(
+                folder: $0,
+                isByRule: items.first?.isByRule ?? false,
+                isByType: items.first?.isByType ?? false,
+                items: items
+            )
         }
     }
 

@@ -165,7 +165,10 @@ tour)
   build_grab
   park_at $tour_size
   grant_access
-  names=(overview reclaim schedule filing type-folders clearing activity general)
+  # In sidebar order, because the loop presses the nth item. Move out and
+  # Routing rules were added between the old entries, so this is not the old
+  # list with two names appended.
+  names=(overview reclaim move-out schedule filing routing-rules type-folders clearing activity general)
   for i in "${!names[@]}"; do
     tab "$((i + 1))"
     # Reclaim measures the folder when its pane opens, and the figure landing
@@ -195,18 +198,21 @@ welcome)
   ;;
 
 assets)
-  # The README set: the same eight panes plus the three review sheets and the
-  # menu, into assets/1.11.0/. Sheets are shown inside the window they belong
-  # to rather than floating on their own, which is how every other shot on that
+  # The README set: the ten panes plus the three review sheets and the menu,
+  # into assets/1.12.0/. Sheets are shown inside the window they belong to
+  # rather than floating on their own, which is how every other shot on that
   # page shows the app.
-  dest="$repo/assets/1.11.0"
+  dest="$repo/assets/1.12.0"
   mkdir -p "$dest"
   build_grab
   park_at $assets_size
   grant_access
   id="$(win_id)"
 
-  names=(overview reclaim schedule filing type-folders clearing activity general)
+  # In sidebar order, because the loop presses the nth item. Move out and
+  # Routing rules were added between the old entries, so this is not the old
+  # list with two names appended.
+  names=(overview reclaim move-out schedule filing routing-rules type-folders clearing activity general)
   for i in "${!names[@]}"; do
     # A sheet left open by the pane before this one would otherwise sit on top
     # of every shot after it.

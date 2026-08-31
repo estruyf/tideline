@@ -61,7 +61,7 @@ struct WelcomeView: View {
                 Text("Tideline is not filing yet")
                     .font(.title3.weight(.semibold))
                 Text("Nothing has moved, and nothing will until you say so.")
-                    .font(.callout)
+                    .explanation()
                     .foregroundStyle(.secondary)
             }
 
@@ -109,12 +109,12 @@ struct WelcomeView: View {
                 .font(.callout.weight(.semibold))
 
             Text("Tideline has not looked at \(settings.downloadsURL.lastPathComponent) yet. macOS will ask whether it may — that prompt is scoped to this one folder, and nothing else on the disk becomes readable by allowing it.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("Allowing it is not the same as starting: the folder is read so this sheet can tell you what a first sweep would do, and nothing moves until you say so below.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -149,7 +149,7 @@ struct WelcomeView: View {
             }
 
             Text("You can change the rules under Filing first, or switch on preview mode to watch a sweep without it touching anything.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -164,7 +164,7 @@ struct WelcomeView: View {
                 .foregroundStyle(Theme.danger)
 
             Text("Choosing the folder yourself grants the same permission the prompt asked for.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -181,7 +181,7 @@ struct WelcomeView: View {
     private var footer: some View {
         HStack(spacing: 12) {
             Text(footerNote)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 

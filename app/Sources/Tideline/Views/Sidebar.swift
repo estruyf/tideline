@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum MainTab: String, CaseIterable, Identifiable {
-    case overview, reclaim, schedule, filing, typeFolders, clearing, activity, general
+    case overview, reclaim, collect, schedule, filing, rules, typeFolders, clearing, activity, general
 
     var id: String { rawValue }
 
@@ -9,8 +9,10 @@ enum MainTab: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "Overview"
         case .reclaim: return "Reclaim space"
+        case .collect: return "Move out"
         case .schedule: return "Schedule"
         case .filing: return "Filing"
+        case .rules: return "Routing rules"
         case .typeFolders: return "Type folders"
         case .clearing: return "Clearing"
         case .activity: return "Activity log"
@@ -22,8 +24,10 @@ enum MainTab: String, CaseIterable, Identifiable {
         switch self {
         case .overview: return "info.circle"
         case .reclaim: return "trash"
+        case .collect: return "tray.and.arrow.up"
         case .schedule: return "clock"
         case .filing: return "arrow.down.doc"
+        case .rules: return "arrow.triangle.branch"
         case .typeFolders: return "folder"
         case .clearing: return "clock.arrow.circlepath"
         case .activity: return "list.bullet"
@@ -51,10 +55,12 @@ struct Sidebar: View {
         VStack(alignment: .leading, spacing: 2) {
             item(.overview)
             item(.reclaim, badge: waiting)
+            item(.collect)
 
             groupHeader("Rules")
             item(.schedule)
             item(.filing)
+            item(.rules)
             item(.typeFolders)
             item(.clearing)
 
@@ -100,7 +106,7 @@ struct Sidebar: View {
 
     private func groupHeader(_ title: String) -> some View {
         Text(title)
-            .font(.caption.weight(.semibold))
+            .font(.callout.weight(.semibold))
             .foregroundStyle(Theme.faint)
             .padding(.horizontal, 9)
             .padding(.top, 12)
@@ -112,11 +118,11 @@ struct Sidebar: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(shortPath)
-                .font(.caption.monospaced())
+                .font(.callout.monospaced())
                 .lineLimit(1)
                 .truncationMode(.head)
             Text(holdings)
-                .font(.caption2)
+                .font(.callout)
                 .foregroundStyle(Theme.faint)
         }
         .foregroundStyle(Theme.muted)
@@ -167,7 +173,7 @@ private struct SidebarItem: View {
                     // Four figures would push the title into a second line, and
                     // past a hundred the exact count is not what you act on.
                     Text(badge > 99 ? "99+" : "\(badge)")
-                        .font(.caption2.weight(.semibold).monospacedDigit())
+                        .font(.callout.weight(.semibold).monospacedDigit())
                         .foregroundStyle(Theme.onAccent)
                         .lineLimit(1)
                         .fixedSize()

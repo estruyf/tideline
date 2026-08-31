@@ -140,6 +140,12 @@ Cross-*building* the installer from macOS does not work; CI builds it on
   app put there or is about to touch, `danger` for faults, `link` for a button
   that only navigates, `success` for running. Every token carries a light value
   and a dark one, so a new one is added in pairs.
+- **Nothing in the window is smaller than 12pt.** `.callout` is the floor —
+  `.caption` and `.caption2` are 10pt and are not used, whatever the role.
+  Explanatory prose goes through `.explanation()` in `Views/Panel.swift` so the
+  sentence under a heading is named rather than sized by hand; secondary weight
+  and monospacing sit on `.callout` alongside it. A column cut to fit 10pt text
+  needs about a fifth more width at 12.
 - Comments explain **why**, in prose, in full sentences. The codebase reads like
   its own documentation — match that rather than annotating what the next line
   already says.

@@ -128,6 +128,21 @@ final class Controller: ObservableObject {
     @Published private(set) var regroupScanning = false
     @Published private(set) var regrouping = false
 
+    /// Collecting. `collectable` is what the last hunt turned up; `collections`
+    /// is what has already been taken and can still be put back.
+    @Published private(set) var collectable: [CollectCandidate] = []
+    @Published private(set) var collectFoldersSearched = 0
+    @Published var reviewingCollect = false
+    @Published private(set) var collectScanning = false
+    @Published private(set) var collecting = false
+    @Published private(set) var collections: [CollectBatch] = []
+    /// How much each rule would turn up right now, for the starting points the
+    /// pane offers. Empty until the pane asks.
+    @Published private(set) var collectWaiting: [String: Int] = [:]
+    @Published private(set) var collectTallying = false
+    /// The hunt the sheet should open on, set when a starting point is pressed.
+    @Published var collectOpeningQuery: CollectQuery?
+
     /// Everything sitting in a folder Tideline made, as of the last scan —
     /// what putting it all back would move.
     @Published private(set) var restorable: [RestoreCandidate] = []
@@ -137,6 +152,7 @@ final class Controller: ObservableObject {
 
     private init() {
         history = log.loadHistory()
+        collections = log.loadCollections()
         lastRunAt = UserDefaults.standard.object(forKey: "lastRunAt") as? Date
         if let lastRunAt {
             lastRunSummary = "Last checked \(Self.relative.localizedString(for: lastRunAt, relativeTo: Date()))"
@@ -419,6 +435,8 @@ final class Controller: ObservableObject {
                 log.write("\(record.wasPreview ? "would trash" : "trashed") \(record.name) — \(record.detail ?? "duplicate")")
             case .renamed:
                 log.write("\(record.wasPreview ? "would rename" : "renamed") \(record.detail ?? "") -> \(record.name) in \(record.folder)/")
+            case .collected:
+                log.write("\(record.wasPreview ? "would move out" : "moved out") \(record.name) -> \(record.folder) \(record.detail ?? "")")
             }
         }
     }
@@ -538,6 +556,134 @@ final class Controller: ObservableObject {
             summary += " · \(outcome.emptiedCount) empty \(folders) to the Trash"
         }
         lastRunSummary = summary
+    }
+
+    // MARK: - Collecting
+
+    /// Hunts for what a query claims, across the root and every folder the app
+    /// made. Reads a lot of folders, so it goes on `inspectQueue` — a long look
+    /// must never delay a sweep.
+    func findCollectable(
+        matching query: CollectQuery,
+        completion: @escaping ([CollectCandidate]) -> Void = { _ in }
+    ) {
+        guard access.mayRead else { return completion([]) }
+        collectScanning = true
+        let configuration = CollectConfiguration(settings)
+
+        inspectQueue.async { [weak self] in
+            let findings = Collector.candidates(matching: query, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.collectable = findings.candidates
+                self?.collectFoldersSearched = findings.foldersSearched
+                self?.collectScanning = false
+                completion(findings.candidates)
+            }
+        }
+    }
+
+    /// How much each rule and type folder would turn up, in one walk. Asked for
+    /// by the pane, which offers them as starting points.
+    func tallyCollectable() {
+        guard access.mayRead, !collectTallying else { return }
+        collectTallying = true
+
+        let configuration = CollectConfiguration(settings)
+        let queries = settings.rules.filter(\.isEnabled).map { CollectQuery(rule: $0) }
+            + settings.typeRules.filter(\.isEnabled).map { CollectQuery(typeRule: $0) }
+
+        inspectQueue.async { [weak self] in
+            let counts = Collector.tally(queries, configuration: configuration)
+            DispatchQueue.main.async {
+                self?.collectWaiting = counts
+                self?.collectTallying = false
+            }
+        }
+    }
+
+    /// Opens the sheet already looking for something.
+    func startCollecting(_ query: CollectQuery? = nil) {
+        collectOpeningQuery = query
+        reviewingCollect = true
+    }
+
+    /// Moves the ticked files out. On `runQueue`, because it moves files and a
+    /// sweep must not be doing the same thing at the same time.
+    func collect(
+        _ selected: [CollectCandidate],
+        to destination: CollectDestination,
+        as label: String,
+        completion: @escaping (CollectResult) -> Void
+    ) {
+        guard !collecting, !selected.isEmpty else { return }
+        collecting = true
+        let configuration = CollectConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Collector.apply(
+                selected, to: destination, as: label, configuration: configuration
+            )
+            DispatchQueue.main.async {
+                self?.finishCollecting(outcome, undoing: false)
+                completion(outcome)
+            }
+        }
+    }
+
+    /// Puts a whole collection back where it came from.
+    func undoCollection(_ batch: CollectBatch, completion: @escaping (CollectResult) -> Void = { _ in }) {
+        guard !collecting else { return }
+        collecting = true
+        let configuration = CollectConfiguration(settings)
+
+        runQueue.async { [weak self] in
+            let outcome = Collector.undo(batch, configuration: configuration)
+            DispatchQueue.main.async {
+                if !configuration.dryRun, outcome.errors.count < batch.count {
+                    self?.forget(batch)
+                }
+                self?.finishCollecting(outcome, undoing: true)
+                completion(outcome)
+            }
+        }
+    }
+
+    private func finishCollecting(_ outcome: CollectResult, undoing: Bool) {
+        collecting = false
+        lastError = outcome.errors.first
+        remember(outcome.moved + outcome.emptied)
+
+        for failure in outcome.errors {
+            log.write("error: \(failure)")
+        }
+
+        if let batch = outcome.batch {
+            collections.insert(batch, at: 0)
+            log.save(collections)
+        }
+
+        guard !outcome.moved.isEmpty else { return }
+
+        let done = Set(outcome.moved.map(\.name))
+        collectable.removeAll { done.contains($0.name) }
+        refreshUsage(force: true)
+        invalidateScans()
+
+        let noun = outcome.movedCount == 1 ? "item" : "items"
+        let verb = outcome.moved.allSatisfy(\.wasPreview)
+            ? (undoing ? "Previewed putting back" : "Previewed moving out")
+            : (undoing ? "Put back" : "Moved out")
+        var summary = "\(verb) \(outcome.movedCount) \(noun)"
+        if outcome.emptiedCount > 0 {
+            let folders = outcome.emptiedCount == 1 ? "folder" : "folders"
+            summary += " · \(outcome.emptiedCount) empty \(folders) to the Trash"
+        }
+        lastRunSummary = summary
+    }
+
+    private func forget(_ batch: CollectBatch) {
+        collections.removeAll { $0.id == batch.id }
+        log.save(collections)
     }
 
     /// What a sweep would move, worked out and thrown away. `run` is the only

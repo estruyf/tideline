@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routing rules — Tideline</title>
+<meta name="description" content="Folders that claim a file by its name or by the site it was downloaded from — so an invoice can be filed as an invoice.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/routing-rules.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Routing rules — Tideline">
+<meta property="og:description" content="Folders that claim a file by its name or by the site it was downloaded from — so an invoice can be filed as an invoice.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/routing-rules.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="routing-rules.html" aria-current="page">Routing rules</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="move-out.html">Move out</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Routing rules</h1>
+<p class="lead">A folder that claims a file by what it is called, or by where it was downloaded from.</p>
+
+<p>
+  A <a href="type-folders.html">type folder</a> asks what a file <em>is</em>.
+  That settles a <code>.dmg</code> and settles nothing at all about an invoice:
+  an invoice is a PDF like every other PDF. What marks one out is its name, or
+  the site it came from.
+</p>
+<p>
+  A routing rule is a folder and a list of conditions. If <strong>any</strong>
+  of them matches, the file lands there:
+</p>
+
+<pre class="tree"><code>Invoices
+  name           <span class="stays">*invoice*</span>
+  downloaded from <span class="stays">*stripe*</span></code></pre>
+
+<figure>
+  <img src="../assets/shots/routing-rules.png"
+       alt="The Routing rules pane: a rule called Invoices with two conditions, one matching the name and one matching where the file was downloaded from">
+</figure>
+
+<h2>What a condition can look at</h2>
+<table>
+  <thead><tr><th>Condition</th><th>Matches against</th></tr></thead>
+  <tbody>
+    <tr><td><code>name</code></td><td>The file's own name, extension included</td></tr>
+    <tr><td><code>downloaded from</code></td><td>The address the file arrived from</td></tr>
+  </tbody>
+</table>
+<p>
+  Patterns use the same shorthand as the skip list — <code>*</code> stands for
+  anything, so <code>*invoice*</code> means &ldquo;contains&rdquo;. There is no
+  separate <em>contains</em> option because there does not need to be.
+</p>
+
+<h2>Where it was downloaded from</h2>
+<p>
+  macOS records the address every download arrived from, and keeps it when the
+  file moves. Two useful things follow. A rule still recognises a file you
+  renamed by hand — you changed the name, not where it came from. And a rule
+  written today matches things that arrived months ago.
+</p>
+<p>
+  The whole address is matched, not just the site. A Logitech receipt arrives
+  from <code>logitech.com</code> with the only clue buried in the path
+  (<code>&hellip;/CustomerReceiptInvoice?&hellip;</code>), and a Stripe invoice
+  arrives from an Amazon storage address that mentions neither Stripe nor the
+  file. Matching only the site name would miss both.
+</p>
+<div class="note">
+  <strong>Not everything carries one.</strong> A file saved out of a mail client,
+  dropped in over AirDrop or fetched from a terminal may have no address at all,
+  and a mail attachment carries the mailbox rather than the sender. That is not
+  an error — the rule simply moves on to its next condition. It is why a rule
+  usually wants a name condition as well.
+</div>
+
+<h2>Order, and case</h2>
+<p>
+  Rules are tried before the type folders, top down, and the first one that
+  matches wins. Without that, <code>Documents</code> would swallow an invoice
+  before <code>Invoices</code> ever saw it. Drag-free for now: a rule higher in
+  the list simply gets asked first.
+</p>
+<p>
+  Conditions <strong>ignore case</strong> unless you press <strong>Aa</strong>.
+  That is the opposite of the skip list, on purpose. A skip pattern names a file
+  you can see sitting in the folder; a rule is a hunt for a word that could have
+  been typed either way, and a rule that quietly stops matching the day a
+  supplier changes their filenames is not something anybody notices.
+</p>
+
+<h2 id="catch-up">Catch Up</h2>
+<p>
+  A new rule only steers what arrives next. <strong>Catch Up…</strong> reaches
+  back: it looks through the dated folders, shows everything the rules now
+  claim, and moves only what you leave ticked. A dated folder left empty by that
+  goes to the Trash.
+</p>
+
+<h2>Where, not when</h2>
+<div class="note">
+  <strong>A rule decides <em>where</em> a file goes, not <em>when</em>.</strong>
+  An invoice that arrived this morning still sits loose in the root until it is
+  older than the <em>Leave loose in the root</em> window — it just goes to
+  <code>Invoices/</code> rather than to a dated folder when its time comes.
+</div>
+<p>
+  A rule's folder is a folder in Downloads, never a path somewhere else. Filing
+  writes inside the folder Tideline watches and nowhere else, which is what lets
+  <a href="filing.html">Put everything back</a> be complete. Moving things out of
+  Downloads is <a href="move-out.html">Move out</a>, and it never happens on a
+  timer.
+</p>
+
+<div class="pager">
+<a href="filing.html"><span>Previous</span>Filing</a>
+<a class="next" href="type-folders.html"><span>Next</span>Type folders</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline&amp;slug=docs%2Frouting-rules" title="Tideline visitors">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline&amp;countColor=%23263759&amp;slug=docs%2Frouting-rules"
+           alt="Visitor count" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -159,5 +159,244 @@
     },
     "entries": [{ "name": "backup.tar.gz", "stamp": "2026-08-17T10:00:00" }],
     "expected": [{ "name": "backup.tar.gz", "target_folder": "Archives", "is_by_type": true }]
+  },
+  {
+    "name": "a routing rule claims a file by name",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "invoice-*" }]
+        }
+      ]
+    },
+    "entries": [
+      {
+        "name": "Invoice-2LNSPA8G-0005.pdf",
+        "stamp": "2026-08-05T10:10:00",
+        "where_from": ["https://outlook.cloud.microsoft/", "https://outlook.cloud.microsoft/"]
+      },
+      { "name": "scan.pdf", "stamp": "2026-08-17T10:00:00" }
+    ],
+    "expected": [
+      { "name": "Invoice-2LNSPA8G-0005.pdf", "target_folder": "Invoices", "is_by_rule": true },
+      { "name": "scan.pdf", "target_folder": "2026-08-17" }
+    ]
+  },
+  {
+    "name": "where a file came from can claim it when its name cannot",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "receipts",
+          "name": "Receipts",
+          "isEnabled": true,
+          "tests": [
+            { "field": "name", "pattern": "*invoice*" },
+            { "field": "where_from", "pattern": "*invoice*" }
+          ]
+        }
+      ]
+    },
+    "entries": [
+      {
+        "name": "logitech-mouse-manual.pdf",
+        "stamp": "2026-08-17T10:00:00",
+        "where_from": ["https://www.logitech.com/"]
+      },
+      {
+        "name": "logitech-palm-rest.pdf",
+        "stamp": "2026-07-29T10:20:00",
+        "where_from": [
+          "https://api.global-e.com/Document/CustomerReceiptInvoice?documentParam=KqNDKUNNEYbp53MAR7VpHVcp",
+          "https://www.logitech.com/"
+        ]
+      }
+    ],
+    "expected": [
+      { "name": "logitech-mouse-manual.pdf", "target_folder": "2026-08-17" },
+      { "name": "logitech-palm-rest.pdf", "target_folder": "Receipts", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a URL is percent-decoded before it is matched",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "facturen",
+          "name": "Facturen",
+          "isEnabled": true,
+          "tests": [{ "field": "where_from", "pattern": "*/facturen/*" }]
+        }
+      ]
+    },
+    "entries": [
+      {
+        "name": "20260702.pdf",
+        "stamp": "2026-07-02T14:57:00",
+        "where_from": ["https://portal.example.com/download?path=%2Ffacturen%2F2026%2Ffactuur-0042.pdf"]
+      },
+      {
+        "name": "receipt.pdf",
+        "stamp": "2026-08-17T10:00:00",
+        "where_from": ["https://portal.example.com/download?path=%2Fbonnen%2F2026%2Fbon-0007.pdf"]
+      }
+    ],
+    "expected": [
+      { "name": "20260702.pdf", "target_folder": "Facturen", "is_by_rule": true },
+      { "name": "receipt.pdf", "target_folder": "2026-08-17" }
+    ]
+  },
+  {
+    "name": "a routing rule decides where, never when",
+    "now": "2026-08-31T14:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "invoice-*" }]
+        }
+      ]
+    },
+    "entries": [
+      { "name": "Invoice-HMOWMPU7-0001.pdf", "stamp": "2026-08-31T10:42:00" },
+      { "name": "Invoice-RUDVUELT-0005.pdf", "stamp": "2026-07-02T14:57:00" }
+    ],
+    "expected": [
+      { "name": "Invoice-RUDVUELT-0005.pdf", "target_folder": "Invoices", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a routing rule is tried before a type rule",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "invoice-*" }]
+        }
+      ],
+      "type_rules": [
+        { "id": "documents", "name": "Documents", "extensions": ["pdf"], "isEnabled": true, "isBuiltIn": true }
+      ]
+    },
+    "entries": [
+      { "name": "Invoice-2LNSPA8G-0005.pdf", "stamp": "2026-08-05T10:10:00" },
+      { "name": "notes.pdf", "stamp": "2026-08-17T10:00:00" }
+    ],
+    "expected": [
+      { "name": "Invoice-2LNSPA8G-0005.pdf", "target_folder": "Invoices", "is_by_rule": true },
+      { "name": "notes.pdf", "target_folder": "Documents", "is_by_type": true }
+    ]
+  },
+  {
+    "name": "the first rule that matches wins",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "receipts",
+          "name": "Receipts",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "*receipt*" }]
+        },
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "*invoice*" }]
+        }
+      ]
+    },
+    "entries": [{ "name": "invoice-receipt.pdf", "stamp": "2026-08-17T10:00:00" }],
+    "expected": [
+      { "name": "invoice-receipt.pdf", "target_folder": "Receipts", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a rule's tests ignore case on both platforms",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "invoice-*" }]
+        }
+      ]
+    },
+    "entries": [{ "name": "INVOICE-2LNSPA8G-0005.PDF", "stamp": "2026-08-05T10:10:00" }],
+    "expected": [
+      { "name": "INVOICE-2LNSPA8G-0005.PDF", "target_folder": "Invoices", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a rule that is switched off claims nothing",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": false,
+          "tests": [{ "field": "name", "pattern": "invoice-*" }]
+        }
+      ]
+    },
+    "entries": [{ "name": "Invoice-2LNSPA8G-0005.pdf", "stamp": "2026-08-05T10:10:00" }],
+    "expected": [{ "name": "Invoice-2LNSPA8G-0005.pdf", "target_folder": "2026-08-05" }]
+  },
+  {
+    "name": "a rule's own folder is never filed away",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "*invoice*" }]
+        }
+      ]
+    },
+    "entries": [
+      { "name": "Invoices", "stamp": "2026-07-01T10:00:00", "is_dir": true },
+      { "name": "old-invoice.pdf", "stamp": "2026-08-17T10:00:00" }
+    ],
+    "expected": [
+      { "name": "old-invoice.pdf", "target_folder": "Invoices", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a test can be told to match case exactly",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "tests": [{ "field": "name", "pattern": "Invoice-*", "matchCase": true }]
+        }
+      ]
+    },
+    "entries": [
+      { "name": "INVOICE-A.pdf", "stamp": "2026-08-05T10:10:00" },
+      { "name": "Invoice-B.pdf", "stamp": "2026-08-05T10:10:00" }
+    ],
+    "expected": [
+      { "name": "INVOICE-A.pdf", "target_folder": "2026-08-05" },
+      { "name": "Invoice-B.pdf", "target_folder": "Invoices", "is_by_rule": true }
+    ]
   }
 ]

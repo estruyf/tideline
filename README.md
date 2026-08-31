@@ -86,10 +86,12 @@ itself still grows, and because nothing here should ever be a surprise.
 | | |
 | --- | --- |
 | [Filing](https://estruyf.github.io/tideline/docs/filing.html) | One folder per day or per month, how long things stay loose, and the list of names never to touch |
+| [Routing rules](https://estruyf.github.io/tideline/docs/routing-rules.html) | Folders that claim a file by its name, or by the site it came from — so an invoice is filed as an invoice |
 | [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html) | Send every `.dmg` to `Installers/` whatever day it arrived on |
 | [Schedule](https://estruyf.github.io/tideline/docs/schedule.html) | On a folder change, once a day, when the app starts, or any combination |
 | [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) | Old dated folders to the Trash, once you have stopped needing them |
 | [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) | Duplicates, big files and old folders — everything that could give space back |
+| [Move out](https://estruyf.github.io/tideline/docs/move-out.html) | Find things across Downloads and everything already filed, then move the batch somewhere else — and put it back in one go |
 | [Preview mode](https://estruyf.github.io/tideline/docs/filing.html#preview) | A sweep that touches nothing and then says what it would have done |
 | [Putting it back](https://estruyf.github.io/tideline/docs/filing.html#putting-it-back) | One sheet that moves everything Tideline ever filed back into the root |
 
@@ -126,8 +128,9 @@ The manual is at **[estruyf.github.io/tideline](https://estruyf.github.io/tideli
 
 - [Install](https://estruyf.github.io/tideline/docs/install.html) and [First launch](https://estruyf.github.io/tideline/docs/first-launch.html) — getting it running, and the question it asks
 - [The window](https://estruyf.github.io/tideline/docs/the-window.html) — the panes, and what the colours mean
-- [Filing](https://estruyf.github.io/tideline/docs/filing.html), [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html), [Schedule](https://estruyf.github.io/tideline/docs/schedule.html), [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) — the rules a sweep follows
+- [Filing](https://estruyf.github.io/tideline/docs/filing.html), [Routing rules](https://estruyf.github.io/tideline/docs/routing-rules.html), [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html), [Schedule](https://estruyf.github.io/tideline/docs/schedule.html), [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) — the rules a sweep follows
 - [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) — duplicates, big files, old dated folders
+- [Move out](https://estruyf.github.io/tideline/docs/move-out.html) — taking things out of Downloads, and putting a batch back
 - [The menu bar](https://estruyf.github.io/tideline/docs/menu-bar.html), [General and activity](https://estruyf.github.io/tideline/docs/general.html), [Updates](https://estruyf.github.io/tideline/docs/updates.html)
 - [Troubleshooting](https://estruyf.github.io/tideline/docs/troubleshooting.html) and [Uninstall](https://estruyf.github.io/tideline/docs/uninstall.html)
 - [Windows (beta)](https://estruyf.github.io/tideline/docs/windows.html) — what the Windows build does, and what it does not do yet

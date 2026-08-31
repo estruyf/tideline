@@ -45,7 +45,7 @@ struct DuplicateView: View {
                 .font(.headline)
 
             Text("Files with the same name — bar a copy suffix — and byte-for-byte the same contents. The newest of each is kept and the rest go to the Trash.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -60,7 +60,7 @@ struct DuplicateView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Text("Only files that already share a name and a size are read through.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
         }
     }
@@ -73,7 +73,7 @@ struct DuplicateView: View {
             Text("Nothing is here twice")
                 .font(.body.weight(.medium))
             Text("No file in \(settings.downloadsURL.lastPathComponent), or in the folders Tideline made, matches another by name and contents.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -95,7 +95,7 @@ struct DuplicateView: View {
                             .truncationMode(.middle)
                         Spacer(minLength: 12)
                         Text(detail(for: group))
-                            .font(.caption)
+                            .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -118,7 +118,7 @@ struct DuplicateView: View {
 
                     if !isGoing {
                         Text("keeping")
-                            .font(.caption2.weight(.medium))
+                            .font(.callout.weight(.medium))
                             .foregroundStyle(Theme.success)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
@@ -132,16 +132,16 @@ struct DuplicateView: View {
             Spacer(minLength: 12)
 
             Text(copy.folder)
-                .font(.caption.monospacedDigit())
+                .font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
                 .background(Theme.hover, in: Capsule())
 
             Text(Self.day.string(from: copy.date))
-                .font(.caption.monospacedDigit())
+                .font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 74, alignment: .trailing)
+                .frame(width: 88, alignment: .trailing)
 
             // The copies are byte-for-byte the same, so this is never about
             // which one to keep — it is about seeing what the thing actually is
@@ -153,6 +153,7 @@ struct DuplicateView: View {
             }
             .buttonStyle(.borderless)
             .help("Show \(copy.name) in Finder")
+                .accessibilityLabel("Show \(copy.name) in Finder")
         }
         .contextMenu {
             Button("Show in Finder") { controller.reveal(copy.url) }
@@ -163,16 +164,16 @@ struct DuplicateView: View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
 
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually be trashed.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.accentText)
                 } else {
                     Text("Copies go to the Trash, so nothing is lost until you empty it.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(.secondary)
                 }
 
@@ -180,7 +181,7 @@ struct DuplicateView: View {
                     Text("Give the copy that stays its plain name back")
                 }
                 .toggleStyle(.checkbox)
-                .font(.caption)
+                .explanation()
                 .help("artifact-1.zip becomes artifact.zip, but only where that name is free.")
             }
 

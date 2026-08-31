@@ -160,7 +160,7 @@ struct CleanupSection: View {
                 Spacer()
                 if settings.cleanupOnSchedule {
                     Label("Runs unattended", systemImage: "clock.arrow.circlepath")
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -200,7 +200,7 @@ struct TypeFolderSection: View {
 
         if let clash = conflictNote {
             Label(clash, systemImage: "exclamationmark.triangle")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
         }
 
@@ -216,7 +216,7 @@ struct TypeFolderSection: View {
                 Text(anyRuleEnabled
                      ? "Pull what these folders claim out of the dated folders."
                      : "Switch a folder on above to have something to catch up on.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
             }
 
@@ -251,6 +251,7 @@ struct TypeFolderSection: View {
             }
             .buttonStyle(.borderless)
             .help(editing == rule.id ? "Close" : "Edit \(rule.name)")
+            .accessibilityLabel(editing == rule.id ? "Close" : "Edit \(rule.name)")
         }
     }
 
@@ -273,7 +274,7 @@ struct TypeFolderSection: View {
 
             if !TypeRule.isValidFolderName(nameDraft) {
                 Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(Theme.danger)
             }
 
@@ -288,6 +289,7 @@ struct TypeFolderSection: View {
                 Spacer()
 
                 Button("Done") { commit(rule) }
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!TypeRule.isValidFolderName(nameDraft))
             }
@@ -318,6 +320,7 @@ struct TypeFolderSection: View {
                     Button("Cancel") { cancelAdding() }
                     Spacer()
                     Button("Add Folder", action: add)
+                        .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.defaultAction)
                         .disabled(!canAdd)
                 }
@@ -423,6 +426,324 @@ struct TypeFolderSection: View {
     }
 }
 
+// MARK: - Routing rules
+
+/// Folders that claim files by what they are called or where they came from.
+/// Tried before the type folders, and like them they decide *where* a file goes
+/// and never when. Nothing ships switched on: a rule exists because someone
+/// wrote it.
+struct RoutingRuleSection: View {
+    @ObservedObject private var settings = Settings.shared
+    @ObservedObject private var controller = Controller.shared
+
+    /// The rule whose editor is open, by id. Only one at a time.
+    @State private var editing: String?
+    @State private var nameDraft = ""
+    @State private var testsDraft: [RuleTest] = []
+
+    @State private var newName = ""
+    @State private var addingRule = false
+
+    var body: some View {
+        ForEach(settings.rules) { rule in
+            VStack(alignment: .leading, spacing: 0) {
+                row(for: rule)
+
+                if editing == rule.id {
+                    Divider()
+                        .padding(.vertical, 10)
+                    editor(for: rule)
+                }
+            }
+        }
+
+        if settings.rules.isEmpty, !addingRule {
+            Text("No rules yet. A rule is a folder and the tests that send files to it — an invoice is a PDF like every other PDF, so what marks it out is its name or the site it came from.")
+                .explanation()
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+
+        if let clash = duplicateNote {
+            Label(clash, systemImage: "exclamationmark.triangle")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+
+        addRow
+
+        // A rule only steers what arrives next. This is what reaches back for
+        // the invoices already sitting in the dated folders.
+        Divider()
+
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Files already filed by date")
+                Text(anyRuleEnabled
+                     ? "Pull what these rules claim out of the dated folders."
+                     : "Write a rule above to have something to catch up on.")
+                    .explanation()
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            Button("Catch Up…") { controller.reviewingRegroup = true }
+                .disabled(!anyRuleEnabled)
+        }
+    }
+
+    private var anyRuleEnabled: Bool {
+        settings.rules.contains { rule in
+            rule.isEnabled && rule.tests.contains { !$0.pattern.trimmingCharacters(in: .whitespaces).isEmpty }
+        }
+    }
+
+    // MARK: Rows
+
+    private func row(for rule: Rule) -> some View {
+        HStack(spacing: 8) {
+            Toggle(isOn: binding(for: rule).isEnabled) {
+                Text(rule.name)
+                Text(summary(for: rule))
+            }
+
+            Spacer(minLength: 12)
+
+            Button {
+                toggleEditor(for: rule)
+            } label: {
+                Image(systemName: editing == rule.id ? "chevron.up" : "slider.horizontal.3")
+            }
+            .buttonStyle(.borderless)
+            .help(editing == rule.id ? "Close" : "Edit \(rule.name)")
+            .accessibilityLabel(editing == rule.id ? "Close" : "Edit \(rule.name)")
+        }
+    }
+
+    /// What the rule looks for, in the order it looks. Any one of them is enough.
+    private func summary(for rule: Rule) -> String {
+        let described = rule.tests.compactMap { test -> String? in
+            let pattern = test.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !pattern.isEmpty else { return nil }
+            return "\(test.field.label) \(pattern)"
+        }
+        return described.isEmpty
+            ? "No tests yet — nothing will match"
+            : described.joined(separator: "   or   ")
+    }
+
+    // MARK: Editing
+
+    @ViewBuilder
+    private func editor(for rule: Rule) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            LabeledContent("Folder name") {
+                TextField("Folder name", text: $nameDraft, prompt: Text("What the folder is called"))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { commit(rule) }
+            }
+
+            if !Rule.isValidFolderName(nameDraft) {
+                Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
+                    .explanation()
+                    .foregroundStyle(Theme.danger)
+            }
+
+            Text("Matches when any of these is true")
+                .explanation()
+                .foregroundStyle(.secondary)
+
+            ForEach($testsDraft) { $test in
+                testRow($test)
+            }
+
+            Button {
+                testsDraft.append(RuleTest())
+            } label: {
+                Label("Add a test", systemImage: "plus")
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
+
+            HStack {
+                Button("Remove", role: .destructive) { remove(rule) }
+                Spacer()
+                Button("Done") { commit(rule) }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!Rule.isValidFolderName(nameDraft))
+            }
+            .controlSize(.small)
+        }
+        .padding(.bottom, 2)
+    }
+
+    private func testRow(_ test: Binding<RuleTest>) -> some View {
+        HStack(spacing: 8) {
+            Picker("Looks at", selection: test.field) {
+                ForEach(RuleField.allCases) { field in
+                    Text(field.label).tag(field)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 140)
+
+            TextField(
+                "Pattern",
+                text: test.pattern,
+                prompt: Text(test.wrappedValue.field.placeholder)
+            )
+            .labelsHidden()
+            .textFieldStyle(.roundedBorder)
+
+            // Drawn rather than a `.toggleStyle(.button)`, which fills itself
+            // with the *system* accent when it is on — the one blue the palette
+            // does not own. Accent means the app is about to touch something,
+            // and a case switch qualifies.
+            Button {
+                test.matchCase.wrappedValue.toggle()
+            } label: {
+                Text("Aa")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(test.wrappedValue.matchCase ? Theme.onAccent : Theme.muted)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(
+                        test.wrappedValue.matchCase ? Theme.accent : Theme.hover,
+                        in: RoundedRectangle(cornerRadius: 5)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("Match the pattern exactly, upper and lower case included")
+            // "Aa" is the whole of the visible label, and it says nothing aloud.
+            .accessibilityLabel("Match case")
+            .accessibilityValue(test.wrappedValue.matchCase ? "on" : "off")
+
+            Button {
+                testsDraft.removeAll { $0.id == test.wrappedValue.id }
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.borderless)
+            .help("Remove this test")
+            .accessibilityLabel("Remove this test")
+        }
+        .controlSize(.small)
+    }
+
+    /// Rules live in an array on `Settings`, so a row edits through its id
+    /// rather than an index that a removal could shift out from under it.
+    private func binding(for rule: Rule) -> Binding<Rule> {
+        Binding(
+            get: { settings.rules.first { $0.id == rule.id } ?? rule },
+            set: { updated in
+                guard let index = settings.rules.firstIndex(where: { $0.id == rule.id }) else { return }
+                settings.rules[index] = updated
+            }
+        )
+    }
+
+    private func toggleEditor(for rule: Rule) {
+        if editing == rule.id {
+            commit(rule)
+            return
+        }
+        addingRule = false
+        editing = rule.id
+        nameDraft = rule.name
+        // A rule with nothing to ask about opens with an empty test rather than
+        // an empty list, so there is somewhere to type.
+        testsDraft = rule.tests.isEmpty ? [RuleTest()] : rule.tests
+    }
+
+    private func commit(_ rule: Rule) {
+        let name = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard Rule.isValidFolderName(name) else { return }
+
+        var updated = rule
+        updated.name = name
+        // A test nobody filled in is not a test. Keeping it would claim nothing
+        // but would read as though the rule were doing more than it is.
+        updated.tests = testsDraft.filter {
+            !$0.pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+        binding(for: rule).wrappedValue = updated
+
+        editing = nil
+    }
+
+    private func remove(_ rule: Rule) {
+        settings.rules.removeAll { $0.id == rule.id }
+        editing = nil
+    }
+
+    // MARK: Adding
+
+    @ViewBuilder
+    private var addRow: some View {
+        if addingRule {
+            VStack(alignment: .leading, spacing: 10) {
+                LabeledContent("Folder name") {
+                    TextField("Folder name", text: $newName, prompt: Text("Invoices"))
+                        .labelsHidden()
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit(add)
+                }
+
+                HStack {
+                    Button("Cancel") { cancelAdding() }
+                    Spacer()
+                    Button("Add Rule", action: add)
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(!Rule.isValidFolderName(newName))
+                }
+                .controlSize(.small)
+            }
+        } else {
+            Button {
+                editing = nil
+                addingRule = true
+            } label: {
+                Label("Add a rule", systemImage: "plus")
+            }
+            .buttonStyle(.borderless)
+        }
+    }
+
+    /// A new rule arrives with one empty test and its editor open: the tests are
+    /// the whole of it, and asking for a name and then hiding them would be a
+    /// form with the interesting half missing.
+    private func add() {
+        let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard Rule.isValidFolderName(name) else { return }
+
+        let rule = Rule(name: name, isEnabled: true, tests: [])
+        settings.rules.append(rule)
+        cancelAdding()
+        toggleEditor(for: rule)
+    }
+
+    private func cancelAdding() {
+        addingRule = false
+        newName = ""
+    }
+
+    // MARK: Conflicts
+
+    /// Two rules pointing at one folder is not an error — they simply share it,
+    /// and the one higher up claims a file first — but it is worth saying.
+    private var duplicateNote: String? {
+        let clashing = RuleRouter.duplicateNames(in: settings.rules)
+        guard !clashing.isEmpty else { return nil }
+        let list = clashing.prefix(3).joined(separator: ", ")
+        let more = clashing.count > 3 ? " and \(clashing.count - 3) more" : ""
+        return "\(list)\(more) is named by more than one rule. They share the folder; the rule higher up claims a file first."
+    }
+}
+
 // MARK: - Skip list
 
 /// The one thing filing cannot be undone with a single gesture in Finder, so
@@ -440,7 +761,7 @@ struct RestoreSection: View {
                 Text(settings.dryRun
                      ? "Preview mode — the review will show what would come back and move nothing."
                      : "Lists everything filed, grouped by the folder it would come out of. Nothing moves until you say so.")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -473,6 +794,7 @@ struct SkipListSection: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Stop skipping \(name)")
+                    .accessibilityLabel("Stop skipping \(name)")
             }
         }
 
@@ -517,7 +839,7 @@ struct ActivitySection: View {
                         // or the name a kept copy got back.
                         if let detail = record.detail {
                             Text(detail)
-                                .font(.caption)
+                                .font(.callout)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
@@ -525,7 +847,7 @@ struct ActivitySection: View {
                     }
                     Spacer(minLength: 12)
                     Text(record.folder)
-                        .font(.caption.monospacedDigit())
+                        .font(.callout.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
@@ -536,7 +858,7 @@ struct ActivitySection: View {
 
             HStack {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("Clear List") { controller.clearHistory() }
@@ -552,6 +874,7 @@ struct ActivitySection: View {
         case .cleared: return "trash"
         case .removed: return "doc.on.doc"
         case .renamed: return "character.cursor.ibeam"
+        case .collected: return "tray.and.arrow.up"
         }
     }
 
@@ -560,10 +883,13 @@ struct ActivitySection: View {
         switch record.kind {
         case .filed, .renamed: return Theme.link
         case .cleared, .removed: return Theme.accentText
+        // Collecting is the one move that leaves the folder the app watches,
+        // so it reads in the colour the app uses for what it is about to touch.
+        case .collected: return Theme.accentText
         }
     }
 
-    /// The list holds four kinds now, so "filed in total" would undercount.
+    /// The list holds five kinds now, so "filed in total" would undercount.
     private var tally: String {
         var counts: [RecordKind: Int] = [:]
         for record in controller.history { counts[record.kind, default: 0] += 1 }
@@ -573,6 +899,7 @@ struct ActivitySection: View {
         if let cleared = counts[.cleared] { parts.append("\(cleared) cleared") }
         if let removed = counts[.removed] { parts.append("\(removed) duplicates trashed") }
         if let renamed = counts[.renamed] { parts.append("\(renamed) renamed") }
+        if let collected = counts[.collected] { parts.append("\(collected) moved out") }
         return parts.joined(separator: " · ")
     }
 }
@@ -588,7 +915,7 @@ struct AboutSection: View {
                 Text(AppInfo.name)
                     .font(.body.weight(.medium))
                 Text(AppInfo.versionLine)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             }

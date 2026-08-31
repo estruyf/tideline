@@ -43,7 +43,7 @@ struct RestoreView: View {
                 .font(.headline)
 
             Text("Everything Tideline filed moves back into \(settings.downloadsURL.lastPathComponent), and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo this.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -68,7 +68,7 @@ struct RestoreView: View {
             Text("There is nothing filed to put back")
                 .font(.body.weight(.medium))
             Text("No dated folders and no type folders with anything in them.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -87,7 +87,7 @@ struct RestoreView: View {
                                     .truncationMode(.middle)
                                 Spacer(minLength: 12)
                                 Text(Self.bytes.string(fromByteCount: candidate.byteSize))
-                                    .font(.caption.monospacedDigit())
+                                    .font(.callout.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -95,13 +95,13 @@ struct RestoreView: View {
                     }
                 } header: {
                     HStack {
-                        Label(group.folder, systemImage: group.isByType ? "shippingbox" : "folder")
+                        Label(group.folder, systemImage: group.isByRule ? "shippingbox" : "folder")
                         Spacer()
                         Button(allSelected(in: group) ? "None" : "All") {
                             toggleAll(in: group)
                         }
                         .buttonStyle(.borderless)
-                        .font(.caption)
+                        .font(.callout)
                     }
                 }
             }
@@ -113,15 +113,15 @@ struct RestoreView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually move.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.accentText)
                 } else if !chosen.isEmpty {
                     Text("A name already taken in the root counts up — report.pdf, report-1.pdf.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(.secondary)
                 }
             }
@@ -169,7 +169,7 @@ struct RestoreView: View {
     /// scan found them — so the list reads as the folder does.
     private struct SourceGroup {
         var folder: String
-        var isByType: Bool
+        var isByRule: Bool
         var items: [RestoreCandidate]
     }
 
@@ -185,7 +185,7 @@ struct RestoreView: View {
         return order.map {
             SourceGroup(
                 folder: $0,
-                isByType: byFolder[$0]?.first?.isByType ?? false,
+                isByRule: byFolder[$0]?.first?.isByRule ?? false,
                 items: byFolder[$0] ?? []
             )
         }

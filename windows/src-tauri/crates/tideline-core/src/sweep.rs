@@ -92,12 +92,72 @@ pub fn scan(config: &RunConfiguration) -> Result<Vec<Entry>, SweepError> {
             },
             hidden: is_hidden(&name, &metadata),
             size: if is_dir { 0 } else { metadata.len() },
+            where_from: where_from_of(&path),
             is_dir,
             name,
         });
     }
 
     Ok(entries)
+}
+
+/// Every URL the download was recorded as arriving from.
+///
+/// Windows keeps these in the `Zone.Identifier` alternate data stream that
+/// browsers write beside a download, so reading them is a plain file open on
+/// `<path>:Zone.Identifier`. A file that came from anywhere else — copied off a
+/// stick, written by a tool — simply has no stream, which is not an error.
+///
+/// Everywhere else this is empty. macOS keeps the same information in the
+/// `com.apple.metadata:kMDItemWhereFroms` extended attribute as a binary plist,
+/// which the macOS app reads for itself; this crate ships on Windows, and
+/// `npm run win:dev` on a Mac just sees no URLs.
+#[cfg(windows)]
+fn where_from_of(path: &Path) -> Vec<String> {
+    let mut stream = path.as_os_str().to_os_string();
+    stream.push(":Zone.Identifier");
+    match fs::read_to_string(stream) {
+        Ok(text) => parse_zone_identifier(&text),
+        Err(_) => Vec::new(),
+    }
+}
+
+#[cfg(not(windows))]
+fn where_from_of(_path: &Path) -> Vec<String> {
+    Vec::new()
+}
+
+/// Pulls the URLs out of a `Zone.Identifier` stream, source first and referrer
+/// second — the order macOS records them in, so a rule written against one
+/// platform reads the same on the other.
+///
+/// Kept out of the `cfg` above so it can be tested anywhere; only the file open
+/// is Windows-only.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn parse_zone_identifier(text: &str) -> Vec<String> {
+    let mut host: Option<&str> = None;
+    let mut referrer: Option<&str> = None;
+
+    for line in text.lines() {
+        let Some((key, value)) = line.split_once('=') else {
+            continue;
+        };
+        let value = value.trim();
+        if value.is_empty() {
+            continue;
+        }
+        // The keys are written in whatever case the browser felt like.
+        match key.trim().to_ascii_lowercase().as_str() {
+            "hosturl" if host.is_none() => host = Some(value),
+            "referrerurl" if referrer.is_none() => referrer = Some(value),
+            _ => {}
+        }
+    }
+
+    host.into_iter()
+        .chain(referrer)
+        .map(|url| url.to_string())
+        .collect()
 }
 
 /// The date this entry is filed by, under the chosen basis.
@@ -345,6 +405,35 @@ mod tests {
     fn a_missing_folder_is_reported_rather_than_created() {
         let config = RunConfiguration::new("/nowhere/at/all/we/hope");
         assert!(matches!(run(&config), Err(SweepError::FolderMissing(_))));
+    }
+
+    #[test]
+    fn zone_identifier_gives_the_source_then_the_referrer() {
+        let stream = "[ZoneTransfer]\r\nZoneId=3\r\nReferrerUrl=https://billing.example.com/\r\nHostUrl=https://cdn.example.com/Invoice-0005.pdf\r\n";
+        assert_eq!(
+            parse_zone_identifier(stream),
+            vec![
+                "https://cdn.example.com/Invoice-0005.pdf".to_string(),
+                "https://billing.example.com/".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn zone_identifier_survives_what_browsers_actually_write() {
+        // Only a zone and no URLs at all, which is what a file copied off a
+        // stick gets. Not an error, just nothing to match on.
+        assert!(parse_zone_identifier("[ZoneTransfer]\nZoneId=3\n").is_empty());
+        // Keys in whatever case, and an empty value is not a URL.
+        assert_eq!(
+            parse_zone_identifier("hosturl=https://example.com/\nReferrerUrl=\n"),
+            vec!["https://example.com/".to_string()]
+        );
+        // A URL with an `=` in the query keeps everything after the first one.
+        assert_eq!(
+            parse_zone_identifier("HostUrl=https://example.com/f?a=b&c=d"),
+            vec!["https://example.com/f?a=b&c=d".to_string()]
+        );
     }
 
     #[test]

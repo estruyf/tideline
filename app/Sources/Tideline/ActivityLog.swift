@@ -5,6 +5,7 @@ final class ActivityLog {
     static let shared = ActivityLog()
 
     private let maximumEntries = 300
+    private let maximumCollections = 40
     private let queue = DispatchQueue(label: "be.eliostruyf.Tideline.log")
 
     private lazy var supportDirectory: URL = {
@@ -16,6 +17,12 @@ final class ActivityLog {
     }()
 
     private lazy var historyURL = supportDirectory.appendingPathComponent("history.json")
+
+    /// Collections are kept apart from the activity list because they are the
+    /// only thing the app can undo, and the list is trimmed to its last few
+    /// hundred entries — an undo that expired because someone downloaded a lot
+    /// would be a poor promise.
+    private lazy var collectionsURL = supportDirectory.appendingPathComponent("collections.json")
 
     lazy var logURL: URL = {
         let logs = URL(fileURLWithPath: NSHomeDirectory() + "/Library/Logs")
@@ -38,6 +45,22 @@ final class ActivityLog {
         }
     }
 
+    /// The collections that can still be put back, newest first.
+    func loadCollections() -> [CollectBatch] {
+        guard let data = try? Data(contentsOf: collectionsURL),
+              let batches = try? JSONDecoder().decode([CollectBatch].self, from: data)
+        else { return [] }
+        return batches
+    }
+
+    func save(_ batches: [CollectBatch]) {
+        let trimmed = Array(batches.prefix(maximumCollections))
+        queue.async { [collectionsURL] in
+            guard let data = try? JSONEncoder().encode(trimmed) else { return }
+            try? data.write(to: collectionsURL, options: .atomic)
+        }
+    }
+
     func write(_ message: String) {
         queue.async { [logURL] in
             let stamp = ISO8601DateFormatter().string(from: Date())
@@ -57,6 +80,7 @@ final class ActivityLog {
     /// Used by the in-app uninstaller.
     func eraseAll() {
         try? FileManager.default.removeItem(at: historyURL)
+        try? FileManager.default.removeItem(at: collectionsURL)
         try? FileManager.default.removeItem(at: logURL)
         try? FileManager.default.removeItem(at: supportDirectory)
     }
