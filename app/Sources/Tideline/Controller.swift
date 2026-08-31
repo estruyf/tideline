@@ -189,6 +189,14 @@ final class Controller: ObservableObject {
             return
         }
 
+        // Everything below reads the folder, and a read only happens once the
+        // state is off `notAsked` — `refreshAccess` declines to probe until it
+        // is. The guard above has just established that this install was
+        // granted access or has been filing, so the probe is silent; without
+        // this line it never runs, and the window asks for a permission the
+        // app already holds.
+        access = .unknown
+
         refreshAccess { [weak self] in
             guard let self else { return }
             self.reconfigure()

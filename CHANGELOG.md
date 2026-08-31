@@ -5,6 +5,26 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2] - 2026-08-31
+
+### Fixed
+
+- **Every relaunch asked for access it already had.** Opening the window after
+  an update showed the permission banner and **Allow Access…**, on an install
+  that had been filing for months. Nothing was actually wrong with the
+  permission: the app deliberately refuses to read the folder before the
+  question has been put — reading is what raises the macOS prompt — and at
+  launch it never recorded that the question had been put long ago, so it sat
+  there waiting to ask. Pressing the button read the folder, found the access
+  it always had, and the banner went.
+
+  It now checks at launch, silently, the way it was meant to. The banner is
+  back to meaning what it says. Filing itself was never affected — the daily
+  sweep and the folder watcher kept working throughout — but the sweep on
+  launch, the catch-up for a sweep missed while the Mac was off, the folder
+  size and the Reclaim space figures all waited on that check, so they were
+  skipped until the window was opened and the button pressed.
+
 ## [1.11.1] - 2026-08-29
 
 ### Fixed
@@ -513,6 +533,7 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.11.2]: https://github.com/estruyf/tideline/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/estruyf/tideline/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/estruyf/tideline/compare/v1.9.0...v1.11.0
 [1.9.0]: https://github.com/estruyf/tideline/compare/v1.8.0...v1.9.0
