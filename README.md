@@ -36,8 +36,8 @@ the first launch, and every setting in the window.
 **🎬 [A ninety-second tour](https://estruyf.github.io/tideline/#tour)** — every
 screen, from the first run to the menu bar.
 
-Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
-because it ships for both Apple silicon and Intel. No Electron, no bundled
+Native Swift with no dependencies at all: about 3 MB to download, 9.6 MB on
+disk because it ships for both Apple silicon and Intel. No Electron, no bundled
 runtime, no helper process quietly installed beside it — one menu bar app that
 schedules itself, and quitting it really is the end of it.
 

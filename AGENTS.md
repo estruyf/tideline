@@ -1,9 +1,9 @@
 # Tideline
 
 A macOS menu-bar app that files older downloads into folders named for the day
-they arrived. Native Swift, SwiftPM, no dependencies — the release zip is about
-1.7 MB, and 5.8 MB unpacked because the bundle is universal. That is a feature,
-not an accident.
+they arrived. Native Swift, SwiftPM, no dependencies — a release is about 3 MB
+to download and 9.6 MB unpacked, because the bundle is universal. That is a
+feature, not an accident.
 
 A Windows build lives in `windows/`: the same filing rules rewritten in Rust,
 behind a Tauri v2 shell. It builds and its tests pass. The **filing engine is
@@ -22,7 +22,8 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 | `app/Sources/Tideline/` | The app. `Organizer` files, `Cleaner` clears, `Deduper` collapses copies, `Weigher` finds big files, `Regrouper` catches up, `Controller` schedules |
 | `app/Sources/Tideline/Views/` | SwiftUI window, one file per tab or sheet |
 | `app/Package.swift` | One executable target, macOS 14+, zero dependencies |
-| `app/build.sh` | Build, bundle, icon, sign, notarize, staple, zip |
+| `app/build.sh` | Build, bundle, icon, sign, notarize, staple, zip, disk image |
+| `app/Tools/make-dmg-layout.sh` | Records the disk image's window layout, by hand, into `app/Resources/dmg/DS_Store` |
 | `app/Resources/Info.plist` | Bundle template; `__VERSION__` / `__BUILD__` substituted at build time |
 | `app/Resources/dmg/DS_Store` | The disk image's window layout, recorded once by `app/Tools/make-dmg-layout.sh` and committed so a release build never has to drive Finder |
 | `windows/src-tauri/crates/tideline-core/` | The Rust filing engine. `organizer` holds the rules and is pure; `sweep` does the I/O |
@@ -213,9 +214,10 @@ On the Rust side:
 - Commit messages are short and descriptive, in the imperative or past tense —
   match `git log`. Version bumps are their own commit, made by `npm version`.
 - Releasing macOS is `npm version patch`, push the tag, then publish the release
-  on GitHub; `release.yml` signs, notarizes, staples, attaches the zip and
-  stamps the Homebrew cask into the tap. The in-app updater depends on the asset
-  name and the notarization — `docs/releasing.md` has the details.
+  on GitHub; `release.yml` signs, notarizes and staples both the zip and the
+  disk image, attaches the two of them, and stamps the Homebrew cask into the
+  tap. The in-app updater depends on the zip's asset name and the notarization —
+  `docs/releasing.md` has the details.
 - **The cask is `homebrew/tideline.rb`, and it is generated into the tap, not
   edited there.** A change to it lands on the next release. `depends_on macos:`
   has to move whenever `LSMinimumSystemVersion` does, and the `zap` paths

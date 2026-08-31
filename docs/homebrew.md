@@ -4,6 +4,12 @@
 zip the release page hands out, and puts `Tideline.app` in `/Applications`,
 which is where the app expects to live.
 
+A release attaches a disk image as well, and the cask deliberately ignores it.
+The image exists so a person has something to drag; Homebrew has no use for a
+window with an arrow drawn on it, and a zip is one less thing to mount. The zip
+is also what the in-app updater fetches, so it has to keep existing regardless —
+see [Releasing](./releasing.md).
+
 The cask is [`homebrew/tideline.rb`](../homebrew/tideline.rb), and this repo is
 where it is edited. [`homebrew/publish-cask.sh`](../homebrew/publish-cask.sh)
 stamps it with a version and a checksum and copies it into the tap, so the tap
