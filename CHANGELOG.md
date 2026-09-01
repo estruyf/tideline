@@ -5,6 +5,95 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-09-01
+
+### Changed
+
+- **Routing rules is a list you can read.** The pane's whole model is that rules
+  are tried top down and the first match wins, and none of that was visible: no
+  numbers, no order to change, and a subtitle that said "No tests yet — nothing
+  will match" on a rule that had one. Every row now carries its number, the rule
+  in one line of words — `name contains invoice, or download URL contains
+  stripe.com` — the folder it sends things to, and how many files that is right
+  now. Rows drag, because the order is the decision.
+
+  The count is what the rule would actually **get**, not what its conditions
+  describe: a file a rule above it already claimed belongs to that rule, and a
+  list of overlapping rules all reporting the same file would be worse than no
+  count at all. Which is also how a rule that can never fire now says so —
+  *Never fires — Invoices catches all 15 of these first*, with a button that
+  moves it above the rule taking them.
+
+- **A rule is edited in a form, not in the list.** The editor used to be spliced
+  into the same list as *Add a rule*, four lines apart and at the same indent.
+  It is now a form under the row it belongs to: the destination named as a
+  destination and spelled out as a path, `~/Downloads/Invoices/ · exists, 41
+  items`, so it is never a wide empty box called "Folder name". Below it, the
+  files the rule is matching right this second, each with the condition that
+  claimed it — which is how a pattern that catches too much gets noticed before
+  it files anything.
+
+- **Conditions are said in words.** A condition is now a field, an operator and
+  what to look for — *Name · contains · invoice* — instead of a pattern you had
+  to know the star grammar to write. Nothing changed underneath: `contains`
+  still saves `*invoice*`, and *matches pattern* is there for anything the four
+  operators cannot say. **Aa** is a labelled *Match case* checkbox, since a
+  glyph that says nothing aloud said nothing on screen either.
+
+- **Catching up is per rule.** It used to be one disabled button at the bottom
+  of the pane, as far from any rule as it could be. It is now on the rule, with
+  the number attached — *12 filed by date — catch up…* — because that is the
+  rule the number belongs to.
+
+- **The settings panes are the theme's cards now, not the system's.** Schedule,
+  Filing, Type folders, Clearing, Activity log and General were the last panes
+  built out of `Form { Section }`, and a grouped `Section` cannot be handed a
+  background — so while Overview, Reclaim space and Routing rules sat in
+  `#202736`, those six sat in whatever grey macOS drew, on the theme's own
+  ground. They are built out of `ListPanel` now, like every other pane, with
+  `SettingsToggle` and `SettingsField` for the rows so a switch and a popup
+  describe themselves the same way. Nothing moved and nothing was renamed; the
+  surfaces just belong to the app.
+
+- **Text fields are the theme's, everywhere in the window.** `.roundedBorder`
+  draws the *system* control background, which was one of the last surfaces the
+  palette never reached — every field sat in a grey the theme does not own, on
+  cards it does. `themedField()` is the recipe the Move out search box had
+  already built by hand, named so the next field does not have to build it
+  again: the pane colour recessed into the card, the theme's own hairline, and
+  the accent while it has the keyboard. Every field in Filing, Type folders,
+  Routing rules and Move out now uses it.
+
+### Added
+
+- **A rule can need every condition to agree.** `Catch a file when [any|all] of
+  these is true`. `any` is what a rule has always meant and stays the default;
+  `all` says "an invoice **and** from Stripe" in one rule instead of splitting
+  it into two that cannot express it either. A condition nobody filled in is
+  dropped before the question is asked, so a half-written row never switches a
+  rule off. Both engines implement it, and `fixtures/sweep-cases.json` holds the
+  cases.
+
+- **A rule can have a name of its own,** separate from the folder it files into.
+  Two rules can legitimately share a folder — receipts from Stripe and receipts
+  from the bank — and a list showing both as `Receipts` cannot be reordered with
+  any confidence. A rule without one is still known by its folder.
+
+### Fixed
+
+- **A rule's form no longer moves under you while you fill it in.** Counting was
+  triggered by any change to the rules at all, so typing a rule's name walked
+  the root and every dated folder on a beat behind every letter, and the preview
+  list — and everything below it — took a fresh height each time. It now watches
+  what a count actually depends on: which rules are on, in what order, and what
+  each of them asks. Names are not part of that.
+
+  Clicking into **Rule name** was enough on its own: taking focus writes the
+  field's value straight back, so a rule that had only ever been known by its
+  folder gained a title of the same words, which counted as a change to the
+  rules. It doesn't any more. The destination line still follows the folder
+  being typed — it asks about that one folder rather than riding along with the
+  count.
 ## [1.12.1] - 2026-08-31
 
 ### Added

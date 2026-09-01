@@ -127,9 +127,10 @@ watching and the reviews instead.
 - **Routing rules**, in the engine. `tideline-core::rule` matches a file by its
   name or by where it was downloaded from — read out of the `Zone.Identifier`
   stream that browsers write beside a download — and the shared fixtures cover
-  the lot. The Tauri settings file carries `rules` and a sweep honours them.
-  What is missing is the window: there is no way to write one yet, so a rule has
-  to arrive in the settings file from somewhere else.
+  the lot, `"match": "any"` and `"match": "all"` included. The Tauri settings
+  file carries `rules` and a sweep honours them. What is missing is the window:
+  there is no way to write one yet, so a rule has to arrive in the settings file
+  from somewhere else.
 
 ## What is not
 
@@ -153,8 +154,13 @@ In rough order of how much each is worth doing next:
    CryptoKit.
 6. **Large files** and **Catch Up** — `Weigher.swift`, `Regrouper.swift`.
 7. **A window for routing rules.** The engine matches them already; this is the
-   editor — a folder name, a list of conditions, and the case switch. Worth
-   doing before anything below it, since the rules are otherwise unreachable.
+   editor. The macOS pane is the shape to copy: a numbered, draggable list where
+   each row says what the rule catches and how many files that is, and a form
+   under the open row with the destination, the any/all popup, and a condition
+   as a field, an operator and what to look for. The operators are presentation
+   over the same glob — `contains` is `*value*` — so nothing there needs an
+   engine change. Worth doing before anything below it, since the rules are
+   otherwise unreachable.
 8. **Move out** — `Collector.swift`. Finding across the folders the app made,
    the places-and-templates the destinations need, and putting a whole batch
    back. It leans on the reviews' shape, none of which is ported yet, so it

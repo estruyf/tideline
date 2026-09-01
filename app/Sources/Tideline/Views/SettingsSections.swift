@@ -11,36 +11,38 @@ struct ScheduleSection: View {
     }
 
     var body: some View {
-        Toggle(isOn: $settings.watchFolder) {
-            Text("As soon as the folder changes")
-            Text("Waits a few seconds for downloads to finish arriving, then files what is due.")
-        }
+        SettingsToggle(
+            "As soon as the folder changes",
+            "Waits a few seconds for downloads to finish arriving, then files what is due.",
+            isOn: $settings.watchFolder
+        )
 
-        VStack(alignment: .leading, spacing: 0) {
-            Toggle(isOn: $settings.dailyRunEnabled.animation(.easeInOut(duration: 0.18))) {
-                Text("Once a day")
-                Text("Files yesterday's downloads even on a morning where nothing new arrives.")
+        Hairline()
+
+        SettingsToggle(
+            "Once a day",
+            "Files yesterday's downloads even on a morning where nothing new arrives.",
+            isOn: $settings.dailyRunEnabled.animation(.easeInOut(duration: 0.18))
+        )
+
+        if settings.dailyRunEnabled {
+            Hairline()
+
+            SettingsField("Run at") {
+                DatePicker("", selection: runTime, displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.stepperField)
+                    .labelsHidden()
+                    .fixedSize()
             }
-
-            if settings.dailyRunEnabled {
-                Divider()
-                    .padding(.vertical, 10)
-
-                LabeledContent {
-                    DatePicker("", selection: runTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.stepperField)
-                        .labelsHidden()
-                        .fixedSize()
-                } label: {
-                    Text("Run at")
-                }
-            }
         }
 
-        Toggle(isOn: $settings.runOnLaunch) {
-            Text("When the app starts")
-            Text("Catches up after the Mac was shut down at the scheduled time.")
-        }
+        Hairline()
+
+        SettingsToggle(
+            "When the app starts",
+            "Catches up after the Mac was shut down at the scheduled time.",
+            isOn: $settings.runOnLaunch
+        )
     }
 }
 
@@ -51,52 +53,71 @@ struct RulesSection: View {
     @ObservedObject private var controller = Controller.shared
 
     var body: some View {
-        LabeledContent("Folder") {
+        SettingsField("Folder") {
             HStack(spacing: 8) {
                 Text(shortPath)
                     .lineLimit(1)
                     .truncationMode(.head)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                 Button("Choose…") { chooseFolder() }
             }
         }
 
-        Picker(selection: $settings.keepRecentDays) {
-            Text("Today only").tag(0)
-            Text("Today and yesterday").tag(1)
-            Text("The last 3 days").tag(2)
-            Text("The last week").tag(6)
-        } label: {
-            Text("Leave loose in the root")
-            Text("Anything older than this window moves into a dated folder.")
-        }
+        Hairline()
 
-        Picker(selection: $settings.folderFormat) {
-            ForEach(FolderFormat.allCases) { format in
-                Text("\(format.label) — \(format.example)").tag(format)
+        SettingsField(
+            "Leave loose in the root",
+            "Anything older than this window moves into a dated folder."
+        ) {
+            Picker("", selection: $settings.keepRecentDays) {
+                Text("Today only").tag(0)
+                Text("Today and yesterday").tag(1)
+                Text("The last 3 days").tag(2)
+                Text("The last week").tag(6)
             }
-        } label: {
-            Text("Folder name")
+            .labelsHidden()
+            .fixedSize()
         }
 
-        Picker(selection: $settings.dateBasis) {
-            ForEach(DateBasis.allCases) { basis in
-                Text(basis.label).tag(basis)
+        Hairline()
+
+        SettingsField("Folder name") {
+            Picker("", selection: $settings.folderFormat) {
+                ForEach(FolderFormat.allCases) { format in
+                    Text("\(format.label) — \(format.example)").tag(format)
+                }
             }
-        } label: {
-            Text("Sort by")
-            Text(settings.dateBasis.explanation)
+            .labelsHidden()
+            .fixedSize()
         }
 
-        Toggle(isOn: $settings.includeFolders) {
-            Text("File folders too")
-            Text("Unzipped archives and downloaded folders move by their own date.")
+        Hairline()
+
+        SettingsField("Sort by", settings.dateBasis.explanation) {
+            Picker("", selection: $settings.dateBasis) {
+                ForEach(DateBasis.allCases) { basis in
+                    Text(basis.label).tag(basis)
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
         }
 
-        Toggle(isOn: $settings.dryRun) {
-            Text("Preview mode")
-            Text("Logs what would move without touching a single file.")
-        }
+        Hairline()
+
+        SettingsToggle(
+            "File folders too",
+            "Unzipped archives and downloaded folders move by their own date.",
+            isOn: $settings.includeFolders
+        )
+
+        Hairline()
+
+        SettingsToggle(
+            "Preview mode",
+            "Logs what would move without touching a single file.",
+            isOn: $settings.dryRun
+        )
     }
 
     private var shortPath: String {
@@ -126,32 +147,47 @@ struct CleanupSection: View {
     @ObservedObject private var controller = Controller.shared
 
     var body: some View {
-        Picker(selection: $settings.cleanupAfterDays.animation(.easeInOut(duration: 0.18))) {
-            Text("Never").tag(0)
-            Text("Older than a month").tag(30)
-            Text("Older than three months").tag(90)
-            Text("Older than six months").tag(180)
-            Text("Older than a year").tag(365)
-        } label: {
-            Text("Clear dated folders")
-            Text("Measured from the end of the day or month the folder is named for.")
+        SettingsField(
+            "Clear dated folders",
+            "Measured from the end of the day or month the folder is named for."
+        ) {
+            Picker("", selection: $settings.cleanupAfterDays.animation(.easeInOut(duration: 0.18))) {
+                Text("Never").tag(0)
+                Text("Older than a month").tag(30)
+                Text("Older than three months").tag(90)
+                Text("Older than six months").tag(180)
+                Text("Older than a year").tag(365)
+            }
+            .labelsHidden()
+            .fixedSize()
         }
 
         if settings.cleanupAfterDays > 0 {
-            Picker(selection: $settings.cleanupKeepNewest) {
-                Text("The newest folder").tag(1)
-                Text("The newest 3 folders").tag(3)
-                Text("The newest 5 folders").tag(5)
-                Text("The newest 10 folders").tag(10)
-            } label: {
-                Text("Always keep")
-                Text("Held back whatever their age, so a quiet month never empties the folder.")
+            Hairline()
+
+            SettingsField(
+                "Always keep",
+                "Held back whatever their age, so a quiet month never empties the folder."
+            ) {
+                Picker("", selection: $settings.cleanupKeepNewest) {
+                    Text("The newest folder").tag(1)
+                    Text("The newest 3 folders").tag(3)
+                    Text("The newest 5 folders").tag(5)
+                    Text("The newest 10 folders").tag(10)
+                }
+                .labelsHidden()
+                .fixedSize()
             }
 
-            Toggle(isOn: $settings.cleanupOnSchedule) {
-                Text("Clear on the daily sweep")
-                Text("Off by default. Left off, folders only go when you review them below.")
-            }
+            Hairline()
+
+            SettingsToggle(
+                "Clear on the daily sweep",
+                "Off by default. Left off, folders only go when you review them below.",
+                isOn: $settings.cleanupOnSchedule
+            )
+
+            Hairline()
 
             HStack {
                 Button("Review Old Folders…") {
@@ -161,9 +197,10 @@ struct CleanupSection: View {
                 if settings.cleanupOnSchedule {
                     Label("Runs unattended", systemImage: "clock.arrow.circlepath")
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.muted)
                 }
             }
+            .settingsRow()
         }
     }
 }
@@ -187,41 +224,41 @@ struct TypeFolderSection: View {
 
     var body: some View {
         ForEach(settings.typeRules) { rule in
-            VStack(alignment: .leading, spacing: 0) {
-                row(for: rule)
+            row(for: rule)
+                .settingsRow()
 
-                if editing == rule.id {
-                    Divider()
-                        .padding(.vertical, 10)
-                    editor(for: rule)
-                }
+            if editing == rule.id {
+                Hairline()
+                editor(for: rule)
+                    .padding(13)
+                    .background(Theme.pane)
             }
+
+            Hairline()
         }
 
         if let clash = conflictNote {
             Label(clash, systemImage: "exclamationmark.triangle")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.muted)
+                .settingsRow()
+
+            Hairline()
         }
 
         addRow
+            .settingsRow()
+
+        Hairline()
 
         // Switching a rule on only steers what arrives next. This is how you
         // bring the files that are already filed by date into line with it.
-        Divider()
-
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Files already filed by date")
-                Text(anyRuleEnabled
-                     ? "Pull what these folders claim out of the dated folders."
-                     : "Switch a folder on above to have something to catch up on.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 12)
-
+        SettingsField(
+            "Files already filed by date",
+            anyRuleEnabled
+                ? "Pull what these folders claim out of the dated folders."
+                : "Switch a folder on above to have something to catch up on."
+        ) {
             Button("Catch Up…") { controller.reviewingRegroup = true }
                 .disabled(!anyRuleEnabled)
         }
@@ -236,11 +273,14 @@ struct TypeFolderSection: View {
     private func row(for rule: TypeRule) -> some View {
         HStack(spacing: 8) {
             Toggle(isOn: binding(for: rule).isEnabled) {
-                Text(rule.name)
-                Text(rule.extensions.isEmpty
-                     ? "No extensions yet — nothing will match"
-                     : rule.displayExtensions)
+                SettingsLabel(
+                    title: rule.name,
+                    explanation: rule.extensions.isEmpty
+                        ? "No extensions yet — nothing will match"
+                        : rule.displayExtensions
+                )
             }
+            .toggleStyle(.switch)
 
             Spacer(minLength: 12)
 
@@ -261,16 +301,18 @@ struct TypeFolderSection: View {
             LabeledContent("Folder name") {
                 TextField("Folder name", text: $nameDraft, prompt: Text("What the folder is called"))
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .themedField()
                     .onSubmit { commit(rule) }
             }
+            .labeledContentStyle(.settings)
 
             LabeledContent("Extensions") {
                 TextField("Extensions", text: $extensionsDraft, prompt: Text("Extensions to match, separated by commas"))
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .themedField()
                     .onSubmit { commit(rule) }
             }
+            .labeledContentStyle(.settings)
 
             if !TypeRule.isValidFolderName(nameDraft) {
                 Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
@@ -305,16 +347,18 @@ struct TypeFolderSection: View {
                 LabeledContent("Folder name") {
                     TextField("Folder name", text: $newName, prompt: Text("What the folder is called"))
                         .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
+                        .themedField()
                         .onSubmit(add)
                 }
+                .labeledContentStyle(.settings)
 
                 LabeledContent("Extensions") {
                     TextField("Extensions", text: $newExtensions, prompt: Text("Extensions to match, separated by commas"))
                         .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
+                        .themedField()
                         .onSubmit(add)
                 }
+                .labeledContentStyle(.settings)
 
                 HStack {
                     Button("Cancel") { cancelAdding() }
@@ -426,324 +470,6 @@ struct TypeFolderSection: View {
     }
 }
 
-// MARK: - Routing rules
-
-/// Folders that claim files by what they are called or where they came from.
-/// Tried before the type folders, and like them they decide *where* a file goes
-/// and never when. Nothing ships switched on: a rule exists because someone
-/// wrote it.
-struct RoutingRuleSection: View {
-    @ObservedObject private var settings = Settings.shared
-    @ObservedObject private var controller = Controller.shared
-
-    /// The rule whose editor is open, by id. Only one at a time.
-    @State private var editing: String?
-    @State private var nameDraft = ""
-    @State private var testsDraft: [RuleTest] = []
-
-    @State private var newName = ""
-    @State private var addingRule = false
-
-    var body: some View {
-        ForEach(settings.rules) { rule in
-            VStack(alignment: .leading, spacing: 0) {
-                row(for: rule)
-
-                if editing == rule.id {
-                    Divider()
-                        .padding(.vertical, 10)
-                    editor(for: rule)
-                }
-            }
-        }
-
-        if settings.rules.isEmpty, !addingRule {
-            Text("No rules yet. A rule is a folder and the tests that send files to it — an invoice is a PDF like every other PDF, so what marks it out is its name or the site it came from.")
-                .explanation()
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-
-        if let clash = duplicateNote {
-            Label(clash, systemImage: "exclamationmark.triangle")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-        }
-
-        addRow
-
-        // A rule only steers what arrives next. This is what reaches back for
-        // the invoices already sitting in the dated folders.
-        Divider()
-
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Files already filed by date")
-                Text(anyRuleEnabled
-                     ? "Pull what these rules claim out of the dated folders."
-                     : "Write a rule above to have something to catch up on.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 12)
-
-            Button("Catch Up…") { controller.reviewingRegroup = true }
-                .disabled(!anyRuleEnabled)
-        }
-    }
-
-    private var anyRuleEnabled: Bool {
-        settings.rules.contains { rule in
-            rule.isEnabled && rule.tests.contains { !$0.pattern.trimmingCharacters(in: .whitespaces).isEmpty }
-        }
-    }
-
-    // MARK: Rows
-
-    private func row(for rule: Rule) -> some View {
-        HStack(spacing: 8) {
-            Toggle(isOn: binding(for: rule).isEnabled) {
-                Text(rule.name)
-                Text(summary(for: rule))
-            }
-
-            Spacer(minLength: 12)
-
-            Button {
-                toggleEditor(for: rule)
-            } label: {
-                Image(systemName: editing == rule.id ? "chevron.up" : "slider.horizontal.3")
-            }
-            .buttonStyle(.borderless)
-            .help(editing == rule.id ? "Close" : "Edit \(rule.name)")
-            .accessibilityLabel(editing == rule.id ? "Close" : "Edit \(rule.name)")
-        }
-    }
-
-    /// What the rule looks for, in the order it looks. Any one of them is enough.
-    private func summary(for rule: Rule) -> String {
-        let described = rule.tests.compactMap { test -> String? in
-            let pattern = test.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !pattern.isEmpty else { return nil }
-            return "\(test.field.label) \(pattern)"
-        }
-        return described.isEmpty
-            ? "No tests yet — nothing will match"
-            : described.joined(separator: "   or   ")
-    }
-
-    // MARK: Editing
-
-    @ViewBuilder
-    private func editor(for rule: Rule) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            LabeledContent("Folder name") {
-                TextField("Folder name", text: $nameDraft, prompt: Text("What the folder is called"))
-                    .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit { commit(rule) }
-            }
-
-            if !Rule.isValidFolderName(nameDraft) {
-                Text("Pick a name that is not empty, has no slashes, and does not read as a date.")
-                    .explanation()
-                    .foregroundStyle(Theme.danger)
-            }
-
-            Text("Matches when any of these is true")
-                .explanation()
-                .foregroundStyle(.secondary)
-
-            ForEach($testsDraft) { $test in
-                testRow($test)
-            }
-
-            Button {
-                testsDraft.append(RuleTest())
-            } label: {
-                Label("Add a test", systemImage: "plus")
-            }
-            .buttonStyle(.borderless)
-            .controlSize(.small)
-
-            HStack {
-                Button("Remove", role: .destructive) { remove(rule) }
-                Spacer()
-                Button("Done") { commit(rule) }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!Rule.isValidFolderName(nameDraft))
-            }
-            .controlSize(.small)
-        }
-        .padding(.bottom, 2)
-    }
-
-    private func testRow(_ test: Binding<RuleTest>) -> some View {
-        HStack(spacing: 8) {
-            Picker("Looks at", selection: test.field) {
-                ForEach(RuleField.allCases) { field in
-                    Text(field.label).tag(field)
-                }
-            }
-            .labelsHidden()
-            .frame(width: 140)
-
-            TextField(
-                "Pattern",
-                text: test.pattern,
-                prompt: Text(test.wrappedValue.field.placeholder)
-            )
-            .labelsHidden()
-            .textFieldStyle(.roundedBorder)
-
-            // Drawn rather than a `.toggleStyle(.button)`, which fills itself
-            // with the *system* accent when it is on — the one blue the palette
-            // does not own. Accent means the app is about to touch something,
-            // and a case switch qualifies.
-            Button {
-                test.matchCase.wrappedValue.toggle()
-            } label: {
-                Text("Aa")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(test.wrappedValue.matchCase ? Theme.onAccent : Theme.muted)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3)
-                    .background(
-                        test.wrappedValue.matchCase ? Theme.accent : Theme.hover,
-                        in: RoundedRectangle(cornerRadius: 5)
-                    )
-            }
-            .buttonStyle(.plain)
-            .help("Match the pattern exactly, upper and lower case included")
-            // "Aa" is the whole of the visible label, and it says nothing aloud.
-            .accessibilityLabel("Match case")
-            .accessibilityValue(test.wrappedValue.matchCase ? "on" : "off")
-
-            Button {
-                testsDraft.removeAll { $0.id == test.wrappedValue.id }
-            } label: {
-                Image(systemName: "minus.circle")
-            }
-            .buttonStyle(.borderless)
-            .help("Remove this test")
-            .accessibilityLabel("Remove this test")
-        }
-        .controlSize(.small)
-    }
-
-    /// Rules live in an array on `Settings`, so a row edits through its id
-    /// rather than an index that a removal could shift out from under it.
-    private func binding(for rule: Rule) -> Binding<Rule> {
-        Binding(
-            get: { settings.rules.first { $0.id == rule.id } ?? rule },
-            set: { updated in
-                guard let index = settings.rules.firstIndex(where: { $0.id == rule.id }) else { return }
-                settings.rules[index] = updated
-            }
-        )
-    }
-
-    private func toggleEditor(for rule: Rule) {
-        if editing == rule.id {
-            commit(rule)
-            return
-        }
-        addingRule = false
-        editing = rule.id
-        nameDraft = rule.name
-        // A rule with nothing to ask about opens with an empty test rather than
-        // an empty list, so there is somewhere to type.
-        testsDraft = rule.tests.isEmpty ? [RuleTest()] : rule.tests
-    }
-
-    private func commit(_ rule: Rule) {
-        let name = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard Rule.isValidFolderName(name) else { return }
-
-        var updated = rule
-        updated.name = name
-        // A test nobody filled in is not a test. Keeping it would claim nothing
-        // but would read as though the rule were doing more than it is.
-        updated.tests = testsDraft.filter {
-            !$0.pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-        binding(for: rule).wrappedValue = updated
-
-        editing = nil
-    }
-
-    private func remove(_ rule: Rule) {
-        settings.rules.removeAll { $0.id == rule.id }
-        editing = nil
-    }
-
-    // MARK: Adding
-
-    @ViewBuilder
-    private var addRow: some View {
-        if addingRule {
-            VStack(alignment: .leading, spacing: 10) {
-                LabeledContent("Folder name") {
-                    TextField("Folder name", text: $newName, prompt: Text("Invoices"))
-                        .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit(add)
-                }
-
-                HStack {
-                    Button("Cancel") { cancelAdding() }
-                    Spacer()
-                    Button("Add Rule", action: add)
-                        .buttonStyle(.borderedProminent)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(!Rule.isValidFolderName(newName))
-                }
-                .controlSize(.small)
-            }
-        } else {
-            Button {
-                editing = nil
-                addingRule = true
-            } label: {
-                Label("Add a rule", systemImage: "plus")
-            }
-            .buttonStyle(.borderless)
-        }
-    }
-
-    /// A new rule arrives with one empty test and its editor open: the tests are
-    /// the whole of it, and asking for a name and then hiding them would be a
-    /// form with the interesting half missing.
-    private func add() {
-        let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard Rule.isValidFolderName(name) else { return }
-
-        let rule = Rule(name: name, isEnabled: true, tests: [])
-        settings.rules.append(rule)
-        cancelAdding()
-        toggleEditor(for: rule)
-    }
-
-    private func cancelAdding() {
-        addingRule = false
-        newName = ""
-    }
-
-    // MARK: Conflicts
-
-    /// Two rules pointing at one folder is not an error — they simply share it,
-    /// and the one higher up claims a file first — but it is worth saying.
-    private var duplicateNote: String? {
-        let clashing = RuleRouter.duplicateNames(in: settings.rules)
-        guard !clashing.isEmpty else { return nil }
-        let list = clashing.prefix(3).joined(separator: ", ")
-        let more = clashing.count > 3 ? " and \(clashing.count - 3) more" : ""
-        return "\(list)\(more) is named by more than one rule. They share the folder; the rule higher up claims a file first."
-    }
-}
-
 // MARK: - Skip list
 
 /// The one thing filing cannot be undone with a single gesture in Finder, so
@@ -754,24 +480,15 @@ struct RestoreSection: View {
     @ObservedObject private var controller = Controller.shared
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Undo filing")
-                    .font(.callout)
-                Text(settings.dryRun
-                     ? "Preview mode — the review will show what would come back and move nothing."
-                     : "Lists everything filed, grouped by the folder it would come out of. Nothing moves until you say so.")
-                    .explanation()
-                    .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 12)
-
+        SettingsField(
+            "Undo filing",
+            settings.dryRun
+                ? "Preview mode — the review will show what would come back and move nothing."
+                : "Lists everything filed, grouped by the folder it would come out of. Nothing moves until you say so."
+        ) {
             Button("Put Everything Back…") { controller.reviewingRestore = true }
                 .disabled(controller.restoring)
         }
-        .padding(.vertical, 2)
     }
 }
 
@@ -783,7 +500,7 @@ struct SkipListSection: View {
         ForEach(Array(settings.skipNames.enumerated()), id: \.offset) { index, name in
             HStack {
                 Image(systemName: name.contains("*") ? "asterisk" : "folder")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                     .frame(width: 16)
                 Text(name)
                 Spacer()
@@ -794,17 +511,21 @@ struct SkipListSection: View {
                 }
                 .buttonStyle(.borderless)
                 .help("Stop skipping \(name)")
-                    .accessibilityLabel("Stop skipping \(name)")
+                .accessibilityLabel("Stop skipping \(name)")
             }
+            .settingsRow()
+
+            Hairline()
         }
 
         HStack {
             TextField("Name or pattern", text: $draft)
-                .textFieldStyle(.roundedBorder)
+                .themedField()
                 .onSubmit(add)
             Button("Add", action: add)
                 .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
         }
+        .settingsRow()
     }
 
     private func add() {
@@ -823,7 +544,8 @@ struct ActivitySection: View {
     var body: some View {
         if controller.history.isEmpty {
             Text("Nothing has been filed yet.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.muted)
+                .settingsRow()
         } else {
             ForEach(controller.history.prefix(12)) { record in
                 HStack(spacing: 10) {
@@ -848,22 +570,25 @@ struct ActivitySection: View {
                     Spacer(minLength: 12)
                     Text(record.folder)
                         .font(.callout.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.muted)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
                         .background(Theme.hover, in: Capsule())
                 }
-                .padding(.vertical, 1)
+                .settingsRow()
+
+                Hairline()
             }
 
             HStack {
                 Text(tally)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                 Spacer()
                 Button("Clear List") { controller.clearHistory() }
                     .buttonStyle(.borderless)
             }
+            .settingsRow()
         }
     }
 
@@ -916,7 +641,7 @@ struct AboutSection: View {
                     .font(.body.weight(.medium))
                 Text(AppInfo.versionLine)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                     .textSelection(.enabled)
             }
 
@@ -925,7 +650,9 @@ struct AboutSection: View {
             Link("Send Feedback", destination: AppInfo.newIssue)
                 .linkButton()
         }
-        .padding(.vertical, 2)
+        .settingsRow()
+
+        Hairline()
 
         LabeledContent {
             Link(AppInfo.repository.absoluteString.replacingOccurrences(of: "https://", with: ""),
@@ -933,17 +660,27 @@ struct AboutSection: View {
         } label: {
             Text("Source code")
         }
+        .labeledContentStyle(.settings)
+        .settingsRow()
+
+        Hairline()
 
         LabeledContent {
             Link("Open on GitHub", destination: AppInfo.issues)
         } label: {
             Text("Issues and ideas")
         }
+        .labeledContentStyle(.settings)
+        .settingsRow()
+
+        Hairline()
 
         LabeledContent {
             Link(AppInfo.author, destination: AppInfo.authorProfile)
         } label: {
             Text("Made by")
         }
+        .labeledContentStyle(.settings)
+        .settingsRow()
     }
 }

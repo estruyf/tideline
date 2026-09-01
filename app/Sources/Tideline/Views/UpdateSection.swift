@@ -10,28 +10,31 @@ struct UpdateSection: View {
     @ObservedObject private var updater = Updater.shared
 
     var body: some View {
-        LabeledContent {
+        SettingsField("This copy", "Version \(AppInfo.version)") {
             HStack(spacing: 10) {
                 Text(checkedText)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.muted)
                 Button("Check Now") { updater.check(userInitiated: true) }
                     .disabled(updater.state.isBusy)
             }
-        } label: {
-            Text("This copy")
-            Text("Version \(AppInfo.version)")
         }
 
-        Toggle(isOn: $settings.automaticUpdateChecks) {
-            Text("Check for updates automatically")
-            Text("Once a day, over the GitHub releases page. Nothing is ever downloaded or installed without you saying so.")
-        }
+        Hairline()
 
-        Toggle(isOn: $settings.notifyOnUpdate) {
-            Text("Notify me when a new version is out")
-            Text("A notice in Notification Centre, once per version, and only for a check that ran on its own — asking here always answers in the window instead. It appears where you have already allowed Tideline to notify you; finding an update is not a reason to ask.")
-        }
+        SettingsToggle(
+            "Check for updates automatically",
+            "Once a day, over the GitHub releases page. Nothing is ever downloaded or installed without you saying so.",
+            isOn: $settings.automaticUpdateChecks
+        )
+
+        Hairline()
+
+        SettingsToggle(
+            "Notify me when a new version is out",
+            "A notice in Notification Centre, once per version, and only for a check that ran on its own — asking here always answers in the window instead. It appears where you have already allowed Tideline to notify you; finding an update is not a reason to ask.",
+            isOn: $settings.notifyOnUpdate
+        )
         // A notice can only come from a check, so the switch means nothing
         // without one. Turning it on is the moment to ask for permission;
         // finding an update is not.
@@ -41,13 +44,33 @@ struct UpdateSection: View {
         }
 
         if !updater.canSelfUpdate {
+            Hairline()
+
             Label("This build is not running from an installed app, so it can't replace itself.",
                   systemImage: "info.circle")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.muted)
+                .settingsRow()
         }
 
-        UpdateStatusView(compact: false)
+        // `.idle` with nothing waiting draws nothing at all, and a divider
+        // above nothing is a line across the bottom of the card.
+        if hasStatus {
+            Hairline()
+
+            UpdateStatusView(compact: false)
+                .settingsRow()
+        }
+    }
+
+    /// Whether `UpdateStatusView` has anything to say, in the states it says it
+    /// in. Kept beside the switch it mirrors.
+    private var hasStatus: Bool {
+        switch updater.state {
+        case .idle: return updater.nag != nil
+        case .checking, .upToDate, .available, .downloading, .installing, .restarting, .failed:
+            return true
+        }
     }
 
     private var checkedText: String {

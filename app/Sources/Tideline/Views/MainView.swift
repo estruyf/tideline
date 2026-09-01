@@ -1069,19 +1069,14 @@ extension ScanCard where Accessory == EmptyView {
 
 private struct ScheduleTab: View {
     var body: some View {
-        Form {
-            Section {
+        SettingsPane {
+            SettingsGroup(
+                title: "When it runs",
+                footer: "A sweep is cheap — nothing moves unless a file is older than the window set under Filing."
+            ) {
                 ScheduleSection()
-            } header: {
-                Text("When it runs")
-            } footer: {
-                Text("A sweep is cheap — nothing moves unless a file is older than the window set under Filing.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .settingsPane()
     }
 }
 
@@ -1089,36 +1084,25 @@ private struct ScheduleTab: View {
 
 private struct FilingTab: View {
     var body: some View {
-        Form {
-            Section {
+        SettingsPane {
+            SettingsGroup(title: "What gets filed") {
                 RulesSection()
-            } header: {
-                Text("What gets filed")
             }
 
-            Section {
+            SettingsGroup(
+                title: "Never touch these",
+                footer: "Exact names, or patterns such as *.dmg. Partial downloads, hidden files and the dated folders themselves are always left alone."
+            ) {
                 SkipListSection()
-            } header: {
-                Text("Never touch these")
-            } footer: {
-                Text("Exact names, or patterns such as *.dmg. Partial downloads, hidden files and the dated folders themselves are always left alone.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Section {
+            SettingsGroup(
+                title: "Putting it back",
+                footer: "Everything Tideline filed goes back into the root, and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo it."
+            ) {
                 RestoreSection()
-            } header: {
-                Text("Putting it back")
-            } footer: {
-                Text("Everything Tideline filed goes back into the root, and the folders it leaves empty go to the Trash. Filing switches off afterwards, so the next sweep does not undo it.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .settingsPane()
     }
 }
 
@@ -1131,40 +1115,21 @@ private struct CollectTab: View {
 // MARK: - Routing rules
 
 private struct RoutingRuleTab: View {
-    var body: some View {
-        Form {
-            Section {
-                RoutingRuleSection()
-            } header: {
-                Text("Routing rules")
-            } footer: {
-                Text("A folder at the root that takes files matching what you describe, instead of the dated folder. A rule looks at the name, or at the site the file was downloaded from — which is how an invoice gets found when it is a PDF like every other PDF. Rules are tried before the type folders, top down, and the first one that matches wins. Files still wait out the window set under Filing.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-        .settingsPane()
-    }
+    var body: some View { RoutingRulePane() }
 }
 
 // MARK: - Type folders
 
 private struct TypeFolderTab: View {
     var body: some View {
-        Form {
-            Section {
+        SettingsPane {
+            SettingsGroup(
+                title: "Type folders",
+                footer: "A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window set under Filing — a type folder decides where something goes, not when. Everything here starts switched off."
+            ) {
                 TypeFolderSection()
-            } header: {
-                Text("Type folders")
-            } footer: {
-                Text("A folder at the root that takes everything with one of its extensions, instead of the dated folder. Files still wait out the window set under Filing — a type folder decides where something goes, not when. Everything here starts switched off.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .settingsPane()
     }
 }
 
@@ -1172,19 +1137,14 @@ private struct TypeFolderTab: View {
 
 private struct ClearingTab: View {
     var body: some View {
-        Form {
-            Section {
+        SettingsPane {
+            SettingsGroup(
+                title: "Clearing out",
+                footer: "Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched. What a clear-out would take back is listed under Reclaim space."
+            ) {
                 CleanupSection()
-            } header: {
-                Text("Clearing out")
-            } footer: {
-                Text("Only the dated folders Tideline made itself are ever cleared, and they go to the Trash. Loose files and folders you made yourself are never touched. What a clear-out would take back is listed under Reclaim space.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .settingsPane()
     }
 }
 
@@ -1192,19 +1152,14 @@ private struct ClearingTab: View {
 
 private struct ActivityTab: View {
     var body: some View {
-        Form {
-            Section {
+        SettingsPane {
+            SettingsGroup(
+                title: "Recent activity",
+                footer: "The last few hundred things Tideline moved, cleared or renamed. The full record, sweep by sweep, is in the log file under General."
+            ) {
                 ActivitySection()
-            } header: {
-                Text("Recent activity")
-            } footer: {
-                Text("The last few hundred things Tideline moved, cleared or renamed. The full record, sweep by sweep, is in the log file under General.")
-                    .explanation()
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .settingsPane()
     }
 }
 
@@ -1217,17 +1172,25 @@ private struct GeneralTab: View {
     @Binding var showUninstall: Bool
 
     var body: some View {
-        Form {
-            Section {
-                Toggle("Notify me when files are filed", isOn: $settings.notifyOnMove)
-                    .onChange(of: settings.notifyOnMove) { _, newValue in
-                        if newValue { controller.requestNotificationPermission() }
-                    }
-
-                Toggle(isOn: $settings.showSizeInMenuBar) {
-                    Text("Show the folder size in the menu bar")
-                    Text("Next to the icon, rather than only inside the menu.")
+        SettingsPane {
+            SettingsGroup(title: "Other") {
+                SettingsToggle(
+                    "Notify me when files are filed",
+                    isOn: $settings.notifyOnMove
+                )
+                .onChange(of: settings.notifyOnMove) { _, newValue in
+                    if newValue { controller.requestNotificationPermission() }
                 }
+
+                Hairline()
+
+                SettingsToggle(
+                    "Show the folder size in the menu bar",
+                    "Next to the icon, rather than only inside the menu.",
+                    isOn: $settings.showSizeInMenuBar
+                )
+
+                Hairline()
 
                 HStack {
                     Button("Open Log File") { controller.openLogFile() }
@@ -1235,23 +1198,17 @@ private struct GeneralTab: View {
                     Spacer()
                     Button("Uninstall…") { showUninstall = true }
                 }
-            } header: {
-                Text("Other")
+                .settingsRow()
             }
 
-            Section {
+            SettingsGroup(title: "Updates") {
                 UpdateSection()
-            } header: {
-                Text("Updates")
             }
 
-            Section {
+            SettingsGroup(title: "About") {
                 AboutSection()
-            } header: {
-                Text("About")
             }
         }
-        .settingsPane()
     }
 }
 

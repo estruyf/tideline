@@ -70,10 +70,17 @@ A type rule claims a file by its extension, which is enough for a `.dmg` and
 useless for an invoice: an invoice is a PDF like every other PDF. What marks it
 out is what it is called, or where it came from.
 
-A routing rule is a folder in the root and an ordered list of tests. If **any**
-test matches, the rule claims the file and names the folder. Rules are tried in
-list order, first match wins, and the whole set is tried before the type rules —
-otherwise `Documents` would swallow an invoice before `Invoices` ever saw it.
+A routing rule is a folder in the root and an ordered list of tests. The rule's
+`match` says how many of them have to agree — `any`, the default, or `all`. Rules
+are tried in list order, first match wins, and the whole set is tried before the
+type rules — otherwise `Documents` would swallow an invoice before `Invoices`
+ever saw it.
+
+A rule may also carry a `title`: what a window calls it in a list, when that is
+not simply its folder. It is a label and nothing else — no engine reads it, and
+a rule without one is known by its folder. It exists because two rules may
+legitimately send files to one folder, and a list showing both as `Receipts`
+cannot be reordered with any confidence.
 
 A test is a field and a pattern:
 
@@ -83,7 +90,14 @@ A test is a field and a pattern:
 | `where_from` | Each URL the download was recorded as arriving from, in turn |
 
 The pattern grammar is the skip list's — `*`, `?`, `[a-z]`, `[!abc]` — so
-`*invoice*` means "contains" and no second operator is needed.
+`*invoice*` means "contains" and no second operator is stored.
+
+A window may still *offer* one. The macOS editor asks for a field, an operator
+and the words — *Name · contains · invoice* — and composes the glob from them:
+`contains` is `*value*`, `starts with` is `value*`, and *matches pattern* hands
+the glob over whole. That is presentation and nothing more. What is written down
+is a pattern, both engines read a pattern, and a pattern whose middle holds a
+wildcard reads back as itself rather than as words it cannot be said in.
 
 ### Case
 
@@ -117,9 +131,23 @@ macOS returns decomposed names, so a non-ASCII letter typed into a pattern may
 not match the file it was copied from; a pattern that sticks to ASCII and leans
 on `*` for the rest has no such problem.
 
-Tests are OR'd, and there is deliberately no AND. A rule that needs to say "a
-PDF *and* from Stripe" is two rules wearing one hat, and the extra grammar is
-not yet worth what it costs to explain.
+### Any, and all
+
+A rule set to `any` claims a file when one of its tests matches. A rule set to
+`all` claims it only when every one of them does — "an invoice *and* from
+Stripe", which under `any` would take every Stripe export as well.
+
+**A test with an empty pattern is dropped before the question is asked**, in
+both modes. It already claims nothing under `any`; under `all` it would stop the
+rule matching anything at all, and a half-written condition in a settings window
+must not silently switch a rule off. A rule left with no filled-in test claims
+nothing, whichever mode it is in.
+
+`all` is stored as `"match": "all"`. **A rule with no `match` written down means
+`any`**, and so does an unreadable value: that is what every rule saved before
+the setting existed meant, and `all` only ever narrows what a rule catches. A
+rule that quietly stops firing after an upgrade is not something anybody
+notices.
 
 ### Where the file came from
 

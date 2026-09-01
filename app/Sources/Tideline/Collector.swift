@@ -343,6 +343,11 @@ struct CollectQuery: Equatable {
     /// What the sheet calls it, and the name a saved rule would take.
     var label: String = ""
     var tests: [RuleTest] = []
+    /// Whether one test is enough. A hunt started from a rule inherits the
+    /// rule's answer, so the sheet turns up exactly what the rule would claim;
+    /// a search typed by hand asks for any of them, which is what a search box
+    /// is understood to mean.
+    var match: RuleMatch = .any
     /// A type folder contributes its extensions rather than a test. The sweep's
     /// grammar has only `name` and `where_from`, and wanting to collect by
     /// extension is not a reason to add a third field to a contract two engines
@@ -367,9 +372,17 @@ struct CollectQuery: Equatable {
     /// URL is distinguishable at a glance from a match on the name, which is how
     /// a false positive gets noticed before it lands in somebody's accounts.
     func claim(_ subject: RuleSubject, extension ext: String) -> String? {
-        for test in filledTests where test.matches(subject) {
-            let pattern = test.pattern.trimmingCharacters(in: .whitespacesAndNewlines)
-            return "\(test.field.shortLabel) \(pattern)"
+        let live = filledTests
+        // Under `all` the tests are one condition, so a file either satisfies
+        // the lot or the query never mentions it. The first test then stands
+        // for the reason, since every one of them agreed.
+        if !live.isEmpty, match == .all, live.allSatisfy({ $0.matches(subject) }) {
+            return live[0].sentence
+        }
+        if match == .any {
+            for test in live where test.matches(subject) {
+                return test.sentence
+            }
         }
         if !ext.isEmpty, extensions.contains(ext) { return "extension .\(ext)" }
         return nil
@@ -378,9 +391,10 @@ struct CollectQuery: Equatable {
 
 extension CollectQuery {
     init(rule: Rule) {
-        label = rule.name
+        label = rule.displayName
         tests = rule.tests
-        folder = rule.name
+        match = rule.match
+        folder = rule.folder
     }
 
     init(typeRule: TypeRule) {
@@ -395,7 +409,7 @@ extension CollectQuery {
     var savableAsRule: Bool { !filledTests.isEmpty }
 
     func asRule(named name: String) -> Rule {
-        Rule(name: name, isEnabled: true, tests: filledTests)
+        Rule(name: name, isEnabled: true, match: match, tests: filledTests)
     }
 }
 

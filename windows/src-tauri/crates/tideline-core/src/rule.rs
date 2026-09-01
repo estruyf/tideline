@@ -3,7 +3,8 @@
 //! A type rule asks what a file *is*, which settles a `.msi` and settles
 //! nothing about an invoice: an invoice is a PDF like every other PDF. What
 //! marks one out is its name, or the URL it arrived from — so a rule is a folder
-//! and a list of tests, and any one of them matching is enough.
+//! and a list of tests, and the rule says whether one of them matching is
+//! enough or all of them have to agree.
 //!
 //! Rules are consulted before the type rules and after everything that decides
 //! whether a file moves at all. They answer *where*, never *when*.
@@ -84,15 +85,36 @@ impl RuleTest {
     }
 }
 
+/// Whether a rule needs one of its tests or every one of them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum Match {
+    /// Any one test is enough. What a rule has always meant, and the default a
+    /// rule written before the setting existed falls back to.
+    #[default]
+    Any,
+    /// Every test has to agree.
+    All,
+}
+
 /// A folder in the root, and the tests that send files to it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rule {
     /// Stable across renames, so a rule the user renamed is still the same rule
     /// next launch.
     pub id: String,
+    /// The destination: a folder name in the root.
     pub name: String,
+    /// What a list calls this rule, when that is not simply its folder. The
+    /// engine never reads it; it is carried so writing the settings back does
+    /// not throw away what the other platform's window put there.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
     #[serde(rename = "isEnabled")]
     pub is_enabled: bool,
+    /// Whether one test is enough or all of them have to agree.
+    #[serde(rename = "match", default)]
+    pub match_mode: Match,
     #[serde(default)]
     pub tests: Vec<RuleTest>,
 }
@@ -102,15 +124,32 @@ impl Rule {
         Rule {
             id: id.to_string(),
             name: name.to_string(),
+            title: None,
             is_enabled: false,
+            match_mode: Match::Any,
             tests,
         }
     }
 
-    /// Tests are OR'd: any one of them is enough. A rule with none claims
-    /// nothing, which is what a rule someone has only just added looks like.
+    /// Whether this rule claims the entry.
+    ///
+    /// A rule with no filled-in test claims nothing, which is what a rule
+    /// someone has only just added looks like. An empty pattern is dropped
+    /// before the question is asked rather than answered `false` inside it:
+    /// under `all` a half-written test would otherwise stop the rule matching
+    /// anything at all.
     pub fn matches(&self, entry: &Entry) -> bool {
-        self.tests.iter().any(|test| test.matches(entry))
+        let mut live = self
+            .tests
+            .iter()
+            .filter(|test| !test.pattern.trim().is_empty());
+        match self.match_mode {
+            Match::Any => live.any(|test| test.matches(entry)),
+            Match::All => {
+                let mut live = live.peekable();
+                live.peek().is_some() && live.all(|test| test.matches(entry))
+            }
+        }
     }
 }
 
@@ -313,6 +352,69 @@ mod tests {
             &["https://stripe-upload-api.s3.aws/x"]
         )));
         assert!(!rule.matches(&entry("holiday.jpg", &["https://example.com/"])));
+    }
+
+    #[test]
+    fn a_rule_set_to_all_needs_every_test() {
+        let mut rule = enabled(
+            "stripe-invoices",
+            "Stripe invoices",
+            vec![
+                RuleTest::new(Field::Name, "*invoice*"),
+                RuleTest::new(Field::WhereFrom, "*stripe.com*"),
+            ],
+        );
+        rule.match_mode = Match::All;
+
+        assert!(rule.matches(&entry(
+            "invoice-0042.pdf",
+            &["https://files.stripe.com/invoices/acct_1/0042"]
+        )));
+        // Each of these satisfies one test and not the other, which under `any`
+        // would have been enough for both of them.
+        assert!(!rule.matches(&entry(
+            "invoice-from-the-bank.pdf",
+            &["https://bank.example.com/"]
+        )));
+        assert!(!rule.matches(&entry(
+            "products.csv",
+            &["https://files.stripe.com/exports/products"]
+        )));
+    }
+
+    #[test]
+    fn a_half_written_test_does_not_stop_a_rule_set_to_all() {
+        let mut rule = enabled(
+            "invoices",
+            "Invoices",
+            vec![
+                RuleTest::new(Field::Name, "*invoice*"),
+                RuleTest::new(Field::WhereFrom, "   "),
+            ],
+        );
+        rule.match_mode = Match::All;
+        assert!(rule.matches(&entry("invoice-0042.pdf", &[])));
+    }
+
+    #[test]
+    fn a_rule_set_to_all_with_nothing_written_down_claims_nothing() {
+        let mut rule = enabled("new", "Invoices", vec![RuleTest::new(Field::Name, "")]);
+        rule.match_mode = Match::All;
+        assert!(!rule.matches(&entry("anything.pdf", &[])));
+    }
+
+    #[test]
+    fn a_rule_stored_without_a_match_means_any() {
+        // Every rule written before the setting existed, and every rule the
+        // Windows window has ever saved.
+        let rule: Rule = serde_json::from_str(
+            r#"{"id":"invoices","name":"Invoices","isEnabled":true,
+                "tests":[{"field":"name","pattern":"*invoice*"},
+                         {"field":"where_from","pattern":"*stripe.com*"}]}"#,
+        )
+        .expect("a rule with no match still reads");
+        assert_eq!(rule.match_mode, Match::Any);
+        assert!(rule.matches(&entry("invoice-0042.pdf", &[])));
     }
 
     #[test]

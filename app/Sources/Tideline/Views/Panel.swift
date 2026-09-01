@@ -34,6 +34,140 @@ struct ListPanel<Content: View>: View {
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 8) }
 }
 
+/// A settings pane: cards on the pane's own ground, scrolling together.
+///
+/// `Form { Section }` drew these until now, and drew them in the *system's*
+/// grouped-form colours — the last surface where the palette stopped at the
+/// pane and the card inside it still belonged to macOS. A grouped `Section`
+/// cannot be handed a background, so the panes build their own out of the same
+/// `ListPanel` that Overview, Reclaim space and Routing rules already use.
+struct SettingsPane<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) { content }
+                .padding(18)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Theme.pane)
+    }
+}
+
+/// One card in a settings pane: what the group is, the rows, and the sentence
+/// underneath that says what to expect of them.
+///
+/// Rows put their own `Hairline()` between themselves, the way every other list
+/// in the window does — a card cannot know where its children end.
+struct SettingsGroup<Content: View>: View {
+    var title: String
+    var footer: String?
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+
+            ListPanel { content }
+
+            if let footer {
+                Text(footer)
+                    .explanation()
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 2)
+            }
+        }
+    }
+}
+
+/// A row that is a switch and the sentence explaining it.
+///
+/// The label stays inside the `Toggle` rather than being drawn beside one, so
+/// clicking the words still flips the switch — which is what a grouped `Form`
+/// gave for free and what anybody who has used one expects.
+struct SettingsToggle: View {
+    var title: String
+    var explanation: String?
+    @Binding var isOn: Bool
+
+    init(_ title: String, _ explanation: String? = nil, isOn: Binding<Bool>) {
+        self.title = title
+        self.explanation = explanation
+        _isOn = isOn
+    }
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            SettingsLabel(title: title, explanation: explanation)
+        }
+        .toggleStyle(.switch)
+        .settingsRow()
+    }
+}
+
+/// A row that is a control with a name beside it — a popup, a stepper, a
+/// button that opens something.
+struct SettingsField<Control: View>: View {
+    var title: String
+    var explanation: String?
+    @ViewBuilder var control: Control
+
+    init(_ title: String, _ explanation: String? = nil, @ViewBuilder control: () -> Control) {
+        self.title = title
+        self.explanation = explanation
+        self.control = control()
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            SettingsLabel(title: title, explanation: explanation)
+            Spacer(minLength: 12)
+            control
+        }
+        .settingsRow()
+    }
+}
+
+/// The name of a setting and the line under it. One shape, so a switch and a
+/// popup describe themselves the same way.
+struct SettingsLabel: View {
+    var title: String
+    var explanation: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            if let explanation {
+                Text(explanation)
+                    .explanation()
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// `LabeledContent` outside a `Form` has no column to line its labels up in,
+/// so a stack of them steps in and out as the words change length. This is that
+/// column: a fixed-width name, then the control filling the rest.
+struct SettingsLabeledContentStyle: LabeledContentStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            configuration.label
+                .foregroundStyle(Theme.muted)
+                .frame(width: 110, alignment: .leading)
+            configuration.content
+        }
+    }
+}
+
+extension LabeledContentStyle where Self == SettingsLabeledContentStyle {
+    static var settings: SettingsLabeledContentStyle { SettingsLabeledContentStyle() }
+}
+
 /// `Divider()` draws a system grey that sits outside the palette. This is the
 /// same hairline in the theme's own border colour.
 struct Hairline: View {
@@ -57,12 +191,12 @@ extension View {
             .foregroundStyle(Theme.muted)
     }
 
-    /// A settings pane. `Form` paints its own ground, which would leave a grey
-    /// slab between two themed panes — this hands it the pane colour instead.
-    func settingsPane() -> some View {
-        formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-            .background(Theme.pane)
+    /// The padding every row in a settings card shares, so a row built by hand
+    /// lines up with the ones `SettingsToggle` and `SettingsField` draw.
+    func settingsRow() -> some View {
+        padding(.horizontal, 13)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Explanatory prose: the sentence under a heading, the note beside a
@@ -83,6 +217,59 @@ extension View {
     func linkButton() -> some View {
         buttonStyle(.link).foregroundStyle(Theme.link)
     }
+
+    /// A text field on a card.
+    ///
+    /// `.roundedBorder` draws the *system* control background, which is one of
+    /// the last surfaces the palette never reached — every field in the window
+    /// sat in a grey the theme does not own, on cards it does. This is the
+    /// recipe the Move out search box had already built by hand, named so the
+    /// next field does not have to build it again: the pane colour recessed
+    /// into the card it sits on, the theme's own hairline around it, and the
+    /// accent while it has the keyboard.
+    ///
+    /// `icon` puts a symbol inside the box, on the left, the way a search field
+    /// carries its magnifying glass.
+    func themedField(icon: String? = nil) -> some View {
+        modifier(ThemedField(icon: icon))
+    }
+}
+
+private struct ThemedField: ViewModifier {
+    var icon: String?
+
+    /// Drawn rather than inherited: `.plain` gives up the system focus ring
+    /// along with the system background, and a field with no sign of having the
+    /// keyboard is worse than one in the wrong grey.
+    @FocusState private var focused: Bool
+
+    func body(content: Content) -> some View {
+        HStack(spacing: 6) {
+            if let icon {
+                Image(systemName: icon)
+                    .foregroundStyle(Theme.muted)
+            }
+            content
+                .textFieldStyle(.plain)
+                .focused($focused)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(Theme.pane, in: shape)
+        // `strokeBorder` insets, so the thicker focused edge is drawn inside
+        // the same box and nothing around it moves when the field is clicked.
+        .overlay(shape.strokeBorder(focused ? Theme.accentText : Theme.border,
+                                    lineWidth: focused ? 1.5 : 1))
+        .contentShape(shape)
+        // The padding and the icon are part of the field as far as anyone
+        // clicking is concerned, which is what `.roundedBorder` gave for free.
+        // Simultaneous, not `.onTapGesture`: a plain gesture on the box wins
+        // the click outright and the field never becomes first responder, so
+        // clicking a field would stop working altogether.
+        .simultaneousGesture(TapGesture().onEnded { focused = true })
+    }
+
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 6) }
 }
 
 extension View {

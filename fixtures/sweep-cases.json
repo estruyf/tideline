@@ -253,6 +253,95 @@
     ]
   },
   {
+    "name": "a rule set to all needs every condition to agree",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "stripe-invoices",
+          "name": "Stripe invoices",
+          "isEnabled": true,
+          "match": "all",
+          "tests": [
+            { "field": "name", "pattern": "*invoice*" },
+            { "field": "where_from", "pattern": "*stripe.com*" }
+          ]
+        }
+      ]
+    },
+    "entries": [
+      {
+        "name": "invoice-0042.pdf",
+        "stamp": "2026-08-17T10:00:00",
+        "where_from": ["https://files.stripe.com/invoices/acct_1/0042"]
+      },
+      {
+        "name": "invoice-from-the-bank.pdf",
+        "stamp": "2026-08-17T10:05:00",
+        "where_from": ["https://bank.example.com/statements/"]
+      },
+      {
+        "name": "products.csv",
+        "stamp": "2026-08-17T10:10:00",
+        "where_from": ["https://files.stripe.com/exports/products"]
+      }
+    ],
+    "expected": [
+      { "name": "invoice-0042.pdf", "target_folder": "Stripe invoices", "is_by_rule": true },
+      { "name": "invoice-from-the-bank.pdf", "target_folder": "2026-08-17" },
+      { "name": "products.csv", "target_folder": "2026-08-17" }
+    ]
+  },
+  {
+    "name": "a rule set to all is not stopped by a condition nobody filled in",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "invoices",
+          "name": "Invoices",
+          "isEnabled": true,
+          "match": "all",
+          "tests": [
+            { "field": "name", "pattern": "*invoice*" },
+            { "field": "where_from", "pattern": "" }
+          ]
+        }
+      ]
+    },
+    "entries": [{ "name": "invoice-0042.pdf", "stamp": "2026-08-17T10:00:00" }],
+    "expected": [
+      { "name": "invoice-0042.pdf", "target_folder": "Invoices", "is_by_rule": true }
+    ]
+  },
+  {
+    "name": "a rule with no match written down still means any",
+    "now": "2026-08-19T09:00:00",
+    "config": {
+      "rules": [
+        {
+          "id": "receipts",
+          "name": "Receipts",
+          "isEnabled": true,
+          "tests": [
+            { "field": "name", "pattern": "*receipt*" },
+            { "field": "where_from", "pattern": "*stripe.com*" }
+          ]
+        }
+      ]
+    },
+    "entries": [
+      {
+        "name": "products.csv",
+        "stamp": "2026-08-17T10:00:00",
+        "where_from": ["https://files.stripe.com/exports/products"]
+      }
+    ],
+    "expected": [
+      { "name": "products.csv", "target_folder": "Receipts", "is_by_rule": true }
+    ]
+  },
+  {
     "name": "a routing rule decides where, never when",
     "now": "2026-08-31T14:00:00",
     "config": {

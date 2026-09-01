@@ -81,13 +81,14 @@
   the site it came from.
 </p>
 <p>
-  A routing rule is a folder and a list of conditions. If <strong>any</strong>
-  of them matches, the file lands there:
+  A routing rule is a folder and a list of conditions. You say whether
+  <strong>any</strong> of them is enough or <strong>all</strong> of them have to
+  agree, and the file lands there:
 </p>
 
 <pre class="tree"><code>Invoices
-  name           <span class="stays">*invoice*</span>
-  downloaded from <span class="stays">*stripe*</span></code></pre>
+  name          <span class="stays">contains  invoice</span>
+  download URL  <span class="stays">contains  stripe.com</span></code></pre>
 
 <figure>
   <img src="../assets/shots/routing-rules.png"
@@ -98,14 +99,29 @@
 <table>
   <thead><tr><th>Condition</th><th>Matches against</th></tr></thead>
   <tbody>
-    <tr><td><code>name</code></td><td>The file's own name, extension included</td></tr>
-    <tr><td><code>downloaded from</code></td><td>The address the file arrived from</td></tr>
+    <tr><td><code>Name</code></td><td>The file's own name, extension included</td></tr>
+    <tr><td><code>Downloaded from</code></td><td>The address the file arrived from</td></tr>
   </tbody>
 </table>
 <p>
-  Patterns use the same shorthand as the skip list — <code>*</code> stands for
-  anything, so <code>*invoice*</code> means &ldquo;contains&rdquo;. There is no
-  separate <em>contains</em> option because there does not need to be.
+  Beside it you pick how to compare — <em>contains</em>, <em>is</em>,
+  <em>starts with</em>, <em>ends with</em> — and type the words. For anything
+  those four cannot say there is <em>matches pattern</em>, which takes the same
+  shorthand as the skip list: <code>*</code> stands for anything, so
+  <code>invoice-*-2026.pdf</code> is one pattern rather than three conditions.
+</p>
+
+<h2>Any, or all</h2>
+<p>
+  <strong>Catch a file when <em>any</em> of these is true</strong> is the
+  default, and the way rules have always worked: one condition matching is
+  enough. Switch it to <strong>all</strong> and every condition has to agree —
+  which is how you say &ldquo;an invoice <em>and</em> from Stripe&rdquo; without
+  also claiming every Stripe export that is not an invoice.
+</p>
+<p>
+  A condition you have not filled in yet is ignored either way, so a half-typed
+  row never quietly stops a rule from matching.
 </p>
 
 <h2>Where it was downloaded from</h2>
@@ -130,27 +146,62 @@
   usually wants a name condition as well.
 </div>
 
-<h2>Order, and case</h2>
+<h2>Order</h2>
 <p>
   Rules are tried before the type folders, top down, and the first one that
   matches wins. Without that, <code>Documents</code> would swallow an invoice
-  before <code>Invoices</code> ever saw it. Drag-free for now: a rule higher in
-  the list simply gets asked first.
+  before <code>Invoices</code> ever saw it. Every row is numbered, and you
+  <strong>drag</strong> to change which rule gets asked first.
 </p>
 <p>
-  Conditions <strong>ignore case</strong> unless you press <strong>Aa</strong>.
-  That is the opposite of the skip list, on purpose. A skip pattern names a file
-  you can see sitting in the folder; a rule is a hunt for a word that could have
-  been typed either way, and a rule that quietly stops matching the day a
-  supplier changes their filenames is not something anybody notices.
+  Because order decides everything, the number beside each rule is what that
+  rule would actually <em>get</em> — files a rule above it already claimed
+  belong to that rule, not to this one. If a rule above claims everything this
+  one describes, the row says so:
+  <em>Never fires &mdash; Invoices catches all 15 of these first</em>, with a
+  button that moves it above the rule taking them.
 </p>
 
-<h2 id="catch-up">Catch Up</h2>
+<h2>Seeing what a rule catches</h2>
 <p>
-  A new rule only steers what arrives next. <strong>Catch Up…</strong> reaches
-  back: it looks through the dated folders, shows everything the rules now
-  claim, and moves only what you leave ticked. A dated folder left empty by that
-  goes to the Trash.
+  Open a rule and the bottom of the form lists the files it is matching right
+  now, each with the condition that claimed it. That is the whole point of it
+  being there: a pattern with a typo looks exactly like one that works, and
+  without a list you would not find out for months.
+</p>
+<p>
+  The line above it counts them &mdash; how many are loose in Downloads, how
+  many are already tucked into a dated folder, and how many a rule above has
+  taken.
+</p>
+
+<h2>Case</h2>
+<p>
+  Conditions <strong>ignore case</strong> unless you tick <strong>Match
+  case</strong>. That is the opposite of the skip list, on purpose. A skip
+  pattern names a file you can see sitting in the folder; a rule is a hunt for a
+  word that could have been typed either way, and a rule that quietly stops
+  matching the day a supplier changes their filenames is not something anybody
+  notices.
+</p>
+
+<h2>Naming a rule</h2>
+<p>
+  A rule is known by the folder it files into unless you give it a name of its
+  own. That is worth doing when two rules share a folder &mdash; receipts from
+  Stripe and receipts from the bank both landing in <code>Receipts</code>
+  &mdash; because a list showing both under the same name is a list you cannot
+  reorder with any confidence.
+</p>
+
+<h2 id="catch-up">Catching up</h2>
+<p>
+  A new rule only steers what arrives next. Everything already tucked into a
+  dated folder stays there &mdash; so each rule counts those too, and offers to
+  reach back for them: <em>12 filed by date &mdash; catch up…</em>. It looks
+  through the dated folders, shows everything the rules now claim, and moves
+  only what you leave ticked. A dated folder left empty by that goes to the
+  Trash.
 </p>
 
 <h2>Where, not when</h2>

@@ -5,7 +5,8 @@ import Foundation
 /// A type rule asks what a file *is*, which settles a `.dmg` and settles nothing
 /// about an invoice: an invoice is a PDF like every other PDF. What marks one out
 /// is its name, or the URL it arrived from — so a rule is a folder and a list of
-/// tests, and any one of them matching is enough.
+/// tests, and the rule says whether one of them matching is enough or all of
+/// them have to agree.
 ///
 /// Rules are consulted before the type rules and after everything that decides
 /// whether a file moves at all. They answer *where*, never *when*.
@@ -28,20 +29,117 @@ enum RuleField: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// How a match reads back in a list — `name *invoice*`, `downloaded from
-    /// stripe.com`. Lower case, because it is a fragment of a sentence rather
-    /// than a heading.
+    /// How a match reads back in a list — `name contains invoice`, `download
+    /// URL contains stripe.com`. Lower case, because it is a fragment of a
+    /// sentence rather than a heading, and a noun rather than the picker's
+    /// "Downloaded from", which only reads as a label with a value beside it.
     var shortLabel: String {
         switch self {
         case .name: return "name"
-        case .whereFrom: return "downloaded from"
+        case .whereFrom: return "download URL"
         }
     }
 
+    /// A pattern in this field, for the one operator that takes a whole glob.
     var placeholder: String {
         switch self {
         case .name: return "*invoice*"
         case .whereFrom: return "*stripe*"
+        }
+    }
+
+    /// The words rather than the pattern, for the other four.
+    var valueHint: String {
+        switch self {
+        case .name: return "invoice"
+        case .whereFrom: return "stripe.com"
+        }
+    }
+}
+
+/// How a pattern is meant, spelled out.
+///
+/// The stored grammar is still a glob — `*invoice*` — because that is what the
+/// contract says and what the Rust engine reads. This is the same thing said in
+/// words, so the editor can offer *contains* rather than asking someone to know
+/// where the stars go. It is presentation, never storage: a test round-trips
+/// through `RuleTest.pattern` and nothing else.
+enum RuleOperator: String, CaseIterable, Identifiable {
+    /// `*value*`
+    case contains
+    /// `value`
+    case exact
+    /// `value*`
+    case startsWith
+    /// `*value`
+    case endsWith
+    /// The glob itself, for anything the four above cannot say.
+    case glob
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .contains: return "contains"
+        case .exact: return "is"
+        case .startsWith: return "starts with"
+        case .endsWith: return "ends with"
+        case .glob: return "matches pattern"
+        }
+    }
+
+    /// The pattern this operator and value add up to.
+    func pattern(for value: String) -> String {
+        let value = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else { return "" }
+        switch self {
+        case .contains: return "*\(value)*"
+        case .exact: return value
+        case .startsWith: return "\(value)*"
+        case .endsWith: return "*\(value)"
+        case .glob: return value
+        }
+    }
+
+    /// The same condition said a different way, when the operator changes.
+    ///
+    /// Switching *to* a pattern hands over the glob the words added up to, so
+    /// there is something to edit rather than a field that quietly lost its
+    /// stars; switching *away* from one reads the words back out, so `*invoice*`
+    /// under *contains* does not become `**invoice**`.
+    static func reword(_ value: String, from old: RuleOperator, to new: RuleOperator) -> String {
+        guard old != new else { return value }
+        if new == .glob { return old.pattern(for: value) }
+        if old == .glob { return read(value).1 }
+        return value
+    }
+
+    /// A stored pattern read back as an operator and the words inside it.
+    ///
+    /// A pattern whose *middle* holds a wildcard cannot be said in words, so it
+    /// reads back as itself under *matches pattern* rather than being described
+    /// as something it is not. That is also what someone who typed a star into
+    /// a *contains* field gets the next time they open the rule — the glob they
+    /// actually saved, not a tidied-up version of it.
+    static func read(_ pattern: String) -> (RuleOperator, String) {
+        let pattern = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !pattern.isEmpty else { return (.contains, "") }
+
+        let leading = pattern.hasPrefix("*")
+        let trailing = pattern.hasSuffix("*") && pattern.count > 1
+        var core = pattern
+        if leading { core.removeFirst() }
+        if trailing { core.removeLast() }
+
+        guard !core.isEmpty, !core.contains(where: { "*?[".contains($0) }) else {
+            return (.glob, pattern)
+        }
+
+        switch (leading, trailing) {
+        case (true, true): return (.contains, core)
+        case (true, false): return (.endsWith, core)
+        case (false, true): return (.startsWith, core)
+        case (false, false): return (.exact, core)
         }
     }
 }
@@ -68,6 +166,18 @@ struct RuleTest: Codable, Identifiable, Equatable {
 }
 
 extension RuleTest {
+    /// The stored pattern said in words, for the editor's two popups.
+    var spelledOut: (op: RuleOperator, value: String) { RuleOperator.read(pattern) }
+
+    /// How this test reads in the row above the editor — `name contains
+    /// invoice`, `downloaded from stripe.com`. A fragment of a sentence, so it
+    /// is lower case and carries no quotes.
+    var sentence: String? {
+        let (op, value) = spelledOut
+        guard !value.isEmpty else { return nil }
+        return "\(field.shortLabel) \(op.label) \(value)"
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id, field, pattern, matchCase
     }
@@ -173,40 +283,120 @@ extension RuleTest {
     }
 }
 
+/// Whether a rule needs one of its tests or every one of them.
+enum RuleMatch: String, Codable, CaseIterable, Identifiable {
+    /// Any one test is enough. What a rule has always meant, and the default.
+    case any
+    /// Every test has to agree. "A PDF from Stripe" in one rule instead of two.
+    case all
+
+    var id: String { rawValue }
+
+    /// Read inside the sentence the editor builds: "Catch a file when *any* of
+    /// these is true".
+    var label: String { rawValue }
+}
+
 /// A folder in the root, and the tests that send files to it.
 struct Rule: Codable, Identifiable, Equatable {
     /// Stable across renames, so a rule the user renamed is still the same rule
     /// the next time the app starts.
     var id: String
+    /// The destination: a folder name in the root. Stored as `name` because
+    /// that is the key both engines have always read — `folder` below is the
+    /// same thing under the word the window uses for it.
     var name: String
+    /// What the list calls this rule, when that is not simply its folder.
+    ///
+    /// Two rules can send files to one folder — receipts from Stripe and
+    /// receipts from the bank — and a list that shows both as `Receipts` cannot
+    /// be reordered with any confidence. Optional, and absent on every rule
+    /// written before it existed, so the folder goes on standing in for it.
+    var title: String?
     var isEnabled: Bool
+    /// Whether one test is enough or all of them have to agree.
+    var match: RuleMatch
     var tests: [RuleTest]
 
-    init(id: String = UUID().uuidString, name: String, isEnabled: Bool = true, tests: [RuleTest] = []) {
+    init(
+        id: String = UUID().uuidString,
+        name: String,
+        title: String? = nil,
+        isEnabled: Bool = true,
+        match: RuleMatch = .any,
+        tests: [RuleTest] = []
+    ) {
         self.id = id
         self.name = name
+        self.title = title
         self.isEnabled = isEnabled
+        self.match = match
         self.tests = tests
+    }
+
+    /// The destination folder, under the word the window uses for it.
+    var folder: String { name }
+
+    /// What to call this rule in a list. A rule that was never given a name of
+    /// its own is known by where it sends things, and one that has neither yet
+    /// is the rule somebody added a second ago.
+    var displayName: String {
+        let title = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !title.isEmpty { return title }
+        let folder = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return folder.isEmpty ? "Untitled rule" : folder
+    }
+
+    /// Tests with something actually typed in them. An empty one is not a test
+    /// yet — it is a row someone has only just added — and under `all` it would
+    /// otherwise stop the rule matching anything at all.
+    var filledTests: [RuleTest] {
+        tests.filter { !$0.pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 }
 
 extension Rule {
     private enum CodingKeys: String, CodingKey {
-        case id, name, isEnabled, tests
+        case id, name, title, isEnabled, match, tests
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
         name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+        title = try container.decodeIfPresent(String.self, forKey: .title)
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
+        // A rule saved before the setting existed meant `any`, which is also
+        // what an unreadable value has to fall back to: `all` narrows what a
+        // rule catches, and a rule that quietly stops firing after an upgrade
+        // is not something anybody notices.
+        match = try container.decodeIfPresent(RuleMatch.self, forKey: .match) ?? .any
         tests = try container.decodeIfPresent([RuleTest].self, forKey: .tests) ?? []
     }
 
-    /// Tests are OR'd: any one of them is enough. A rule with none claims
-    /// nothing, which is what a rule someone has only just added looks like.
+    /// Whether this rule claims the file.
+    ///
+    /// A rule with no filled-in test claims nothing, which is what a rule
+    /// someone has only just added looks like.
     func matches(_ subject: RuleSubject) -> Bool {
-        tests.contains { $0.matches(subject) }
+        let live = filledTests
+        guard !live.isEmpty else { return false }
+        switch match {
+        case .any: return live.contains { $0.matches(subject) }
+        case .all: return live.allSatisfy { $0.matches(subject) }
+        }
+    }
+
+    /// The test that claimed the file, for a list that has to say why.
+    ///
+    /// Under `all` every test agreed, so the first one is as good an answer as
+    /// any; under `any` it is the one that actually did the claiming.
+    func claimingTest(_ subject: RuleSubject) -> RuleTest? {
+        guard matches(subject) else { return nil }
+        switch match {
+        case .any: return filledTests.first { $0.matches(subject) }
+        case .all: return filledTests.first
+        }
     }
 
     /// A rule's folder is held to the same standard as a type folder's, since
@@ -279,22 +469,6 @@ struct RuleRouter {
     /// A rule's folder is never itself filed into a dated one.
     func owns(_ name: String) -> Bool {
         ownedNames.contains(name.lowercased())
-    }
-
-    /// Names claimed by more than one enabled rule. The second never sees a
-    /// file the first has already taken, so the settings window says so rather
-    /// than letting it puzzle.
-    static func duplicateNames(in rules: [Rule]) -> [String] {
-        var seen: Set<String> = []
-        var clashing: [String] = []
-        for rule in rules where rule.isEnabled {
-            let name = rule.name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty else { continue }
-            if !seen.insert(name.lowercased()).inserted, !clashing.contains(name) {
-                clashing.append(name)
-            }
-        }
-        return clashing
     }
 }
 

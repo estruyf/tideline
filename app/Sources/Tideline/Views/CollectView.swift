@@ -119,17 +119,9 @@ struct CollectView: View {
                     .labelsHidden()
                     .frame(width: 150)
 
-                    HStack(spacing: 6) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(.secondary)
-                        TextField("", text: $condition.pattern, prompt: Text(condition.field.placeholder))
-                            .textFieldStyle(.plain)
-                            .font(.body.monospaced())
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(Theme.pane, in: RoundedRectangle(cornerRadius: 6))
-                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.border))
+                    TextField("", text: $condition.pattern, prompt: Text(condition.field.placeholder))
+                        .font(.body.monospaced())
+                        .themedField(icon: "magnifyingglass")
 
                     Button {
                         conditions.removeAll { $0.id == condition.id }
@@ -179,7 +171,7 @@ struct CollectView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             TextField("Folder name", text: $newRuleName, prompt: Text("Invoices"))
-                .textFieldStyle(.roundedBorder)
+                .themedField()
                 .onSubmit(saveRule)
 
             HStack {
@@ -525,7 +517,7 @@ struct CollectView: View {
 
     /// Opens on a hunt the pane started.
     private func adopt(_ opening: CollectQuery) {
-        if let rule = settings.rules.first(where: { $0.name == opening.label }) {
+        if let rule = settings.rules.first(where: { $0.displayName == opening.label }) {
             kind = .rule
             ruleID = rule.id
         } else if let type = settings.typeRules.first(where: { $0.name == opening.label }) {
@@ -865,12 +857,12 @@ struct CollectPane: View {
         var found: [StartingPoint] = []
 
         for rule in settings.rules where rule.isEnabled {
-            let waiting = controller.collectWaiting[rule.name] ?? 0
+            let waiting = controller.collectWaiting[rule.displayName] ?? 0
             guard waiting > 0 || controller.collectWaiting.isEmpty else { continue }
             found.append(StartingPoint(
                 id: "rule-\(rule.id)",
                 kind: "RULE",
-                name: rule.name,
+                name: rule.displayName,
                 detail: controller.collectTallying ? "counting…" : "\(waiting) waiting",
                 query: CollectQuery(rule: rule)
             ))
@@ -881,7 +873,7 @@ struct CollectPane: View {
         }
         if !last.isEmpty {
             let described = last
-                .map { "\($0.field.shortLabel) \($0.pattern.trimmingCharacters(in: .whitespaces))" }
+                .compactMap(\.sentence)
                 .joined(separator: " or ")
             found.append(StartingPoint(
                 id: "last",
@@ -998,15 +990,17 @@ struct CollectPane: View {
             LabeledContent("Name") {
                 TextField("Name", text: $nameDraft, prompt: Text("What to call this place"))
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .themedField()
                     .onSubmit { commit(place) }
             }
+            .labeledContentStyle(.settings)
 
             LabeledContent("Inside") {
                 TextField("Template", text: templateBinding(for: place), prompt: Text("{yyyy}/kwartaal {q}"))
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .themedField()
             }
+            .labeledContentStyle(.settings)
 
             Text("\(CollectDestination.tokens.joined(separator: "  ")) — filled in from each file's own date, so a batch that straddles a quarter lands in two folders.")
                 .explanation()

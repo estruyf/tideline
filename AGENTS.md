@@ -19,7 +19,7 @@ be a reason to change `app/`, or the reverse — see `docs/behaviour.md`.
 
 | Path | |
 | --- | --- |
-| `app/Sources/Tideline/` | The app. `Organizer` files, `Cleaner` clears, `Deduper` collapses copies, `Weigher` finds big files, `Regrouper` catches up, `Controller` schedules |
+| `app/Sources/Tideline/` | The app. `Organizer` files, `Cleaner` clears, `Deduper` collapses copies, `Weigher` finds big files, `Regrouper` catches up, `RuleInspector` counts what each routing rule catches, `Controller` schedules |
 | `app/Sources/Tideline/Views/` | SwiftUI window, one file per tab or sheet |
 | `app/Package.swift` | One executable target, macOS 14+, zero dependencies |
 | `app/build.sh` | Build, bundle, icon, sign, notarize, staple, zip, disk image |
@@ -55,7 +55,7 @@ npm run quit             # quit the running app
 npm run clean            # throw away build artefacts
 npm version patch        # bump, rebuild, commit and tag
 
-npm run win:test         # the Rust workspace: 47 tests
+npm run win:test         # the Rust workspace: 65 tests
 npm run win:check        # type-check the engine against the Windows target
 npm run win:dev          # run the Tauri app (works on a Mac too, see below)
 npm run win:build        # NSIS installer — Windows only
@@ -77,7 +77,7 @@ There is no Swift test target. Confirm behaviour by running the real bundle:
    would do without touching a file.
 3. `npm run logs` and watch a sweep decide.
 
-The Rust side does have tests — `npm run win:test` runs all 45. The rules are
+The Rust side does have tests — `npm run win:test` runs all 65. The rules are
 pure functions taking a list of entries and a moment, so a rule change is
 provable without a filesystem; only `sweep.rs` needs a real folder.
 

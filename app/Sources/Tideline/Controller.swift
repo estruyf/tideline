@@ -123,6 +123,19 @@ final class Controller: ObservableObject {
     /// Files already filed by date that the type rules now claim, as of the
     /// last scan. Switching a type folder on never moves anything on its own —
     /// catching up is always asked for, and always reviewed.
+    /// What each routing rule is catching as the folder stands right now —
+    /// counts, the files behind them, and whether a rule above claims them all
+    /// first. Refreshed when the rules pane asks and after anything moves.
+    @Published private(set) var ruleReport = RuleReport()
+    @Published private(set) var ruleScanning = false
+    /// Whether the open rule's destination folder is already there. Kept apart
+    /// from the report because it answers to a name being typed rather than to
+    /// the rules changing.
+    @Published private(set) var destination: DestinationCheck?
+    /// A rule changed while a count was running, so the answer in flight is
+    /// already out of date and another walk follows it.
+    private var ruleInspectAgain = false
+
     @Published private(set) var regroupable: [RegroupCandidate] = []
     @Published var reviewingRegroup = false
     @Published private(set) var regroupScanning = false
@@ -498,6 +511,53 @@ final class Controller: ObservableObject {
         }
     }
 
+    // MARK: - What the rules catch
+
+    /// Counts what every routing rule would claim, in one walk of the root and
+    /// the dated folders.
+    ///
+    /// On `inspectQueue` with the other readers: the pane asks for this every
+    /// time a pattern is typed into, and a long look must never delay a sweep.
+    func inspectRules() {
+        guard access.mayRead else { return }
+        // A rule edited while the last count was still running would otherwise
+        // be counted under the rules as they were a moment ago, and the pane
+        // would sit there showing the wrong number until something else moved.
+        guard !ruleScanning else { return ruleInspectAgain = true }
+        guard !settings.rules.isEmpty else {
+            ruleReport = RuleReport(takenAt: Date())
+            return
+        }
+
+        ruleScanning = true
+        ruleInspectAgain = false
+        let inspection = RuleInspection(settings)
+
+        inspectQueue.async { [weak self] in
+            let report = RuleInspector.report(inspection: inspection)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.ruleReport = report
+                self.ruleScanning = false
+                if self.ruleInspectAgain { self.inspectRules() }
+            }
+        }
+    }
+
+    /// Looks up one rule's destination folder. One directory read, so it can
+    /// follow the name being typed without the pane having to wait for it.
+    func checkDestination(_ folder: String?) {
+        guard let folder, Rule.isValidFolderName(folder), access.mayRead else {
+            return destination = nil
+        }
+
+        let root = settings.downloadsURL
+        inspectQueue.async { [weak self] in
+            let found = DestinationCheck.take(folder: folder, root: root)
+            DispatchQueue.main.async { self?.destination = found }
+        }
+    }
+
     // MARK: - Catching up
 
     /// Walks the dated folders for anything the type rules now claim. Reads
@@ -843,6 +903,10 @@ final class Controller: ObservableObject {
     private func invalidateScans() {
         largeFilesScannedAt = nil
         clearableScannedAt = nil
+        // A count of what a rule catches is about a folder that just changed.
+        // Cleared rather than recounted: the pane asks when it is on screen,
+        // and nothing else in the window reads it.
+        ruleReport = RuleReport()
     }
 
     // MARK: - Duplicates
