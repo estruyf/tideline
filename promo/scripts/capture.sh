@@ -201,10 +201,10 @@ welcome)
 
 assets)
   # The README set: the ten panes plus the three review sheets and the menu,
-  # into assets/1.12.0/. Sheets are shown inside the window they belong to
+  # into assets/1.13.0/. Sheets are shown inside the window they belong to
   # rather than floating on their own, which is how every other shot on that
   # page shows the app.
-  dest="$repo/assets/1.12.0"
+  dest="$repo/assets/1.13.0"
   mkdir -p "$dest"
   build_grab
   park_at $assets_size
