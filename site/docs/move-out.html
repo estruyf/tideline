@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move out — Tideline</title>
+<meta name="description" content="Find things across Downloads and everything Tideline has filed, then move them somewhere else entirely — and put the whole batch back in one go.">
+<link rel="icon" href="../icon.png">
+<link rel="stylesheet" href="../style.css">
+<link rel="canonical" href="https://estruyf.github.io/tideline/docs/move-out.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Move out — Tideline">
+<meta property="og:description" content="Find things across Downloads and everything Tideline has filed, then move them somewhere else entirely — and put the whole batch back in one go.">
+<meta property="og:url" content="https://estruyf.github.io/tideline/docs/move-out.html">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="band">
+  <div class="band-inner">
+    <a class="wordmark" href="../"><img src="../icon.png" alt="" width="26" height="26">Tideline</a>
+    <nav>
+      <a href="./" aria-current="page">Docs</a>
+      <a class="drop-first" href="https://github.com/estruyf/tideline">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/estruyf/tideline/releases/latest">Download</a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs">
+<nav class="sidebar" aria-label="Documentation">
+<div class="sidebar-grid">
+<div>
+<h2>Getting started</h2>
+<ul>
+<li><a href="index.html">Documentation</a></li>
+<li><a href="install.html">Install</a></li>
+<li><a href="first-launch.html">First launch</a></li>
+</ul>
+</div>
+<div>
+<h2>Using Tideline</h2>
+<ul>
+<li><a href="the-window.html">The window</a></li>
+<li><a href="filing.html">Filing</a></li>
+<li><a href="routing-rules.html">Routing rules</a></li>
+<li><a href="type-folders.html">Type folders</a></li>
+<li><a href="schedule.html">Schedule</a></li>
+<li><a href="clearing.html">Clearing</a></li>
+<li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="move-out.html" aria-current="page">Move out</a></li>
+<li><a href="menu-bar.html">The menu bar</a></li>
+<li><a href="general.html">General and activity</a></li>
+</ul>
+</div>
+<div>
+<h2>Help</h2>
+<ul>
+<li><a href="updates.html">Updates</a></li>
+<li><a href="troubleshooting.html">Troubleshooting</a></li>
+<li><a href="uninstall.html">Uninstall</a></li>
+</ul>
+</div>
+<div>
+<h2>Other platforms</h2>
+<ul>
+<li><a href="windows.html">Windows<span class="beta">Beta</span></a></li>
+</ul>
+</div>
+</div>
+</nav>
+<main class="doc" id="main">
+<h1>Move out</h1>
+<p class="lead">Finding things across Downloads and taking them somewhere else entirely.</p>
+
+<p>
+  Filing sorts the Downloads folder. This takes things out of it — the quarter's
+  invoices into the accounts, a shoot onto an external drive — and it is the
+  only thing Tideline does that writes outside the folder it watches.
+</p>
+<p>
+  <strong>It never runs on its own.</strong> Not on the timer, not when the
+  folder changes, not after a sweep. You say what to look for, the app says what
+  it found and which condition found it, and only what you tick actually moves.
+</p>
+
+<figure>
+  <img src="../assets/shots/move-out.png"
+       alt="The Move out pane: starting points from your rules, the places things can go, and the batches that have already been moved">
+</figure>
+
+<h2>Saying what to look for</h2>
+<p>Three ways in, all of them the same underneath:</p>
+<ul>
+  <li><strong>A rule I wrote</strong> — anything a <a href="routing-rules.html">routing rule</a> claims.</li>
+  <li><strong>A type folder</strong> — anything a <a href="type-folders.html">type folder</a> claims.</li>
+  <li><strong>Search by hand</strong> — conditions typed on the spot, matched as you type.</li>
+</ul>
+<p>
+  A search that turns out to be right can be kept with <strong>Save as a
+  rule…</strong>, which is the easiest way to write one: see what it catches
+  first, then keep it.
+</p>
+
+<h2>It reaches back</h2>
+<div class="note">
+  <strong>Filing only ever sees today.</strong> A sweep looks at what is loose in
+  the root. Move out searches Downloads <em>and</em> every folder Tideline has
+  filed, so a search written now finds the invoices already sitting in
+  <code>2026-07-02/</code>. Folders you made yourself are never opened.
+</div>
+
+<h2>Looking before you move</h2>
+<p>
+  Results are grouped by the condition that found them, so a pattern that is too
+  loose shows up as one long group of things that do not belong together. Each
+  row has <strong>Quick Look</strong> and <strong>Reveal</strong>, because
+  whether a PDF really is an invoice is a question about what is inside it.
+</p>
+<p>
+  A hunt started from a rule also offers whatever is sitting in that rule's
+  folder, matched or not — a file dragged there by hand is still that rule's
+  doing. Those are listed apart, under <em>Worth a look before you move it</em>,
+  and are <strong>never ticked for you</strong>.
+</p>
+
+<h2>Places</h2>
+<p>
+  A place is a folder you collect into, remembered as a bookmark rather than a
+  path, so it keeps working when the folder above it is renamed and says
+  <em>not mounted</em> rather than failing when a drive is unplugged.
+</p>
+<p>A place can carry a template, and the tokens fill in from each file's own date:</p>
+<pre class="tree"><code>~/Dropbox/Boekhouding/<span class="stays">{yyyy}</span>/kwartaal <span class="stays">{q}</span>/in</code></pre>
+<table>
+  <thead><tr><th>Token</th><th>Becomes</th></tr></thead>
+  <tbody>
+    <tr><td><code>{yyyy}</code> <code>{yy}</code></td><td>The year</td></tr>
+    <tr><td><code>{mm}</code></td><td>The month, <code>01</code>–<code>12</code></td></tr>
+    <tr><td><code>{dd}</code></td><td>The day, <code>01</code>–<code>31</code></td></tr>
+    <tr><td><code>{q}</code></td><td>The quarter, <code>1</code>–<code>4</code></td></tr>
+  </tbody>
+</table>
+<p>
+  Because the tokens read each file's own date, a batch that straddles the end of
+  a quarter lands in two folders — which is the answer the accounting wanted, and
+  the one a single fixed folder could not give.
+</p>
+<p>
+  The first time Tideline writes into a protected folder such as
+  <code>~/Documents</code>, macOS asks permission. That is asked for when you
+  pick the place, with the folder in front of you, rather than in the middle of
+  a move.
+</p>
+
+<h2 id="put-back">Put Back</h2>
+<p>
+  Every batch is recorded as one, so it comes back as one. <strong>Put
+  Back</strong> returns each file to the folder it came from — or to the root if
+  that folder has since gone — under the same rules as everything else: nothing
+  is overwritten, and a name already taken counts up.
+</p>
+<p>
+  It matters more here than anywhere else in the app. These are the only files
+  that leave the folder Tideline watches, and
+  <a href="filing.html">Put everything back</a> cannot reach them.
+</p>
+
+<h2>The rest of the promises hold</h2>
+<ul>
+  <li>Nothing is overwritten — <code>report.pdf</code> arrives as <code>report-1.pdf</code>.</li>
+  <li>A dated folder left empty by a move goes to the Trash. A rule or type folder does not: the next sweep will fill it again.</li>
+  <li>The skip list, hidden files and part-downloads are left alone, exactly as filing leaves them.</li>
+  <li><strong>Preview mode</strong> covers it: the list is built and shown, and nothing moves.</li>
+</ul>
+
+<div class="pager">
+<a href="reclaim-space.html"><span>Previous</span>Reclaim space</a>
+<a class="next" href="menu-bar.html"><span>Next</span>The menu bar</a>
+</div>
+</main>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>
+      Tideline is <a href="https://github.com/estruyf/tideline/blob/main/LICENSE">MIT licensed</a>,
+      by <a href="https://www.eliostruyf.com">Elio Struyf</a>.
+    </div>
+    <nav>
+      <a href="../">Home</a>
+      <a href="https://github.com/estruyf/tideline">Source</a>
+      <a href="https://github.com/estruyf/tideline/issues">Issues</a>
+      <a href="https://github.com/estruyf/tideline/blob/main/CHANGELOG.md">Changelog</a>
+    </nav>
+  </div>
+  <div class="wrap footer-count">
+    <a href="https://visitorbadge.io/status?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline&amp;slug=docs%2Fmove-out" title="Tideline visitors">
+      <img src="https://api.visitorbadge.io/api/visitors?path=https%3A%2F%2Fgithub.com%2Festruyf%2Ftideline&amp;countColor=%23263759&amp;slug=docs%2Fmove-out"
+           alt="Visitor count" height="20">
+    </a>
+  </div>
+</footer>
+
+</body>
+</html>

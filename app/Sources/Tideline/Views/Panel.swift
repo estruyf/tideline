@@ -53,7 +53,7 @@ extension View {
 
     /// The heading inside a card: what this box is, in as few words as it takes.
     func panelHeader() -> some View {
-        font(.caption.weight(.semibold))
+        font(.callout.weight(.semibold))
             .foregroundStyle(Theme.muted)
     }
 
@@ -63,6 +63,18 @@ extension View {
         formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .background(Theme.pane)
+    }
+
+    /// Explanatory prose: the sentence under a heading, the note beside a
+    /// control, the line that says what a setting will do.
+    ///
+    /// One step down from body, never two. The app had settled on `.caption`
+    /// for this, which is the size for a number in a column rather than for
+    /// something somebody actually has to read — a pane of it reads as small
+    /// before it reads as anything else. Colour is left to the caller, since
+    /// the same sentence is sometimes secondary and sometimes a warning.
+    func explanation() -> some View {
+        font(.callout)
     }
 
     /// A button that only navigates — it opens Finder, or moves you to another

@@ -1,12 +1,14 @@
 import Foundation
 
 /// What a history entry records: a file filed away, a dated folder cleared out,
-/// a duplicate copy trashed, or a kept copy given its plain name back.
+/// a duplicate copy trashed, a kept copy given its plain name back, or a file
+/// collected out of the watched folder altogether.
 enum RecordKind: String, Codable {
     case filed
     case cleared
     case removed
     case renamed
+    case collected
 }
 
 struct MoveRecord: Codable, Identifiable, Equatable {
@@ -52,6 +54,8 @@ struct PlannedMove: Identifiable, Equatable {
     var stamp: Date
     var byteSize: Int64
     var isFolder: Bool
+    /// True when a routing rule claimed it. Exclusive with `isByType`.
+    var isByRule: Bool = false
     /// True when a type rule claimed it rather than the date.
     var isByType: Bool
 }
@@ -144,6 +148,7 @@ enum Organizer {
         formatter.timeZone = .current
         formatter.dateFormat = snapshot.folderFormat.dateFormat
 
+        let ruleRouter = RuleRouter(rules: snapshot.rules)
         let router = TypeRouter(rules: snapshot.typeRules)
 
         let calendar = Calendar.current
@@ -159,7 +164,9 @@ enum Organizer {
             plan.inspected += 1
             let name = entry.lastPathComponent
 
-            guard shouldConsider(entry, name: name, snapshot: snapshot, router: router) else {
+            guard shouldConsider(
+                entry, name: name, snapshot: snapshot, rules: ruleRouter, router: router
+            ) else {
                 plan.leftAlone += 1
                 continue
             }
@@ -184,10 +191,13 @@ enum Organizer {
                 continue
             }
 
-            // The rule decides where it goes; the window above already decided
-            // that it goes at all.
-            let claimed = router.folderName(forExtension: entry.pathExtension)
-            let folderName = claimed ?? formatter.string(from: stamp)
+            // A rule decides where it goes; the window above already decided
+            // that it goes at all. Routing rules are asked first, or `Documents`
+            // would swallow an invoice before `Invoices` ever saw it.
+            let subject = RuleSubject(name: name, url: entry)
+            let byRule = ruleRouter.folderName(for: subject)
+            let byType = byRule == nil ? router.folderName(forExtension: entry.pathExtension) : nil
+            let folderName = byRule ?? byType ?? formatter.string(from: stamp)
 
             // The file's own length, as Finder lists it, rather than what it
             // takes up on disk — this is a list of files, not of space.
@@ -205,7 +215,8 @@ enum Organizer {
                 stamp: stamp,
                 byteSize: size,
                 isFolder: isFolder,
-                isByType: claimed != nil
+                isByRule: byRule != nil,
+                isByType: byType != nil
             ))
         }
 
@@ -256,10 +267,14 @@ enum Organizer {
     // MARK: - Rules
 
     private static func shouldConsider(
-        _ url: URL, name: String, snapshot: RunConfiguration, router: TypeRouter
+        _ url: URL, name: String, snapshot: RunConfiguration,
+        rules: RuleRouter, router: TypeRouter
     ) -> Bool {
         if isManagedFolderName(name) { return false }
-        // A folder a type rule owns is a destination, not something to file.
+        // A folder a rule owns is a destination, not something to file. This
+        // holds even while the rule has no tests yet, so a folder is not filed
+        // away in the middle of writing the rule that fills it.
+        if rules.owns(name) { return false }
         if router.owns(name) { return false }
         if matchesSkipList(name, patterns: snapshot.skipNames) { return false }
 
@@ -356,6 +371,9 @@ struct RunConfiguration {
     var includeFolders: Bool = true
     var dryRun: Bool = false
     var skipNames: [String] = []
+    /// Tried before the type rules, and in this order. Only the rules that are
+    /// switched on ever reach a sweep.
+    var rules: [Rule] = []
     /// Only the rules that are switched on ever reach a sweep.
     var typeRules: [TypeRule] = []
 }
@@ -370,6 +388,7 @@ extension RunConfiguration {
         includeFolders = settings.includeFolders
         dryRun = settings.dryRun
         skipNames = settings.skipNames
+        rules = settings.rules.filter(\.isEnabled)
         typeRules = settings.typeRules.filter(\.isEnabled)
     }
 }

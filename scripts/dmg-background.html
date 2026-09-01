@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tideline DMG background</title>
+    <!--
+  The source of assets/dmg/background.tiff — what someone sees inside the disk
+  image before they have run anything.
+
+  Rendered by scripts/render-dmg-background.sh at 640x420, which is the size the
+  DMG window is opened to. The two icons are drawn by Finder on top of this, at
+  the positions the committed .DS_Store holds; the wells here are what they land
+  in, so the picture and the .DS_Store have to move together. Their centres are
+  (160, 198) and (480, 198) measured from the top-left of the content area.
+
+  A well is taller than it is wide because Finder writes the item's name under
+  its icon, and that name is part of what has to sit inside the box.
+
+  All 420 of it is seen. A Finder window's title bar comes out of the height it
+  is given, so make-dmg-layout.sh asks for 453 to leave 420 of content. Those
+  two numbers move together: ask for too little and the bottom of this picture
+  is cropped, ask for too much and the view can be scrolled, which shows up as a
+  scroll bar down the right-hand edge.
+
+  ?theme=light switches the palette, but only one file can be the background and
+  the dark one ships.
+
+  Which raises the problem the bottom of each well solves. Finder draws an item's
+  name in the *system* appearance — white in Dark mode, near-black in Light — and
+  the background cannot follow, so a flat dark picture loses the two labels
+  entirely for anyone running Light. The wells therefore fade to a mid grey under
+  the label, light enough for black text and dark enough for white: about 4.5:1
+  each way. It is the one place in this picture where a colour is chosen by
+  contrast rather than by taste.
+-->
+    <style>
+      :root {
+        --bg-a: #10141c;
+        --bg-b: #1b2230;
+        --text: #e7e9ee;
+        --dim: #8b93a3;
+        --faint: #6b7280;
+        --accent: #ffd43b;
+      }
+
+      /* Shared by both themes: the plate is a surface, not a palette entry, and
+     it stays pale in either rendering because the icons have to stand on
+     something. The edge tones darken with it for the same reason.
+
+     --plate-label is the strip the name sits on, and it is the one colour here
+     picked by arithmetic rather than by eye. Finder writes that name in the
+     system appearance — near-black in Light, white in Dark — and a background
+     cannot know which. Only a mid tone is legible under both: white needs a
+     relative luminance under about 0.30 and near-black one over about 0.10,
+     and this sits between them at 0.16, which is 4.3:1 against black and
+     4.9:1 against white. The pale plate is 1.2:1 against white, which is why
+     the strip cannot simply be more of it. */
+      :root,
+      body.light {
+        --plate: #e7e9ee;
+        --plate-edge: rgba(29, 35, 48, 0.1);
+        --plate-dash: rgba(29, 35, 48, 0.28);
+        --plate-label: #6e7784;
+      }
+      body.light {
+        --bg-a: #e7ebf2;
+        --bg-b: #ffffff;
+        --text: #1d2330;
+        --dim: #5b6474;
+        --faint: #6b7280;
+        --accent: #a08000;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 640px;
+        height: 420px;
+        overflow: hidden;
+      }
+
+      body {
+        background: radial-gradient(
+          120% 130% at 22% -10%,
+          var(--bg-b) 0%,
+          var(--bg-a) 64%
+        );
+        font:
+          400 13px -apple-system,
+          BlinkMacSystemFont,
+          system-ui,
+          sans-serif;
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+        position: relative;
+      }
+
+      /* Everything is placed rather than flowed: the two wells have to line up with
+     coordinates that live in the .DS_Store, and a layout that reflows would put
+     them somewhere else the next time a word changes. */
+      .at {
+        position: absolute;
+      }
+
+      /* ---- Wordmark ---------------------------------------------------------- */
+
+      .mark {
+        top: 34px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 19px;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+      }
+      .tag {
+        top: 62px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 12px;
+        color: var(--dim);
+      }
+
+      /* ---- The two icon wells ------------------------------------------------ */
+
+      /* 160x180, holding a 128px icon at the top and its name underneath. The two
+     sides are marked differently on purpose: the left is a shelf with something
+     already on it, the right is an empty place to put it. */
+      .well {
+        width: 160px;
+        height: 180px;
+        top: 118px;
+        border-radius: 24px;
+        background: var(--plate);
+        /* The strip below is a child rather than a second colour stop, so the
+       two tones meet at an edge instead of fading into one another. It
+       overflows the rounded corners otherwise. */
+        overflow: hidden;
+      }
+      /* The bed the name sits on. 38 tall against a well of 180 puts its top at
+     260, which is where the 128px icon ends: the icon keeps the pale plate,
+     the label gets the tone it needs. Moving the well's height or the icon's
+     size means moving this with them. */
+      .strip {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 38px;
+        background: var(--plate-label);
+      }
+
+      .well.app {
+        left: 80px;
+        border: 1px solid var(--plate-edge);
+      }
+      .well.apps {
+        left: 400px;
+        border: 1.5px dashed var(--plate-dash);
+      }
+
+      .arrow {
+        top: 186px;
+        left: 284px;
+        width: 72px;
+        height: 36px;
+      }
+
+      /* ---- The instruction --------------------------------------------------- */
+
+      .hint {
+        top: 318px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .note {
+        top: 346px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 12px;
+        color: var(--faint);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="at mark">Tideline</div>
+    <div class="at tag">A tidy Downloads folder, every morning.</div>
+
+    <div class="at well app"><i class="strip"></i></div>
+    <div class="at well apps"><i class="strip"></i></div>
+
+    <svg
+      class="at arrow"
+      viewBox="0 0 72 36"
+      fill="none"
+      stroke="var(--accent)"
+      stroke-width="3.4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M6 18h52M47 8l13 10-13 10" />
+    </svg>
+
+    <div class="at hint">Drag it into Applications</div>
+    <div class="at note">
+      It runs in the menu bar, so there is no Dock icon.
+    </div>
+
+    <script>
+      if (new URLSearchParams(location.search).get("theme") === "light") {
+        document.body.classList.add("light");
+      }
+    </script>
+  </body>
+</html>

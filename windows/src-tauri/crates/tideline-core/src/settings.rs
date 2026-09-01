@@ -184,37 +184,50 @@ impl TypeRule {
     /// The reserved DOS device names are Windows' own trap: a folder called
     /// `CON` or `NUL` cannot be created at all.
     pub fn is_valid_folder_name(name: &str) -> bool {
-        const RESERVED: [&str; 22] = [
-            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7",
-            "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
-        ];
-
-        let trimmed = name.trim();
-        if trimmed.is_empty() || trimmed.chars().count() > 60 {
-            return false;
-        }
-        if trimmed.starts_with('.') {
-            return false;
-        }
-        // Windows forbids rather more than macOS does, and a trailing dot or
-        // space is silently stripped by the shell — which would rename the
-        // folder out from under the rule.
-        if trimmed.contains(['/', '\\', ':', '*', '?', '"', '<', '>', '|']) {
-            return false;
-        }
-        if trimmed.ends_with('.') || trimmed.ends_with(' ') {
-            return false;
-        }
-        let stem = trimmed
-            .split('.')
-            .next()
-            .unwrap_or(trimmed)
-            .to_ascii_uppercase();
-        if RESERVED.contains(&stem.as_str()) {
-            return false;
-        }
-        !crate::organizer::is_managed_folder_name(trimmed)
+        is_valid_folder_name(name)
     }
+}
+
+/// A destination folder name has to be usable as one, and must not look like
+/// something the app files by date — a rule called `2026-08` would collide with
+/// the dated folders and clearing would take it away.
+///
+/// The reserved DOS device names are Windows' own trap: a folder called `CON`
+/// or `NUL` cannot be created at all.
+///
+/// Type rules and routing rules are held to the same standard, since both end
+/// up as a folder in the root.
+pub fn is_valid_folder_name(name: &str) -> bool {
+    const RESERVED: [&str; 22] = [
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
+        "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    ];
+
+    let trimmed = name.trim();
+    if trimmed.is_empty() || trimmed.chars().count() > 60 {
+        return false;
+    }
+    if trimmed.starts_with('.') {
+        return false;
+    }
+    // Windows forbids rather more than macOS does, and a trailing dot or
+    // space is silently stripped by the shell — which would rename the
+    // folder out from under the rule.
+    if trimmed.contains(['/', '\\', ':', '*', '?', '"', '<', '>', '|']) {
+        return false;
+    }
+    if trimmed.ends_with('.') || trimmed.ends_with(' ') {
+        return false;
+    }
+    let stem = trimmed
+        .split('.')
+        .next()
+        .unwrap_or(trimmed)
+        .to_ascii_uppercase();
+    if RESERVED.contains(&stem.as_str()) {
+        return false;
+    }
+    !crate::organizer::is_managed_folder_name(trimmed)
 }
 
 /// Lower-cased, leading dots dropped, duplicates removed, order kept.
@@ -256,6 +269,10 @@ pub struct RunConfiguration {
     pub dry_run: bool,
     #[serde(default)]
     pub skip_names: Vec<String>,
+    /// Tried before the type rules, and in this order. Only the rules that are
+    /// switched on ever reach a sweep.
+    #[serde(default)]
+    pub rules: Vec<crate::rule::Rule>,
     /// Only the rules that are switched on ever reach a sweep.
     #[serde(default)]
     pub type_rules: Vec<TypeRule>,
@@ -275,6 +292,7 @@ impl RunConfiguration {
             include_folders: true,
             dry_run: false,
             skip_names: vec!["Inbox".into(), "Screenshots".into()],
+            rules: Vec::new(),
             type_rules: Vec::new(),
         }
     }

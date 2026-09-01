@@ -42,7 +42,9 @@ enum Weigher {
         let fileManager = FileManager.default
         var found: [LargeFile] = []
 
-        for place in ReviewScope.places(root: configuration.root, typeRules: configuration.typeRules) {
+        for place in ReviewScope.places(
+            root: configuration.root, rules: configuration.rules, typeRules: configuration.typeRules
+        ) {
             guard let contents = try? fileManager.contentsOfDirectory(
                 at: place.url,
                 includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .totalFileAllocatedSizeKey],
@@ -152,6 +154,7 @@ enum Weigher {
 struct LargeFileConfiguration {
     var root: URL
     /// Every rule, switched on or not — their folders are looked in either way.
+    var rules: [Rule] = []
     var typeRules: [TypeRule] = []
     var skipNames: [String] = []
     var dateBasis: DateBasis = .added
@@ -167,6 +170,7 @@ extension LargeFileConfiguration {
     @MainActor
     init(_ settings: Settings) {
         root = settings.downloadsURL
+        rules = settings.rules
         typeRules = settings.typeRules
         skipNames = settings.skipNames
         dateBasis = settings.dateBasis

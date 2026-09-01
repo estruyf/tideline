@@ -1,13 +1,13 @@
 import Foundation
 
-/// One file already filed into a dated folder that a type rule now claims.
+/// One file already filed into a dated folder that a rule now claims.
 struct RegroupCandidate: Identifiable, Equatable {
     var id: String { url.path }
     var url: URL
     var name: String
     /// The dated folder it sits in today.
     var currentFolder: String
-    /// The type folder that would take it.
+    /// The folder a rule would take it to.
     var targetFolder: String
     var byteSize: Int64
 }
@@ -22,9 +22,11 @@ struct RegroupResult {
     var emptiedCount: Int { emptied.count }
 }
 
-/// Catching up. Switching on `Installers` only changes where *future* downloads
-/// go — every `.dmg` already tucked into a dated folder stays there. This walks
-/// the dated folders the app made and pulls out what the rules now claim.
+/// Catching up. Switching on `Installers`, or writing a rule that finds
+/// invoices, only changes where *future* downloads go — everything already
+/// tucked into a dated folder stays there. This walks the dated folders the app
+/// made and pulls out what the rules now claim, which is what makes a rule
+/// written today reach what arrived last month.
 ///
 /// Only folders matching the dated pattern are opened, only their immediate
 /// contents are considered, and nothing that is not claimed by a rule is
@@ -34,8 +36,9 @@ enum Regrouper {
     // MARK: - Finding
 
     static func candidates(configuration: RegroupConfiguration) -> [RegroupCandidate] {
+        let ruleRouter = RuleRouter(rules: configuration.rules)
         let router = TypeRouter(rules: configuration.typeRules)
-        guard !router.isEmpty else { return [] }
+        guard !ruleRouter.isEmpty || !router.isEmpty else { return [] }
 
         let fileManager = FileManager.default
         guard let entries = try? fileManager.contentsOfDirectory(
@@ -66,7 +69,14 @@ enum Regrouper {
                 // something a normal sweep would have refused to do.
                 if Organizer.incompleteExtensions.contains(ext) { continue }
                 if Organizer.matchesSkipList(name, patterns: configuration.skipNames) { continue }
-                guard let target = router.folderName(forExtension: ext) else { continue }
+
+                // The same order a sweep asks in: a routing rule first, then a
+                // type rule, or catching up would file things somewhere filing
+                // never would.
+                let subject = RuleSubject(name: name, url: item)
+                let claimed = ruleRouter.folderName(for: subject)
+                    ?? router.folderName(forExtension: ext)
+                guard let target = claimed else { continue }
 
                 let values = try? item.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
                 if values?.isDirectory == true {
@@ -149,7 +159,8 @@ enum Regrouper {
 /// An immutable copy of what catching up needs, mirroring `RunConfiguration`.
 struct RegroupConfiguration {
     var root: URL
-    /// Only the rules that are switched on.
+    /// Only the rules that are switched on, routing rules first.
+    var rules: [Rule] = []
     var typeRules: [TypeRule] = []
     var skipNames: [String] = []
     var includeFolders: Bool = true
@@ -162,6 +173,7 @@ extension RegroupConfiguration {
     @MainActor
     init(_ settings: Settings) {
         root = settings.downloadsURL
+        rules = settings.rules.filter(\.isEnabled)
         typeRules = settings.typeRules.filter(\.isEnabled)
         skipNames = settings.skipNames
         includeFolders = settings.includeFolders

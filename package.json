@@ -1,6 +1,6 @@
 {
   "name": "tideline",
-  "version": "1.11.1",
+  "version": "1.12.1",
   "description": "Files older downloads into folders named for the day they arrived. Native on macOS, Tauri on Windows.",
   "license": "MIT",
   "author": "Elio Struyf",
@@ -17,6 +17,9 @@
     "build": "cd app && ./build.sh",
     "build:install": "cd app && ./build.sh --install",
     "build:zip": "cd app && ./build.sh --zip",
+    "build:dmg": "cd app && ./build.sh --dmg",
+    "dmg:background": "./scripts/render-dmg-background.sh",
+    "dmg:layout": "cd app && ./Tools/make-dmg-layout.sh",
     "sign": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --zip",
     "notarize": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --notarize",
     "release": "cd app && CODESIGN_IDENTITY=\"${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | sed -n 's/.*\"\\(Developer ID Application: [^\"]*\\)\".*/\\1/p' | head -1)}\" ./build.sh --notarize",

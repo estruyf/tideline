@@ -36,12 +36,12 @@ the first launch, and every setting in the window.
 **🎬 [A ninety-second tour](https://estruyf.github.io/tideline/#tour)** — every
 screen, from the first run to the menu bar.
 
-Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
-because it ships for both Apple silicon and Intel. No Electron, no bundled
+Native Swift with no dependencies at all: about 3 MB to download, 9.6 MB on
+disk because it ships for both Apple silicon and Intel. No Electron, no bundled
 runtime, no helper process quietly installed beside it — one menu bar app that
 schedules itself, and quitting it really is the end of it.
 
-![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.11.0/overview.png)
+![The Tideline window: the sidebar, the status card, and the Downloads folder as it stands](./assets/1.12.0/overview.png)
 
 > **Windows — beta.** There is a Windows build under [`windows/`](./windows):
 > the same filing rules, rewritten in Rust behind a [Tauri](https://tauri.app)
@@ -86,10 +86,12 @@ itself still grows, and because nothing here should ever be a surprise.
 | | |
 | --- | --- |
 | [Filing](https://estruyf.github.io/tideline/docs/filing.html) | One folder per day or per month, how long things stay loose, and the list of names never to touch |
+| [Routing rules](https://estruyf.github.io/tideline/docs/routing-rules.html) | Folders that claim a file by its name, or by the site it came from — so an invoice is filed as an invoice |
 | [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html) | Send every `.dmg` to `Installers/` whatever day it arrived on |
 | [Schedule](https://estruyf.github.io/tideline/docs/schedule.html) | On a folder change, once a day, when the app starts, or any combination |
 | [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) | Old dated folders to the Trash, once you have stopped needing them |
 | [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) | Duplicates, big files and old folders — everything that could give space back |
+| [Move out](https://estruyf.github.io/tideline/docs/move-out.html) | Find things across Downloads and everything already filed, then move the batch somewhere else — and put it back in one go |
 | [Preview mode](https://estruyf.github.io/tideline/docs/filing.html#preview) | A sweep that touches nothing and then says what it would have done |
 | [Putting it back](https://estruyf.github.io/tideline/docs/filing.html#putting-it-back) | One sheet that moves everything Tideline ever filed back into the root |
 
@@ -109,13 +111,20 @@ With [Homebrew](https://brew.sh):
 brew install --cask estruyf/tap/tideline
 ```
 
-Or grab the zip from the [latest release](https://github.com/estruyf/tideline/releases/latest),
-unzip it, and drag **Tideline.app** into `/Applications`.
+Or open the disk image from the
+[latest release](https://github.com/estruyf/tideline/releases/latest) and drag
+**Tideline.app** onto the Applications folder beside it. The zip attached to the
+same release is the same build, and is the one Tideline downloads when it
+updates itself.
 
 Either way it ends up in `/Applications`, which is where it keeps itself
 current: Tideline looks for a newer release once a day and offers it. That is
-also why `brew upgrade` leaves it alone; the cask is marked as updating itself,
-so the two never race.
+also why a plain `brew upgrade` leaves it alone; the cask is marked as updating
+itself, so the two never race. To take a version from Homebrew instead, name it:
+
+```bash
+brew upgrade --cask estruyf/tap/tideline
+```
 
 Nothing is filed until you say so — what the app asks the first time you open it
 is on [First launch](https://estruyf.github.io/tideline/docs/first-launch.html).
@@ -126,8 +135,9 @@ The manual is at **[estruyf.github.io/tideline](https://estruyf.github.io/tideli
 
 - [Install](https://estruyf.github.io/tideline/docs/install.html) and [First launch](https://estruyf.github.io/tideline/docs/first-launch.html) — getting it running, and the question it asks
 - [The window](https://estruyf.github.io/tideline/docs/the-window.html) — the panes, and what the colours mean
-- [Filing](https://estruyf.github.io/tideline/docs/filing.html), [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html), [Schedule](https://estruyf.github.io/tideline/docs/schedule.html), [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) — the rules a sweep follows
+- [Filing](https://estruyf.github.io/tideline/docs/filing.html), [Routing rules](https://estruyf.github.io/tideline/docs/routing-rules.html), [Type folders](https://estruyf.github.io/tideline/docs/type-folders.html), [Schedule](https://estruyf.github.io/tideline/docs/schedule.html), [Clearing](https://estruyf.github.io/tideline/docs/clearing.html) — the rules a sweep follows
 - [Reclaim space](https://estruyf.github.io/tideline/docs/reclaim-space.html) — duplicates, big files, old dated folders
+- [Move out](https://estruyf.github.io/tideline/docs/move-out.html) — taking things out of Downloads, and putting a batch back
 - [The menu bar](https://estruyf.github.io/tideline/docs/menu-bar.html), [General and activity](https://estruyf.github.io/tideline/docs/general.html), [Updates](https://estruyf.github.io/tideline/docs/updates.html)
 - [Troubleshooting](https://estruyf.github.io/tideline/docs/troubleshooting.html) and [Uninstall](https://estruyf.github.io/tideline/docs/uninstall.html)
 - [Windows (beta)](https://estruyf.github.io/tideline/docs/windows.html) — what the Windows build does, and what it does not do yet

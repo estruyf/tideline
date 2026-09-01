@@ -39,6 +39,17 @@ Stapling has to happen on the `.app` rather than the zip, which is why the
 archive is rebuilt at the end — **ship the zip produced after that step**,
 `app/dist/Tideline.zip`.
 
+Add `--dmg` and there is a second round trip. The disk image is built *after*
+the app is stapled, signed, submitted on its own, and stapled in turn, so both
+downloads carry a ticket: the app's covers a copy dragged out of the image, the
+image's covers a download that is checked without ever being opened. That is
+the order Apple asks for, and it is why the release job takes a few minutes
+longer than a zip-only one.
+
+```bash
+cd app && CODESIGN_IDENTITY="Developer ID Application: ..." ./build.sh --notarize --dmg
+```
+
 To sign without notarizing — a build for your own machines that survives a
 rebuild — use `npm run sign`.
 
@@ -80,3 +91,8 @@ passes, so this normally means something re-signed the bundle afterwards.
 **`spctl --assess` rejects the app.** The ticket did not staple. Check with
 `xcrun stapler validate app/dist/Tideline.app`, and make sure you are shipping
 the zip written *after* stapling rather than one from an earlier step.
+
+**`spctl --assess` rejects the disk image.** Assess an image with
+`--type open --context context:primary-signature` rather than `--type execute`,
+which is for the app. If it really is unstapled, check that the image was built
+after the app was stapled: building it first bakes in a bundle with no ticket.

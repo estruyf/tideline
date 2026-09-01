@@ -13,9 +13,10 @@ struct Place: Equatable {
 /// yourself is never opened, exactly as filing never opens one.
 enum ReviewScope {
 
-    static func places(root: URL, typeRules: [TypeRule]) -> [Place] {
+    static func places(root: URL, rules: [Rule], typeRules: [TypeRule]) -> [Place] {
         // Every rule's folder, on or off: a rule switched off still has files
         // sitting in the folder it made while it was on.
+        let ruleRouter = RuleRouter(rules: rules)
         let router = TypeRouter(rules: typeRules)
 
         guard let entries = try? FileManager.default.contentsOfDirectory(
@@ -29,7 +30,8 @@ enum ReviewScope {
         for entry in entries.sorted(by: { $0.lastPathComponent > $1.lastPathComponent }) {
             let name = entry.lastPathComponent
             guard (try? entry.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
-            guard Organizer.isManagedFolderName(name) || router.owns(name) else { continue }
+            guard Organizer.isManagedFolderName(name) || ruleRouter.owns(name) || router.owns(name)
+            else { continue }
             places.append(Place(url: entry, label: name))
         }
 

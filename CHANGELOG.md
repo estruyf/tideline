@@ -5,6 +5,114 @@ All notable changes to Tideline are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1] - 2026-08-31
+
+### Added
+
+- **A disk image beside the zip.** The manual download is now
+  `Tideline-<version>-macos-universal.dmg`: a window with the app on the left,
+  the Applications folder on the right, and an arrow between them. Dragging it
+  across is the whole install, and there is no unpacking step to get wrong —
+  which also retires the oldest support question, the zip inside a zip that
+  comes off the Actions page instead of the release.
+
+  It is also the first place there is room to say the thing a zip cannot:
+  Tideline runs in the menu bar and has no Dock icon. That is the first question
+  anybody has after installing it, and now it is answered before they ask.
+
+  The zip stays, and stays the asset the in-app updater fetches. An update
+  should be a file the app can unpack on its own rather than a volume it has to
+  mount, so the two downloads exist for two different readers. Homebrew keeps
+  reading the zip as well.
+
+## [1.12.0] - 2026-08-31
+
+### Added
+
+- **Routing rules: folders that claim a file by its name, or by where it came
+  from.** A type folder asks what a file *is*, which settles a `.dmg` and
+  settles nothing about an invoice — an invoice is a PDF like every other PDF.
+  A routing rule is a folder and a list of conditions, and any one of them
+  matching is enough: `name *invoice*`, or `downloaded from *stripe*`.
+
+  The second one is the interesting half. macOS records the URL a download
+  arrived from and keeps it when the file is moved, so a rule can still
+  recognise something you renamed by hand, and a rule written today matches what
+  arrived last month. Windows keeps the same thing in the `Zone.Identifier`
+  stream, so both apps read it. The whole URL is matched, not just the host, and
+  it is unescaped first — a receipt from `logitech.com` says what it is only in
+  its path, and a Stripe invoice arrives from an S3 bucket that mentions neither.
+
+  Rules are tried before the type folders, top down, first match wins.
+  Otherwise `Documents` would swallow an invoice before `Invoices` ever saw it.
+  Like a type folder, a rule decides *where* a file goes and never *when*: it
+  still waits out the window set under Filing.
+
+  Conditions ignore case unless you say otherwise, which the skip list does not.
+  A skip pattern names a file you can see in the folder; a rule is a hunt for a
+  word that could have been typed either way, and a rule that quietly stops
+  matching is not something anybody notices.
+
+- **Move out: finding things and taking them out of Downloads altogether.** The
+  quarter's invoices into the accounts, a shoot onto an external drive. It never
+  runs on its own — you say what to look for, the app says what it found and
+  which condition found it, and only what you tick actually moves.
+
+  It searches Downloads *and* every folder Tideline has filed, which is what
+  makes a rule retroactive: a search written today reaches the invoices already
+  sitting in `2026-07-02/`. Filing alone can never do that, because a sweep only
+  ever sees what is loose in the root.
+
+  A destination is remembered as a bookmark rather than a path, so it survives
+  the folder above it being renamed, and it can carry a template —
+  `{yyyy}/kwartaal {q}/in`. The tokens fill in from each file's own date, so a
+  batch that straddles the end of a quarter lands in two folders, which is the
+  answer the accounting wanted.
+
+  This is the one thing in the app that writes outside the folder it watches, so
+  a whole batch is recorded as one and **Put Back** returns it — each file to
+  the folder it came from, under the same collision rules as everything else.
+
+- **Catching up covers routing rules too.** Catch Up… already pulled files out
+  of the dated folders when a type folder was switched on; it now does the same
+  for a rule you have just written.
+
+- **Move Out… in the menu bar**, beside the Reclaim space reviews. Like them it
+  finds things and asks; unlike a sweep it never acts on its own.
+
+### Changed
+
+- **Nothing in the window is smaller than 12pt.** Explanatory text — the
+  sentence under a heading, the note beside a control — was two steps down from
+  body, at the size meant for a number in a column. A pane of it read as small
+  before it read as anything else. Sizes that were doing real work as small
+  text, tallies and per-row dates among them, came up with it, and the columns
+  cut to fit the old size were widened to match.
+
+- **Catch Up… stays on the pane you asked from.** Asking from Routing rules
+  jumped the window to Type folders before opening the sheet. It acts on both
+  kinds of rule, so neither pane is more its home than the other.
+
+## [1.11.2] - 2026-08-31
+
+### Fixed
+
+- **Every relaunch asked for access it already had.** Opening the window after
+  an update showed the permission banner and **Allow Access…**, on an install
+  that had been filing for months. Nothing was actually wrong with the
+  permission: the app deliberately refuses to read the folder before the
+  question has been put — reading is what raises the macOS prompt — and at
+  launch it never recorded that the question had been put long ago, so it sat
+  there waiting to ask. Pressing the button read the folder, found the access
+  it always had, and the banner went.
+
+  It now checks at launch, silently, the way it was meant to. The banner is
+  back to meaning what it says. Filing itself was never affected — the daily
+  sweep and the folder watcher kept working throughout — but the sweep on
+  launch, the catch-up for a sweep missed while the Mac was off, the folder
+  size and the Reclaim space figures all waited on that check, so they were
+  skipped until the window was opened and the button pressed.
+
 ## [1.11.1] - 2026-08-29
 
 ### Fixed
@@ -513,6 +621,9 @@ First public release.
   signed app rather than a script, macOS scopes that permission to Tideline
   alone instead of to `bash` or your terminal.
 
+[1.12.1]: https://github.com/estruyf/tideline/compare/v1.12.0...v1.12.1
+[1.12.0]: https://github.com/estruyf/tideline/compare/v1.11.2...v1.12.0
+[1.11.2]: https://github.com/estruyf/tideline/compare/v1.11.1...v1.11.2
 [1.11.1]: https://github.com/estruyf/tideline/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/estruyf/tideline/compare/v1.9.0...v1.11.0
 [1.9.0]: https://github.com/estruyf/tideline/compare/v1.8.0...v1.9.0

@@ -40,7 +40,7 @@ struct UninstallView: View {
                 .font(.title3.weight(.semibold))
 
             Text("Your downloads and every dated folder stay exactly where they are. Only the app and its own settings go away.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -116,14 +116,14 @@ private struct Step: View {
             // A filled badge, so it takes the colour that goes on the accent
             // rather than the label colour the system would pick.
             Text("\(number)")
-                .font(.caption.weight(.bold))
+                .font(.callout.weight(.bold))
                 .foregroundStyle(Theme.onAccent)
                 .frame(width: 18, height: 18)
                 .background(Theme.accent, in: Circle())
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.callout.weight(.medium))
                 Text(detail)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

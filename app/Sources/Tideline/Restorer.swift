@@ -5,10 +5,10 @@ struct RestoreCandidate: Identifiable, Equatable {
     var id: String { url.path }
     var url: URL
     var name: String
-    /// The folder it sits in today — a dated one, or a type folder.
+    /// The folder it sits in today — a dated one, or a folder a rule made.
     var currentFolder: String
-    /// True when a type folder claimed it rather than the date.
-    var isByType: Bool
+    /// True when a rule claimed it — routing or type — rather than the date.
+    var isByRule: Bool
     var byteSize: Int64
 }
 
@@ -43,13 +43,16 @@ enum Restorer {
             options: [.skipsHiddenFiles]
         ) else { return [] }
 
-        let types = Set(configuration.typeFolderNames)
+        let destinations = Set(configuration.destinationFolderNames)
 
         // Newest first, so the list opens on what was filed most recently —
         // which is what someone undoing filing is most likely to be looking for.
         let folders = entries
             .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true }
-            .filter { Organizer.isManagedFolderName($0.lastPathComponent) || types.contains($0.lastPathComponent) }
+            .filter {
+                Organizer.isManagedFolderName($0.lastPathComponent)
+                    || destinations.contains($0.lastPathComponent)
+            }
             .sorted { $0.lastPathComponent > $1.lastPathComponent }
 
         var found: [RestoreCandidate] = []
@@ -70,7 +73,7 @@ enum Restorer {
                     url: item,
                     name: item.lastPathComponent,
                     currentFolder: name,
-                    isByType: types.contains(name),
+                    isByRule: destinations.contains(name),
                     byteSize: Int64(values?.fileSize ?? 0)
                 ))
             }
@@ -173,9 +176,10 @@ enum Restorer {
 /// `RunConfiguration`.
 struct RestoreConfiguration {
     var root: URL
-    /// Every type folder the app knows about, switched on or not: a folder it
-    /// filled last month is still its doing after the rule was switched off.
-    var typeFolderNames: [String] = []
+    /// Every folder a rule owns — routing and type both — switched on or not:
+    /// a folder it filled last month is still its doing after the rule was
+    /// switched off.
+    var destinationFolderNames: [String] = []
     var dryRun: Bool = false
     /// Folders left empty by the move go to the Trash.
     var removeEmptied: Bool = true
@@ -185,7 +189,7 @@ extension RestoreConfiguration {
     @MainActor
     init(_ settings: Settings) {
         root = settings.downloadsURL
-        typeFolderNames = settings.typeRules.map(\.name)
+        destinationFolderNames = settings.rules.map(\.name) + settings.typeRules.map(\.name)
         dryRun = settings.dryRun
     }
 }

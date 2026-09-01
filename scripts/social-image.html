@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tideline 1.12 announcement image</title>
+<!--
+  The source of assets/social-1.12.jpg and assets/social-1.12-light.jpg.
+  Rendered by scripts/render-social.sh at 1200x630 with a 2x scale factor —
+  1.91:1, the shape X and LinkedIn crop a link preview to.
+
+  It draws the result rather than the feature: the same PDF found two different
+  ways, one by its name and one by the site it came from. A list of bullet
+  points would say the app has routing rules; this shows why they were needed.
+
+  Filenames are the real ones from the release notes, with the account portions
+  left as they were — they identify a Stripe invoice, not a person.
+
+  ?theme=light switches the palette, exactly as the pitch banner does.
+-->
+<style>
+  :root {
+    --bg-a: #10141c;
+    --bg-b: #1b2230;
+    --pane: #15181f;
+    --card: #202736;
+    --border: #374151;
+    --hover: #2d3142;
+    --text: #d9dbe1;
+    --muted: #9ba4b7;
+    --faint: #6b7280;
+    --accent: #ffd43b;
+    --on-accent: #15181f;
+    --accent-text: #ffd43b;
+    --chip: rgba(255, 212, 59, 0.14);
+    --shadow: 0 26px 64px rgba(0, 0, 0, 0.55);
+  }
+  body.light {
+    --bg-a: #eef1f6;
+    --bg-b: #ffffff;
+    --pane: #f8f9fb;
+    --card: #ffffff;
+    --border: #bcc4d1;
+    --hover: #e1e4e8;
+    --text: #202736;
+    --muted: #505869;
+    --faint: #6b7280;
+    --accent: #ffd43b;
+    --on-accent: #15181f;
+    --accent-text: #a08000;
+    --chip: rgba(160, 128, 0, 0.12);
+    --shadow: 0 20px 44px rgba(24, 32, 48, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 1200px; height: 630px;
+    display: flex; align-items: center; gap: 48px;
+    padding: 0 54px;
+    background: linear-gradient(135deg, var(--bg-a), var(--bg-b));
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .left { width: 486px; flex: none; }
+
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 26px; }
+  .brand img { width: 38px; height: 38px; border-radius: 9px; display: block; }
+  .brand b { font-size: 23px; font-weight: 600; letter-spacing: -0.01em; }
+  .ver {
+    font-size: 13px; font-weight: 600; color: var(--on-accent);
+    background: var(--accent); border-radius: 999px; padding: 3px 10px;
+  }
+
+  h1 {
+    font-size: 53px; line-height: 1.07; letter-spacing: -0.024em;
+    font-weight: 600; margin: 0 0 24px;
+  }
+  h1 em { font-style: normal; color: var(--accent-text); }
+
+  p { font-size: 21px; line-height: 1.48; color: var(--muted); margin: 0; }
+  p strong { color: var(--text); font-weight: 600; }
+
+  .right { flex: 1; min-width: 0; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card + .card { margin-top: 13px; }
+
+  .head {
+    display: flex; align-items: center; gap: 9px;
+    padding: 15px 17px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tick { width: 15px; height: 15px; flex: none; }
+  .lbl { font-size: 14.5px; color: var(--muted); }
+  .chip {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14.5px; color: var(--accent-text);
+    background: var(--chip); border-radius: 6px; padding: 4px 9px;
+  }
+  .count { margin-left: auto; font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+  .row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 12px 17px;
+    border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  }
+  .row:first-of-type { border-top: 0; }
+  .name {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 15.5px; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .where { font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .size { margin-left: auto; font-size: 14px; color: var(--faint); white-space: nowrap; }
+  .doc { width: 13px; height: 15px; flex: none; }
+
+  .foot {
+    margin-top: 17px; display: flex; align-items: center; gap: 13px;
+    font-size: 15px; line-height: 1.4; color: var(--muted);
+  }
+  .pill {
+    background: var(--accent); color: var(--on-accent);
+    font-size: 15px; font-weight: 600; white-space: nowrap;
+    border-radius: 8px; padding: 10px 16px;
+  }
+  .more {
+    padding: 10px 17px; font-size: 14px; color: var(--accent-text);
+    border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+  }
+</style>
+</head>
+<body>
+
+<div class="left">
+  <div class="brand">
+    <img src="../site/icon.png" alt="">
+    <b>Tideline</b>
+    <span class="ver">1.12</span>
+  </div>
+
+  <h1>An invoice is a PDF like <em>every other PDF</em>.</h1>
+
+  <p>
+    So filing by file type never helped. Tideline now files by name — or by
+    <strong>the site a file was downloaded from</strong>, which macOS remembers
+    even after you rename it.
+  </p>
+</div>
+
+<div class="right">
+
+  <div class="card">
+    <div class="head">
+      <svg class="tick" viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="var(--accent)"/>
+        <path d="M4 8.3l2.6 2.6L12 5.6" fill="none" stroke="var(--on-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">matched</span>
+      <span class="chip">downloaded from stripe.com</span>
+      <span class="count">9 files</span>
+    </div>
+    <div class="row">
+      <svg class="doc" viewBox="0 0 12 15" aria-hidden="true"><path d="M1 1h6l4 4v9H1z" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      <span class="name">Invoice-69F5D7E6-0005.pdf</span>
+      <span class="where">2026-06-02/</span>
+      <span class="size">44 KB</span>
+    </div>
+    <div class="row">
+      <svg class="doc" viewBox="0 0 12 15" aria-hidden="true"><path d="M1 1h6l4 4v9H1z" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      <span class="name">Receipt-2916-3946.pdf</span>
+      <span class="where">2026-07-19/</span>
+      <span class="size">38 KB</span>
+    </div>
+    <div class="row">
+      <svg class="doc" viewBox="0 0 12 15" aria-hidden="true"><path d="M1 1h6l4 4v9H1z" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      <span class="name">Invoice-HMOWMPU7-0001.pdf</span>
+      <span class="where">2026-08-31/</span>
+      <span class="size">26 KB</span>
+    </div>
+    <div class="more">6 more from stripe.com · show</div>
+  </div>
+
+  <div class="card">
+    <div class="head">
+      <svg class="tick" viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="var(--accent)"/>
+        <path d="M4 8.3l2.6 2.6L12 5.6" fill="none" stroke="var(--on-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="lbl">matched</span>
+      <span class="chip">name *invoice*</span>
+      <span class="count">4 files</span>
+    </div>
+    <div class="row">
+      <svg class="doc" viewBox="0 0 12 15" aria-hidden="true"><path d="M1 1h6l4 4v9H1z" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-linejoin="round"/></svg>
+      <span class="name">Invoice-RUDVUELT-0005.pdf</span>
+      <span class="where">Downloads/</span>
+      <span class="size">41 KB</span>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="pill">Move 12 items to 2026</span>
+    <span>They leave Downloads for good. Put Back returns the batch.</span>
+  </div>
+
+</div>
+
+<script>
+  if (new URLSearchParams(location.search).get('theme') === 'light') {
+    document.body.classList.add('light');
+  }
+</script>
+
+</body>
+</html>

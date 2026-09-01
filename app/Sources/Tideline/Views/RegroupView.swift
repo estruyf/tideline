@@ -43,7 +43,7 @@ struct RegroupView: View {
                 .font(.headline)
 
             Text("Switching a type folder on only changes where new downloads go. These are files already sitting in a dated folder that the rules now claim.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -70,7 +70,7 @@ struct RegroupView: View {
             Text(hasRules
                  ? "Nothing in the dated folders matches a type folder you have switched on."
                  : "Switch one on under Filing, then come back here to catch up.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -89,7 +89,7 @@ struct RegroupView: View {
                                     .truncationMode(.middle)
                                 Spacer(minLength: 12)
                                 Text(candidate.currentFolder)
-                                    .font(.caption.monospacedDigit())
+                                    .font(.callout.monospacedDigit())
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -103,7 +103,7 @@ struct RegroupView: View {
                             toggleAll(in: group)
                         }
                         .buttonStyle(.borderless)
-                        .font(.caption)
+                        .font(.callout)
                     }
                 }
             }
@@ -115,15 +115,15 @@ struct RegroupView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually move.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.accentText)
                 } else if !chosen.isEmpty {
                     Text("A dated folder left empty by this goes to the Trash.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(.secondary)
                 }
             }

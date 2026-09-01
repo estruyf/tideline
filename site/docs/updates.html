@@ -44,10 +44,12 @@
 <ul>
 <li><a href="the-window.html">The window</a></li>
 <li><a href="filing.html">Filing</a></li>
+<li><a href="routing-rules.html">Routing rules</a></li>
 <li><a href="type-folders.html">Type folders</a></li>
 <li><a href="schedule.html">Schedule</a></li>
 <li><a href="clearing.html">Clearing</a></li>
 <li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="move-out.html">Move out</a></li>
 <li><a href="menu-bar.html">The menu bar</a></li>
 <li><a href="general.html">General and activity</a></li>
 </ul>
@@ -127,9 +129,11 @@
 
 <div class="note note-info">
   <strong>Installed with Homebrew?</strong> The cask is marked as self-updating,
-  so <code>brew upgrade</code> leaves Tideline alone and the two never race.
-  <code>brew upgrade --greedy</code> installs a new version through Homebrew
-  instead, if you would rather it came from there.
+  so a plain <code>brew upgrade</code> leaves Tideline alone and the two never
+  race. Naming it takes the new version from Homebrew instead:
+  <code>brew upgrade --cask estruyf/tap/tideline</code>.
+  <code>brew upgrade --greedy</code> does the same across every self-updating
+  cask you have.
 </div>
 
 <p>

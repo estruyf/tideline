@@ -46,7 +46,7 @@ struct LargeFileView: View {
                 .font(.headline)
 
             Text("The biggest files in \(settings.downloadsURL.lastPathComponent), and in the folders Tideline made. Nothing is ticked for you — have a look in Finder first, then send what you are done with to the Trash.")
-                .font(.callout)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -71,7 +71,7 @@ struct LargeFileView: View {
             Text("Nothing in there is that big")
                 .font(.body.weight(.medium))
             Text("No file over \(Self.threshold(settings.largeFileThresholdMB)). Try a smaller size below — folders you made yourself are never looked in.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -105,11 +105,11 @@ struct LargeFileView: View {
             Spacer(minLength: 12)
 
             Text(Self.bytes.string(fromByteCount: file.byteSize))
-                .font(.caption.monospacedDigit().weight(.medium))
-                .frame(width: 68, alignment: .trailing)
+                .font(.callout.monospacedDigit().weight(.medium))
+                .frame(width: 80, alignment: .trailing)
 
             Text(file.folder)
-                .font(.caption.monospacedDigit())
+                .font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -118,9 +118,9 @@ struct LargeFileView: View {
                 .background(Theme.hover, in: Capsule())
 
             Text(Self.day.string(from: file.date))
-                .font(.caption.monospacedDigit())
+                .font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 74, alignment: .trailing)
+                .frame(width: 88, alignment: .trailing)
 
             Button {
                 controller.reveal(file.url)
@@ -129,6 +129,7 @@ struct LargeFileView: View {
             }
             .buttonStyle(.borderless)
             .help("Show \(file.name) in Finder")
+                .accessibilityLabel("Show \(file.name) in Finder")
         }
         .contextMenu {
             Button("Show in Finder") { controller.reveal(file.url) }
@@ -139,16 +140,16 @@ struct LargeFileView: View {
         HStack(alignment: .bottom, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(tally)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
 
                 if settings.dryRun {
                     Text("Preview mode — nothing will actually be trashed.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(Theme.accentText)
                 } else {
                     Text("Files go to the Trash, so nothing is lost until you empty it.")
-                        .font(.caption)
+                        .explanation()
                         .foregroundStyle(.secondary)
                 }
 
@@ -160,7 +161,7 @@ struct LargeFileView: View {
                     }
                 }
                 .pickerStyle(.menu)
-                .font(.caption)
+                .font(.callout)
                 .fixedSize()
                 .onChange(of: settings.largeFileThresholdMB) { _, _ in load() }
             }

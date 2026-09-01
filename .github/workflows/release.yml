@@ -81,22 +81,30 @@ jobs:
           NOTARY_APPLE_ID: ${{ secrets.APPLE_ID }}
           NOTARY_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           NOTARY_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
-        run: cd app && ./build.sh --notarize
+        run: cd app && ./build.sh --notarize --dmg
 
-      - name: Confirm the ticket is stapled
+      # Both carry a ticket of their own: the app's covers a copy dragged out of
+      # the image, the image's covers a download that is never opened.
+      - name: Confirm the tickets are stapled
         run: |
           xcrun stapler validate "app/dist/Tideline.app"
           spctl --assess --type execute --verbose=2 "app/dist/Tideline.app"
+          xcrun stapler validate "app/dist/Tideline.dmg"
 
-      - name: Name the archive after the version
+      # The zip keeps its name because the in-app updater looks for it by name.
+      # The disk image is the download for a person, and is named to match.
+      - name: Name the downloads after the version
         id: archive
         run: |
           VERSION="$(node -p "require('./package.json').version")"
-          NAME="Tideline-$VERSION-macos-universal.zip"
-          mv "app/dist/Tideline.zip" "app/dist/$NAME"
+          ZIP="Tideline-$VERSION-macos-universal.zip"
+          DMG="Tideline-$VERSION-macos-universal.dmg"
+          mv "app/dist/Tideline.zip" "app/dist/$ZIP"
+          mv "app/dist/Tideline.dmg" "app/dist/$DMG"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "path=app/dist/$NAME" >> "$GITHUB_OUTPUT"
+          echo "name=$ZIP" >> "$GITHUB_OUTPUT"
+          echo "path=app/dist/$ZIP" >> "$GITHUB_OUTPUT"
+          echo "dmg=app/dist/$DMG" >> "$GITHUB_OUTPUT"
 
       # GitHub always wraps an artifact in a zip of its own, so this name must
       # differ from the zip inside it. Naming both the same makes the download
@@ -107,7 +115,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: tideline-${{ steps.archive.outputs.version }}-build
-          path: ${{ steps.archive.outputs.path }}
+          path: |
+            ${{ steps.archive.outputs.path }}
+            ${{ steps.archive.outputs.dmg }}
           if-no-files-found: error
           retention-days: 90
 
@@ -120,7 +130,8 @@ jobs:
           TARGET: ${{ github.event_name == 'release' && github.ref_name || inputs.tag }}
         run: |
           gh release upload "$TARGET" \
-            "${{ steps.archive.outputs.path }}" --clobber
+            "${{ steps.archive.outputs.path }}" \
+            "${{ steps.archive.outputs.dmg }}" --clobber
 
       # What makes `brew install --cask estruyf/tap/tideline` resolve. Only a
       # published, non-prerelease build belongs in the tap: the cask carries a

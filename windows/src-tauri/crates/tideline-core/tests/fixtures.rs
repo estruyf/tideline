@@ -8,12 +8,18 @@ use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use serde::Deserialize;
 use std::path::PathBuf;
 use tideline_core::organizer::{plan, Entry};
+use tideline_core::rule::Rule;
 use tideline_core::settings::{DateBasis, FolderFormat, RunConfiguration, TypeRule};
 
 #[derive(Debug, Deserialize)]
 struct Case {
     name: String,
     now: String,
+    /// A case describing behaviour this engine has not implemented yet. The
+    /// contract is written down first, so the fixture is allowed to be ahead of
+    /// the code; dropping the flag is what turns it into a failing test.
+    #[serde(default)]
+    pending: bool,
     #[serde(default)]
     config: CaseConfig,
     entries: Vec<CaseEntry>,
@@ -32,6 +38,8 @@ struct CaseConfig {
     include_folders: bool,
     #[serde(default)]
     skip_names: Vec<String>,
+    #[serde(default)]
+    rules: Vec<Rule>,
     #[serde(default)]
     type_rules: Vec<TypeRule>,
 }
@@ -53,12 +61,16 @@ struct CaseEntry {
     settled: bool,
     #[serde(default)]
     hidden: bool,
+    #[serde(default)]
+    where_from: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Expected {
     name: String,
     target_folder: String,
+    #[serde(default)]
+    is_by_rule: bool,
     #[serde(default)]
     is_by_type: bool,
 }
@@ -88,8 +100,14 @@ fn shared_cases_agree() {
     assert!(!cases.is_empty(), "no cases found in {}", path.display());
 
     let mut failures = Vec::new();
+    let mut pending = 0;
 
     for case in &cases {
+        if case.pending {
+            pending += 1;
+            continue;
+        }
+
         let config = RunConfiguration {
             root: PathBuf::from("/downloads"),
             keep_recent_days: case.config.keep_recent_days,
@@ -98,6 +116,13 @@ fn shared_cases_agree() {
             include_folders: case.config.include_folders,
             dry_run: false,
             skip_names: case.config.skip_names.clone(),
+            rules: case
+                .config
+                .rules
+                .iter()
+                .filter(|r| r.is_enabled)
+                .cloned()
+                .collect(),
             type_rules: case
                 .config
                 .type_rules
@@ -117,20 +142,35 @@ fn shared_cases_agree() {
                 size: e.size,
                 settled: e.settled,
                 hidden: e.hidden,
+                where_from: e.where_from.clone(),
             })
             .collect();
 
         let result = plan(&entries, &config, local(&case.now));
 
-        let got: Vec<(String, String, bool)> = result
+        let got: Vec<(String, String, bool, bool)> = result
             .moves
             .iter()
-            .map(|m| (m.name.clone(), m.target_folder.clone(), m.is_by_type))
+            .map(|m| {
+                (
+                    m.name.clone(),
+                    m.target_folder.clone(),
+                    m.is_by_rule,
+                    m.is_by_type,
+                )
+            })
             .collect();
-        let want: Vec<(String, String, bool)> = case
+        let want: Vec<(String, String, bool, bool)> = case
             .expected
             .iter()
-            .map(|e| (e.name.clone(), e.target_folder.clone(), e.is_by_type))
+            .map(|e| {
+                (
+                    e.name.clone(),
+                    e.target_folder.clone(),
+                    e.is_by_rule,
+                    e.is_by_type,
+                )
+            })
             .collect();
 
         if got != want {
@@ -167,5 +207,12 @@ fn shared_cases_agree() {
         failures.join("")
     );
 
-    println!("{} shared cases agree", cases.len());
+    if pending > 0 {
+        println!(
+            "{} shared cases agree, {pending} pending",
+            cases.len() - pending
+        );
+    } else {
+        println!("{} shared cases agree", cases.len());
+    }
 }

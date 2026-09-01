@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Install — Tideline</title>
-<meta name="description" content="Install Tideline with Homebrew or from the release zip. macOS 14 or later, free and open source.">
+<meta name="description" content="Install Tideline with Homebrew or from the release disk image. macOS 14 or later, free and open source.">
 <link rel="icon" href="../icon.png">
 <link rel="stylesheet" href="../style.css">
 <link rel="canonical" href="https://estruyf.github.io/tideline/docs/install.html">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Install — Tideline">
-<meta property="og:description" content="Install Tideline with Homebrew or from the release zip. macOS 14 or later, free and open source.">
+<meta property="og:description" content="Install Tideline with Homebrew or from the release disk image. macOS 14 or later, free and open source.">
 <meta property="og:url" content="https://estruyf.github.io/tideline/docs/install.html">
 </head>
 <body>
@@ -44,10 +44,12 @@
 <ul>
 <li><a href="the-window.html">The window</a></li>
 <li><a href="filing.html">Filing</a></li>
+<li><a href="routing-rules.html">Routing rules</a></li>
 <li><a href="type-folders.html">Type folders</a></li>
 <li><a href="schedule.html">Schedule</a></li>
 <li><a href="clearing.html">Clearing</a></li>
 <li><a href="reclaim-space.html">Reclaim space</a></li>
+<li><a href="move-out.html">Move out</a></li>
 <li><a href="menu-bar.html">The menu bar</a></li>
 <li><a href="general.html">General and activity</a></li>
 </ul>
@@ -70,16 +72,23 @@
 </nav>
 <main class="doc" id="main">
 <h1>Install</h1>
-<p class="lead">Homebrew or a zip, either way it ends up in <code>/Applications</code>. macOS 14 or later, Apple silicon and Intel both.</p>
+<p class="lead">Homebrew or a disk image, either way it ends up in <code>/Applications</code>. macOS 14 or later, Apple silicon and Intel both.</p>
 
 <h2>With Homebrew</h2>
 <pre class="shell"><code>brew install --cask estruyf/tap/tideline</code></pre>
 
 <h2>Or from the release</h2>
 <p>
-  Grab the zip from the
-  <a href="https://github.com/estruyf/tideline/releases/latest">latest release</a>,
-  unzip it, and drag <strong>Tideline.app</strong> into <code>/Applications</code>.
+  Open <strong>Tideline-&lt;version&gt;-macos-universal.dmg</strong> from the
+  <a href="https://github.com/estruyf/tideline/releases/latest">latest release</a>
+  and drag <strong>Tideline.app</strong> onto the Applications folder next to it.
+  Then eject the image; nothing is left behind.
+</p>
+<p>
+  The zip attached to the same release is the same build, signed and notarized
+  the same way. It is there because it is what Tideline downloads when it
+  <a href="updates.html">updates itself</a> — an update should not have to mount
+  anything — and either one installs by hand just as well.
 </p>
 
 <div class="note note-warn">
@@ -98,16 +107,22 @@
   itself means being somewhere it can write.
 </p>
 <p>
-  That is also why <code>brew upgrade</code> leaves it alone: the cask is marked
-  as updating itself, so the two never race.
-  <code>brew upgrade --greedy</code> installs a new version through Homebrew
-  instead, if you would rather it came from there.
+  That is also why a plain <code>brew upgrade</code> leaves it alone: the cask
+  is marked as updating itself, so the two never race. Naming it is enough to
+  take a version from Homebrew instead:
+</p>
+
+<pre class="shell"><code>brew upgrade --cask estruyf/tap/tideline</code></pre>
+
+<p>
+  <code>brew upgrade --greedy</code> does the same thing across every cask that
+  updates itself, if that is how you would rather work.
 </p>
 
 <h2>What it is</h2>
 <p>
-  Native Swift with no dependencies at all: 1.7 MB to download, 5.8 MB on disk
-  because it ships for both Apple silicon and Intel. No Electron, no bundled
+  Native Swift with no dependencies at all: about 3 MB to download, 9.6 MB on
+  disk because it ships for both Apple silicon and Intel. No Electron, no bundled
   runtime, no helper process quietly installed beside it — one menu bar app that
   schedules itself, and quitting it really is the end of it.
 </p>

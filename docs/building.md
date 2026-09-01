@@ -1,6 +1,6 @@
 # Building Tideline
 
-For running the app you do not need any of this — grab the zip from the
+For running the app you do not need any of this — open the disk image from the
 [latest release](https://github.com/estruyf/tideline/releases/latest). This page
 is for building it on your own machine.
 
@@ -31,6 +31,9 @@ built it; to hand the app to anyone else, see [Signing and notarizing](./signing
 | `npm run build` | Build into `app/dist/` |
 | `npm run build:install` | Build, copy to `/Applications`, open it |
 | `npm run build:zip` | Build and zip it for release |
+| `npm run build:dmg` | Build and wrap it in `app/dist/Tideline.dmg` |
+| `npm run dmg:background` | Re-render `assets/dmg/background.tiff` from its HTML source |
+| `npm run dmg:layout` | Re-record the disk image's window layout — needs a real Finder, see [Releasing](./releasing.md) |
 | `npm run sign` | Build signed with your Developer ID, then zip |
 | `npm run notarize` | Sign, notarize with Apple, staple, zip |
 | `npm run open` | Open the built app from `app/dist/` |
@@ -68,7 +71,8 @@ VERSION=1.2.0-beta.1 npm run build
 | Path | |
 | --- | --- |
 | [`app/Package.swift`](../app/Package.swift) | SwiftPM manifest — one executable target, macOS 14+ |
-| [`app/build.sh`](../app/build.sh) | Build, bundle, icon, sign, notarize, staple, zip |
+| [`app/build.sh`](../app/build.sh) | Build, bundle, icon, sign, notarize, staple, zip, disk image |
+| [`app/Tools/make-dmg-layout.sh`](../app/Tools/make-dmg-layout.sh) | Records the disk image's window layout into `app/Resources/dmg/DS_Store`, by hand, so the build never needs Finder |
 | [`app/Resources/Info.plist`](../app/Resources/Info.plist) | Bundle template; `__VERSION__` and `__BUILD__` are substituted at build time |
 | [`app/Tools/make-icon.swift`](../app/Tools/make-icon.swift) | Draws the icon set the build turns into `AppIcon.icns` |
 | `app/Sources/Tideline/` | The app: `Organizer` files, `Cleaner` clears, `Controller` schedules, `Views/` is the window |

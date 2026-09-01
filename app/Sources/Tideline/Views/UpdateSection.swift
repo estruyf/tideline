@@ -13,7 +13,7 @@ struct UpdateSection: View {
         LabeledContent {
             HStack(spacing: 10) {
                 Text(checkedText)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                 Button("Check Now") { updater.check(userInitiated: true) }
                     .disabled(updater.state.isBusy)
@@ -43,7 +43,7 @@ struct UpdateSection: View {
         if !updater.canSelfUpdate {
             Label("This build is not running from an installed app, so it can't replace itself.",
                   systemImage: "info.circle")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
         }
 
@@ -106,7 +106,7 @@ private struct UpdateStatusView: View {
                     .font(.callout.weight(.medium))
                 ProgressView(value: fraction)
                 Text(fraction > 0 ? "\(Int(fraction * 100))% of \(updater.pending?.sizeText ?? "")" : "Starting…")
-                    .font(.caption)
+                    .explanation()
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 2)
@@ -115,7 +115,7 @@ private struct UpdateStatusView: View {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
                 Text("Checking the download is signed by the same developer…")
-                    .font(.callout)
+                    .explanation()
                     .foregroundStyle(.secondary)
             }
 
@@ -133,7 +133,7 @@ private struct UpdateStatusView: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(Theme.danger)
                 Text(message)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
@@ -163,12 +163,12 @@ private struct AvailableCard: View {
                     .font(.callout.weight(.semibold))
                 Spacer(minLength: 8)
                 Text([release.releasedText, release.sizeText].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             }
 
             Text("You are running \(AppInfo.version). The update is downloaded from GitHub, checked against this app's own signature, and only then swapped in — Tideline restarts once it is done.")
-                .font(.caption)
+                .explanation()
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -176,14 +176,14 @@ private struct AvailableCard: View {
                 DisclosureGroup("What's new", isExpanded: $showingNotes) {
                     ScrollView {
                         Text(notes)
-                            .font(.caption)
+                            .font(.callout)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .textSelection(.enabled)
                             .padding(.top, 4)
                     }
                     .frame(maxHeight: 160)
                 }
-                .font(.caption.weight(.medium))
+                .font(.callout.weight(.medium))
             }
 
             HStack {

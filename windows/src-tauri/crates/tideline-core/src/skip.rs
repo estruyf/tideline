@@ -4,9 +4,15 @@
 //! Windows, so the same grammar is implemented here: `*` for any run of
 //! characters, `?` for exactly one, `[abc]` / `[a-z]` / `[!abc]` for a set.
 //!
-//! Matching is case-insensitive on Windows and case-sensitive elsewhere, which
-//! follows the filesystem underneath in each case: a user who writes `*.EXE`
-//! on Windows means the file that Explorer shows as `.exe`.
+//! For the skip list, matching is case-insensitive on Windows and
+//! case-sensitive elsewhere, which follows the filesystem underneath in each
+//! case: a user who writes `*.EXE` on Windows means the file that Explorer
+//! shows as `.exe`.
+//!
+//! Routing rules ask the same matcher a different question and choose their own
+//! answer, so [`glob_match_with`] takes the case rule as an argument. Folding is
+//! ASCII `A`-`Z` only whichever way it is called — full Unicode folding is
+//! locale-dependent, and this has to mean the same thing in both engines.
 
 /// Whether any pattern in the list claims this name.
 pub fn matches_skip_list(name: &str, patterns: &[String]) -> bool {
@@ -25,35 +31,48 @@ pub fn matches_skip_list(name: &str, patterns: &[String]) -> bool {
     })
 }
 
-fn case_insensitive() -> bool {
-    cfg!(windows)
+/// What the skip list does when the user has not said otherwise.
+fn skip_list_is_case_sensitive() -> bool {
+    !cfg!(windows)
 }
 
 fn eq(a: &str, b: &str) -> bool {
-    if case_insensitive() {
-        a.eq_ignore_ascii_case(b)
-    } else {
+    if skip_list_is_case_sensitive() {
         a == b
+    } else {
+        a.eq_ignore_ascii_case(b)
     }
 }
 
-fn fold(c: char) -> char {
-    if case_insensitive() {
-        c.to_ascii_lowercase()
-    } else {
+fn fold(c: char, case_sensitive: bool) -> char {
+    if case_sensitive {
         c
+    } else {
+        c.to_ascii_lowercase()
     }
 }
 
 /// `fnmatch`-style matching, without `FNM_PATHNAME` — these are single path
 /// components, so there is no separator to be careful about.
 pub fn glob_match(pattern: &str, name: &str) -> bool {
-    let pattern: Vec<char> = pattern.chars().collect();
-    let name: Vec<char> = name.chars().collect();
-    matches_from(&pattern, 0, &name, 0)
+    glob_match_with(pattern, name, skip_list_is_case_sensitive())
 }
 
-fn matches_from(pattern: &[char], mut p: usize, name: &[char], mut n: usize) -> bool {
+/// The same matcher with the case rule spelled out, for callers that do not
+/// want the platform's answer. Routing rules default to `false`.
+pub fn glob_match_with(pattern: &str, name: &str, case_sensitive: bool) -> bool {
+    let pattern: Vec<char> = pattern.chars().collect();
+    let name: Vec<char> = name.chars().collect();
+    matches_from(&pattern, 0, &name, 0, case_sensitive)
+}
+
+fn matches_from(
+    pattern: &[char],
+    mut p: usize,
+    name: &[char],
+    mut n: usize,
+    case_sensitive: bool,
+) -> bool {
     // Where to resume if a `*` turns out to have swallowed too little. Tracking
     // one backtrack point keeps this linear on the patterns people actually
     // write, rather than exponential on `*a*a*a*`.
@@ -79,20 +98,21 @@ fn matches_from(pattern: &[char], mut p: usize, name: &[char], mut n: usize) -> 
                     continue;
                 }
                 '[' if n < name.len() => {
-                    if let Some((next, matched)) = match_class(pattern, p, name[n]) {
+                    if let Some((next, matched)) = match_class(pattern, p, name[n], case_sensitive)
+                    {
                         if matched {
                             p = next;
                             n += 1;
                             continue;
                         }
-                    } else if fold(pattern[p]) == fold(name[n]) {
+                    } else if fold(pattern[p], case_sensitive) == fold(name[n], case_sensitive) {
                         // An unterminated `[` is a literal bracket, as fnmatch has it.
                         p += 1;
                         n += 1;
                         continue;
                     }
                 }
-                c if n < name.len() && fold(c) == fold(name[n]) => {
+                c if n < name.len() && fold(c, case_sensitive) == fold(name[n], case_sensitive) => {
                     p += 1;
                     n += 1;
                     continue;
@@ -117,7 +137,12 @@ fn matches_from(pattern: &[char], mut p: usize, name: &[char], mut n: usize) -> 
 
 /// Reads a `[...]` class starting at `open`. Returns where the class ends and
 /// whether `candidate` is in it, or `None` if the bracket is never closed.
-fn match_class(pattern: &[char], open: usize, candidate: char) -> Option<(usize, bool)> {
+fn match_class(
+    pattern: &[char],
+    open: usize,
+    candidate: char,
+    case_sensitive: bool,
+) -> Option<(usize, bool)> {
     let mut i = open + 1;
     let mut negated = false;
     if i < pattern.len() && (pattern[i] == '!' || pattern[i] == '^') {
@@ -136,8 +161,11 @@ fn match_class(pattern: &[char], open: usize, candidate: char) -> Option<(usize,
 
         // `a-z`, but only when the `-` is not the last character before `]`.
         if i + 2 < pattern.len() && pattern[i + 1] == '-' && pattern[i + 2] != ']' {
-            let (lo, hi) = (fold(pattern[i]), fold(pattern[i + 2]));
-            let c = fold(candidate);
+            let (lo, hi) = (
+                fold(pattern[i], case_sensitive),
+                fold(pattern[i + 2], case_sensitive),
+            );
+            let c = fold(candidate, case_sensitive);
             if lo <= c && c <= hi {
                 found = true;
             }
@@ -145,7 +173,7 @@ fn match_class(pattern: &[char], open: usize, candidate: char) -> Option<(usize,
             continue;
         }
 
-        if fold(pattern[i]) == fold(candidate) {
+        if fold(pattern[i], case_sensitive) == fold(candidate, case_sensitive) {
             found = true;
         }
         i += 1;

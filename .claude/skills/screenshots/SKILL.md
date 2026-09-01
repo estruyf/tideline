@@ -11,13 +11,16 @@ command per profile, so a release that changed the window is a re-run and a
 find-and-replace, not an afternoon in Preview.
 
 The script is [`promo/scripts/capture.sh`](../../../promo/scripts/capture.sh).
+Its `names` array is the sidebar **in order**, because the loop presses the nth
+item — adding a pane means inserting the name in the right place, in both the
+`tour` and `assets` profiles, not appending it.
 It lives in `promo/` because the promo videos need the same shots, but its
 `assets` profile writes the README set — parked at 918x678, captured at 2x, so
 every PNG lands at 1836x1356 and matches the series before it.
 
 ## The set
 
-`assets` writes eleven files into `assets/<version>/`:
+`assets` writes thirteen files into `assets/<version>/`:
 
 | File | Where it appears |
 | --- | --- |
@@ -25,6 +28,8 @@ every PNG lands at 1836x1356 and matches the series before it.
 | `reclaim-space.png` | Reclaim space |
 | `review-duplicates.png`, `review-big-files.png`, `review-old-folders.png` | the three review sheets, shown inside the window |
 | `schedule.png`, `filing.png`, `type-folders.png`, `clearing.png`, `general.png` | the settings panes |
+| `routing-rules.png` | Routing rules, and the docs page of the same name |
+| `move-out.png` | Move out, and the docs page of the same name |
 | `activity.png` | nothing yet — captured because the tour uses it |
 
 Two more are not part of that run:
@@ -44,14 +49,20 @@ Two more are not part of that run:
    then **Filing › Folder** → `~/Downloads-demo`. Never capture a real Downloads
    folder: those are somebody's real filenames and they end up in a README that
    is hard to take back.
-3. **Snapshot the settings**, because the run clicks through the app and the
+3. **Seed the two panes that would otherwise be empty.**
+   `./scripts/tideline-demo-settings.sh` writes a routing rule and makes the
+   folder a place points at, then prints the two things it cannot do — a saved
+   place holds a macOS bookmark that only the app can mint, and the *Moved out*
+   list only has rows once a batch has actually moved. Both are a few clicks,
+   and the script says which. Restart the app afterwards so it reads the rule.
+4. **Snapshot the settings**, because the run clicks through the app and the
    `welcome` profile rewrites flags:
    ```bash
    defaults export be.eliostruyf.Tideline /tmp/tideline.plist
    ```
-4. **Set the version folder.** `dest=` in the `assets` case of `capture.sh` is
+5. **Set the version folder.** `dest=` in the `assets` case of `capture.sh` is
    written out in full; bump it to the version in `package.json` before running.
-5. Accessibility has to be granted to whatever runs the script — it moves,
+6. Accessibility has to be granted to whatever runs the script — it moves,
    resizes and clicks the window. macOS will prompt the first time.
 
 ## The run
